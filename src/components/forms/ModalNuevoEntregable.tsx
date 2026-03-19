@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { crearEntregable, obtenerSiguienteNumero, formatearNumeroDoc, obtenerHitosPorProyecto, hoy } from '@/lib/db'
+import { crearEntregable, obtenerSiguienteNumero, formatearNumeroDoc, obtenerHitosPorProyecto, hoy, marcarHitoRealizado } from '@/lib/db'
+import { db } from '@/lib/firebase'
+import { doc, getDoc } from 'firebase/firestore'
 import type { Cliente, Proyecto, Hito, Empresa, TipoEntregable } from '@/types'
-import { X, FileText, Hash, AlertCircle } from 'lucide-react'
+import { X, FileText, Hash } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -37,19 +39,15 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   const [loading, setLoading] = useState(false)
   const [loadingNum, setLoadingNum] = useState(false)
 
-  // Preview del número automático
   useEffect(() => {
     if (modoManual) return
     let activo = true
     const calcular = async () => {
       setLoadingNum(true)
       try {
-        // Solo preview, no incrementa
-        const ref = await import('firebase/firestore').then(m =>
-          m.doc(await import('@/lib/firebase').then(fb => fb.db), 'contadores', empresa)
-        )
-        const snap = await import('firebase/firestore').then(m => m.getDoc(ref))
-        const actual = snap.exists() ? snap.data().ultimoNumero : 0
+        const ref = doc(db, 'contadores', empresa)
+        const snap = await getDoc(ref)
+        const actual = snap.exists() ? (snap.data().ultimoNumero as number) : 0
         const siguiente = actual + 1
         if (activo) {
           const { documento, cargo } = formatearNumeroDoc(empresa, siguiente)
@@ -57,11 +55,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
           setPreviewCargo(cargo)
         }
       } catch {
-        if (activo) {
-          const { documento, cargo } = formatearNumeroDoc(empresa, 1)
-          setPreviewDoc(documento)
-          setPreviewCargo(cargo)
-        }
+        if (activo) { setPreviewDoc('—'); setPreviewCargo('—') }
       } finally {
         if (activo) setLoadingNum(false)
       }
@@ -70,75 +64,54 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
     return () => { activo = false }
   }, [empresa, modoManual])
 
-  // Cargar hitos al cambiar proyecto
   useEffect(() => {
-    if (!proyectoId) { setHitos([]); setHitoId(''); return }
+    if (!proyectoId) { setHitos([]); return }
     obtenerHitosPorProyecto(proyectoId).then(setHitos)
-    const p = proyectos.find(p => p.id === proyectoId)
-    if (p) setEmpresa(p.empresa)
   }, [proyectoId])
 
-  // Filtrar proyectos por cliente
-  const proyectosFiltrados = clienteId
-    ? proyectos.filter(p => p.clienteId === clienteId)
-    : proyectos
+  const proyectosFiltrados = clienteId ? proyectos.filter(p => p.clienteId === clienteId) : proyectos
+  const clienteSeleccionado = clientes.find(c => c.id === clienteId)
+  const proyectoSeleccionado = proyectos.find(p => p.id === proyectoId)
 
-  const handleSubmit = async () => {
-    if (!clienteId || !proyectoId || !asunto) {
+  const handleGuardar = async () => {
+    if (!clienteId || !proyectoId || !asunto.trim()) {
       toast.error('Completa cliente, proyecto y asunto')
       return
     }
     setLoading(true)
     try {
-      let numDoc = previewDoc
-      let numCargo = previewCargo
-
-      if (modoManual && numeroManual) {
-        const parsed = parseInt(numeroManual)
-        if (isNaN(parsed)) { toast.error('Número inválido'); setLoading(false); return }
-        const f = formatearNumeroDoc(empresa, parsed)
-        numDoc = f.documento
-        numCargo = f.cargo
+      let numeroDoc = ''
+      let numeroCargo = ''
+      if (modoManual && numeroManual.trim()) {
+        numeroDoc = numeroManual.trim()
+        numeroCargo = `Cargo ${numeroManual.trim()}`
       } else {
-        const num = await obtenerSiguienteNumero(empresa)
-        const f = formatearNumeroDoc(empresa, num)
-        numDoc = f.documento
-        numCargo = f.cargo
+        const siguiente = await obtenerSiguienteNumero(empresa)
+        const { documento, cargo } = formatearNumeroDoc(empresa, siguiente)
+        numeroDoc = documento
+        numeroCargo = cargo
       }
-
-      const cliente = clientes.find(c => c.id === clienteId)
-      const proyecto = proyectos.find(p => p.id === proyectoId)
-
       await crearEntregable({
-        empresa,
-        tipo,
-        clienteId,
-        clienteNombre: cliente?.nombre || '',
-        proyectoId,
-        proyectoNombre: proyecto?.nombre || '',
+        empresa, tipo,
+        clienteId, clienteNombre: clienteSeleccionado?.nombre || '',
+        proyectoId, proyectoNombre: proyectoSeleccionado?.nombre || '',
         hitoId: hitoId || undefined,
-        fecha,
-        asunto,
+        fecha, asunto: asunto.trim(),
         responsableUid: usuario?.uid || '',
         responsableNombre: responsable,
-        numeroDocumento: numDoc,
-        numeroCargo: numCargo,
+        numeroDocumento: numeroDoc, numeroCargo,
         estado: tipo === 'Reservar' ? 'reservado' : 'completo',
-        descripcion,
+        descripcion: descripcion.trim() || undefined,
         createdAt: new Date().toISOString(),
       })
-
-      // Marcar hito si aplica
-      if (hitoId) {
-        const { marcarHitoRealizado } = await import('@/lib/db')
+      if (hitoId && tipo !== 'Reservar') {
         await marcarHitoRealizado(hitoId, fecha)
       }
-
-      toast.success('Entregable registrado correctamente')
+      toast.success(`Entregable registrado: ${numeroDoc}`)
       onSuccess()
     } catch (err) {
       console.error(err)
-      toast.error('Error al registrar entregable')
+      toast.error('Error al guardar')
     } finally {
       setLoading(false)
     }
@@ -147,55 +120,59 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-box">
-        <div className="flex items-center justify-between p-6 border-b border-[#1e3a8a]/40">
-          <h2 className="font-display font-semibold text-white text-lg flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-400" />
-            Nuevo Entregable
-          </h2>
+        <div className="flex items-center justify-between p-6 border-b border-[#1e3a8a]/50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center">
+              <FileText className="w-4 h-4 text-blue-400" />
+            </div>
+            <h2 className="font-display font-semibold text-white">Nuevo Entregable</h2>
+          </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
-
         <div className="p-6 space-y-4">
-          {/* Empresa + Tipo */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Empresa *</label>
-              <select className="input-field" value={empresa} onChange={e => setEmpresa(e.target.value as Empresa)}>
-                {EMPRESAS.map(em => <option key={em} value={em}>{em}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Tipo *</label>
-              <select className="input-field" value={tipo} onChange={e => setTipo(e.target.value as TipoEntregable)}>
-                {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+          <div>
+            <label className="label">Empresa *</label>
+            <div className="flex gap-2">
+              {EMPRESAS.map(e => (
+                <button key={e} onClick={() => setEmpresa(e)}
+                  className={clsx('flex-1 py-2 px-2 rounded-lg text-xs font-medium border transition-all',
+                    empresa === e
+                      ? e === 'OKINAWATEC' ? 'bg-blue-600/30 border-blue-500 text-blue-300'
+                        : e === 'TECH SOLUTIONS' ? 'bg-green-600/30 border-green-500 text-green-300'
+                        : 'bg-purple-600/30 border-purple-500 text-purple-300'
+                      : 'bg-[#0d1526] border-[#1e3a8a]/50 text-slate-400 hover:border-slate-500')}>
+                  {e === 'TECH SOLUTIONS' ? 'TECH' : e === 'OKINAWATEC' ? 'OKINA' : 'QUANTIC'}
+                </button>
+              ))}
             </div>
           </div>
-
-          {/* Cliente + Proyecto */}
-          <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="label">Tipo *</label>
+            <select className="input-field" value={tipo} onChange={e => setTipo(e.target.value as TipoEntregable)}>
+              {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Cliente *</label>
               <select className="input-field" value={clienteId} onChange={e => { setClienteId(e.target.value); setProyectoId('') }}>
-                <option value="">Seleccionar cliente</option>
+                <option value="">Seleccionar...</option>
                 {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
             <div>
               <label className="label">Proyecto *</label>
-              <select className="input-field" value={proyectoId} onChange={e => setProyectoId(e.target.value)}>
-                <option value="">Seleccionar proyecto</option>
+              <select className="input-field" value={proyectoId} onChange={e => setProyectoId(e.target.value)} disabled={!clienteId}>
+                <option value="">Seleccionar...</option>
                 {proyectosFiltrados.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
               </select>
             </div>
           </div>
-
-          {/* Hito vinculado (opcional) */}
           {hitos.length > 0 && (
             <div>
-              <label className="label">Hito vinculado (opcional) — al guardar se marcará como realizado</label>
+              <label className="label">Hito vinculado (opcional)</label>
               <select className="input-field" value={hitoId} onChange={e => setHitoId(e.target.value)}>
                 <option value="">Sin hito vinculado</option>
                 {hitos.filter(h => h.estado === 'pendiente').map(h => (
@@ -204,96 +181,56 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
               </select>
             </div>
           )}
-
-          {/* Fecha + Responsable */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Fecha *</label>
               <input type="date" className="input-field" value={fecha} onChange={e => setFecha(e.target.value)} />
             </div>
             <div>
-              <label className="label">Responsable *</label>
+              <label className="label">Responsable</label>
               <input type="text" className="input-field" value={responsable} onChange={e => setResponsable(e.target.value)} />
             </div>
           </div>
-
-          {/* Asunto */}
           <div>
             <label className="label">Asunto *</label>
             <input type="text" className="input-field" placeholder="Descripción del entregable..." value={asunto} onChange={e => setAsunto(e.target.value)} />
           </div>
-
-          {/* Descripción */}
           <div>
             <label className="label">Descripción adicional</label>
-            <textarea className="input-field resize-none" rows={2} placeholder="Notas adicionales..." value={descripcion} onChange={e => setDescripcion(e.target.value)} />
+            <textarea className="input-field resize-none" rows={2} value={descripcion} onChange={e => setDescripcion(e.target.value)} />
           </div>
-
-          {/* Numeración */}
-          <div className="bg-[#0d1526] border border-[#1e3a8a]/50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-white flex items-center gap-2">
-                <Hash className="w-4 h-4 text-blue-400" /> Numeración automática
-              </h4>
-              <button
-                type="button"
-                onClick={() => setModoManual(!modoManual)}
-                className="text-xs text-blue-400 hover:text-blue-300"
-              >
-                {modoManual ? 'Usar automático' : 'Ingresar manualmente'}
+          <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Hash className="w-4 h-4 text-blue-400" />
+                <span className="text-xs font-medium text-slate-300">Numeración automática</span>
+              </div>
+              <button onClick={() => setModoManual(!modoManual)} className="text-xs text-blue-400 hover:text-blue-300 underline">
+                {modoManual ? 'Usar automático' : 'Ingresar manual'}
               </button>
             </div>
-
             {modoManual ? (
-              <div>
-                <label className="label">Número a asignar (para migración histórica)</label>
-                <input type="number" className="input-field" placeholder="ej: 25041" value={numeroManual} onChange={e => setNumeroManual(e.target.value)} />
-                {numeroManual && (() => {
-                  const n = parseInt(numeroManual)
-                  if (!isNaN(n)) {
-                    const f = formatearNumeroDoc(empresa, n)
-                    return (
-                      <div className="flex gap-3 mt-2">
-                        <code className="text-xs text-cyan-400 bg-cyan-900/20 px-2 py-1 rounded">{f.documento}</code>
-                        <code className="text-xs text-blue-400 bg-blue-900/20 px-2 py-1 rounded">{f.cargo}</code>
-                      </div>
-                    )
-                  }
-                  return null
-                })()}
-              </div>
+              <input type="text" className="input-field text-xs" placeholder="Ej: ITOK-00100" value={numeroManual} onChange={e => setNumeroManual(e.target.value)} />
             ) : (
-              <div className="flex gap-3">
-                {loadingNum ? (
-                  <span className="text-xs text-slate-400">Calculando...</span>
-                ) : (
-                  <>
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">N° Documento</p>
-                      <code className="text-sm text-cyan-400 bg-cyan-900/20 px-2 py-1 rounded font-medium">{previewDoc}</code>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">N° Cargo</p>
-                      <code className="text-sm text-blue-400 bg-blue-900/20 px-2 py-1 rounded font-medium">{previewCargo}</code>
-                    </div>
-                  </>
-                )}
+              <div className="flex gap-4">
+                <div>
+                  <p className="text-xs text-slate-500 mb-0.5">N° Documento</p>
+                  <p className="text-sm font-mono text-cyan-400">{loadingNum ? '...' : previewDoc}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 mb-0.5">N° Cargo</p>
+                  <p className="text-sm font-mono text-cyan-400">{loadingNum ? '...' : previewCargo}</p>
+                </div>
               </div>
             )}
           </div>
-
-          {tipo === 'Reservar' && (
-            <div className="flex items-start gap-2 bg-amber-900/20 border border-amber-700/30 rounded-lg p-3">
-              <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-300">Este entregable quedará en estado <strong>Reservado</strong>. Podrás agregar el expediente después desde la lista.</p>
-            </div>
-          )}
         </div>
-
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#1e3a8a]/40">
+        <div className="flex justify-end gap-3 px-6 pb-6">
           <button onClick={onClose} className="btn-secondary">Cancelar</button>
-          <button onClick={handleSubmit} disabled={loading} className="btn-primary">
-            {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Registrar entregable'}
+          <button onClick={handleGuardar} disabled={loading} className="btn-primary">
+            {loading
+              ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <><FileText className="w-4 h-4" /> Guardar</>}
           </button>
         </div>
       </div>
