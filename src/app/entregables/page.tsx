@@ -74,9 +74,17 @@ export default function EntregablesPage() {
   }
 
   const iniciarEdicion = (e: Entregable) => {
-    setEditando(e.id)
-    setEditData({ asunto: e.asunto, fecha: e.fecha, responsableNombre: e.responsableNombre, tipo: e.tipo, descripcion: e.descripcion || '' })
-  }
+  setEditando(e.id)
+  setEditData({
+    asunto: e.asunto,
+    fecha: e.fecha,
+    responsableNombre: e.responsableNombre,
+    tipo: e.tipo,
+    descripcion: e.descripcion || '',
+    numeroDocumento: e.numeroDocumento,
+    numeroCargo: e.numeroCargo,
+  })
+}
 
   const guardarEdicion = async (id: string) => {
     try {
