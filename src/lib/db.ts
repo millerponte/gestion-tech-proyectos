@@ -1,18 +1,18 @@
 import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc,
-  deleteDoc, query, where, orderBy, runTransaction, Timestamp,
-  setDoc, limit
+  deleteDoc, query, where, orderBy, runTransaction,
+  setDoc
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { Empresa, Entregable, Hito, Proyecto, Cliente, Usuario, ContadorDocumento } from '@/types'
+import type { Empresa, Entregable, Hito, Proyecto, Cliente, Usuario } from '@/types'
 
-// ─── CONTADORES DE DOCUMENTOS ───────────────────────────────────────────────
+// ─── CONTADORES ──────────────────────────────────────────────────────────────
 
 export function formatearNumeroDoc(empresa: Empresa, numero: number): { documento: string; cargo: string } {
   const n = String(numero).padStart(5, '0')
   switch (empresa) {
     case 'TECH SOLUTIONS':
-      return { documento: `RPTS-${n}`, cargo: `Cargo ${n}-ZRIX` }
+      return { documento: `RPTS-${n}`, cargo: `Cargo ${n}-TECH` }
     case 'QUANTIC':
       return { documento: `QT-${n}`, cargo: `Cargo ${n}-QTO` }
     case 'OKINAWATEC':
@@ -157,7 +157,7 @@ export async function eliminarEntregable(id: string) {
   await deleteDoc(doc(db, 'entregables', id))
 }
 
-// ─── HELPERS DE FECHAS ────────────────────────────────────────────────────────
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 export function hoy(): string {
   return new Date().toISOString().split('T')[0]
