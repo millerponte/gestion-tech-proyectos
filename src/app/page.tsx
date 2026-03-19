@@ -125,7 +125,9 @@ export default function ProyectosPage() {
           <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
             <FolderKanban className="w-6 h-6 text-blue-400" /> Proyectos
           </h1>
-          <p className="text-slate-400 text-sm mt-0.5">{proyectos.length} proyectos en total</p>
+          <p className="text-slate-400 text-sm mt-0.5">
+            <p className="text-xs text-red-400">DEBUG: isAdmin={String(isAdmin)} | rol={usuario?.rol}</p>
+            {proyectos.length} proyectos en total</p>
         </div>
         <div className="flex gap-2">
           <button onClick={exportarExcel} className="btn-secondary">
