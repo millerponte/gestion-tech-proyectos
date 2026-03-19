@@ -1,3 +1,449 @@
-export default function Page() {
-  return <div className="text-white p-6">Sección: cronogramas — próximamente</div>
+'use client'
+
+import { useEffect, useState } from 'react'
+import { obtenerProyectos, obtenerClientes, obtenerHitosPorProyecto, crearHito, actualizarHito, eliminarHito } from '@/lib/db'
+import type { Proyecto, Cliente, Hito } from '@/types'
+import { useAuth } from '@/hooks/useAuth'
+import { CalendarDays, Plus, Search, ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Download, Clock, AlertCircle, CheckCircle2 } from 'lucide-react'
+import clsx from 'clsx'
+import toast from 'react-hot-toast'
+import { formatearFecha, hoy, esFechaVencida } from '@/lib/db'
+import { useSearchParams } from 'next/navigation'
+
+const ESTADO_HITO: Record<string, string> = {
+  pendiente: 'bg-amber-900/30 text-amber-300 border-amber-700/40',
+  realizado: 'bg-green-900/30 text-green-300 border-green-700/40',
+  vencido: 'bg-red-900/30 text-red-300 border-red-700/40',
+}
+
+export default function CronogramasPage() {
+  const { isAdmin } = useAuth()
+  const searchParams = useSearchParams()
+  const [proyectos, setProyectos] = useState<Proyecto[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [hitos, setHitos] = useState<Hito[]>([])
+  const [proyectoSeleccionado, setProyectoSeleccionado] = useState<Proyecto | null>(null)
+  const [busqueda, setBusqueda] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [loadingHitos, setLoadingHitos] = useState(false)
+  const [expandido, setExpandido] = useState<string | null>(null)
+  const [editando, setEditando] = useState<string | null>(null)
+  const [editData, setEditData] = useState<Partial<Hito>>({})
+  const [modalNuevoHito, setModalNuevoHito] = useState(false)
+  const [nuevoHito, setNuevoHito] = useState<Partial<Hito>>({
+    nombre: '', descripcion: '', responsable: '',
+    plazoContractual: '', fechaInicio: hoy(),
+    fechaLimite: hoy(), pago: '', origen: '',
+    estado: 'pendiente', esCritico: false,
+  })
+
+  useEffect(() => {
+    const cargar = async () => {
+      const [p, c] = await Promise.all([obtenerProyectos(), obtenerClientes()])
+      setProyectos(p)
+      setClientes(c)
+      setLoading(false)
+      // Si viene con ?proyecto=id desde proyectos
+      const idParam = searchParams.get('proyecto')
+      if (idParam) {
+        const encontrado = p.find(x => x.id === idParam)
+        if (encontrado) seleccionarProyecto(encontrado)
+      }
+    }
+    cargar()
+  }, [])
+
+  const seleccionarProyecto = async (p: Proyecto) => {
+    setProyectoSeleccionado(p)
+    setLoadingHitos(true)
+    const h = await obtenerHitosPorProyecto(p.id)
+    setHitos(h)
+    setLoadingHitos(false)
+  }
+
+  const proyectosFiltrados = proyectos.filter(p => {
+    const q = busqueda.toLowerCase()
+    return !q || p.nombre.toLowerCase().includes(q) || p.clienteNombre.toLowerCase().includes(q)
+  })
+
+  const exportarExcel = () => {
+    if (!proyectoSeleccionado) return
+    const headers = ['Hito', 'Descripción', 'Responsable', 'Plazo Contractual', 'Fecha Inicio', 'Fecha Límite', 'Fecha Real Envío', 'Estado', 'Pago', 'Origen']
+    const filas = hitos.map(h => [
+      h.nombre, h.descripcion, h.responsable, h.plazoContractual,
+      formatearFecha(h.fechaInicio), formatearFecha(h.fechaLimite),
+      h.fechaRealEnvio ? formatearFecha(h.fechaRealEnvio) : '',
+      h.estado, h.pago, h.origen
+    ])
+    const csv = [headers, ...filas].map(f => f.map(v => `"${v}"`).join(',')).join('\n')
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url
+    a.download = `cronograma_${proyectoSeleccionado.clienteNombre}_${new Date().toISOString().split('T')[0]}.csv`
+    a.click(); URL.revokeObjectURL(url)
+    toast.success('Exportado correctamente')
+  }
+
+  const iniciarEdicion = (h: Hito) => {
+    setEditando(h.id)
+    setEditData({ ...h })
+  }
+
+  const guardarEdicion = async (id: string) => {
+    try {
+      await actualizarHito(id, editData)
+      toast.success('Hito actualizado')
+      setEditando(null)
+      if (proyectoSeleccionado) seleccionarProyecto(proyectoSeleccionado)
+    } catch {
+      toast.error('Error al guardar')
+    }
+  }
+
+  const handleEliminar = async (id: string) => {
+    if (!confirm('¿Eliminar este hito?')) return
+    await eliminarHito(id)
+    toast.success('Hito eliminado')
+    if (proyectoSeleccionado) seleccionarProyecto(proyectoSeleccionado)
+  }
+
+  const handleCrearHito = async () => {
+    if (!nuevoHito.nombre?.trim() || !proyectoSeleccionado) {
+      toast.error('Ingresa el nombre del hito')
+      return
+    }
+    try {
+      await crearHito({
+        proyectoId: proyectoSeleccionado.id,
+        nombre: nuevoHito.nombre!.trim(),
+        descripcion: nuevoHito.descripcion || '',
+        responsable: nuevoHito.responsable || '',
+        plazoContractual: nuevoHito.plazoContractual || '',
+        fechaInicio: nuevoHito.fechaInicio || hoy(),
+        fechaLimite: nuevoHito.fechaLimite || hoy(),
+        pago: nuevoHito.pago || '',
+        origen: nuevoHito.origen || '',
+        estado: 'pendiente',
+        esCritico: nuevoHito.esCritico || false,
+      })
+      toast.success('Hito creado')
+      setModalNuevoHito(false)
+      setNuevoHito({ nombre: '', descripcion: '', responsable: '', plazoContractual: '', fechaInicio: hoy(), fechaLimite: hoy(), pago: '', origen: '', estado: 'pendiente', esCritico: false })
+      seleccionarProyecto(proyectoSeleccionado)
+    } catch {
+      toast.error('Error al crear hito')
+    }
+  }
+
+  const estadoHito = (h: Hito): string => {
+    if (h.estado === 'realizado') return 'realizado'
+    if (esFechaVencida(h.fechaLimite)) return 'vencido'
+    return 'pendiente'
+  }
+
+  if (loading) return (
+    <div className="flex justify-center py-16">
+      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
+  return (
+    <div className="space-y-5 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
+            <CalendarDays className="w-6 h-6 text-blue-400" /> Cronogramas
+          </h1>
+          <p className="text-slate-400 text-sm mt-0.5">
+            {proyectoSeleccionado ? proyectoSeleccionado.nombre : 'Selecciona un proyecto'}
+          </p>
+        </div>
+        {proyectoSeleccionado && (
+          <div className="flex gap-2">
+            <button onClick={exportarExcel} className="btn-secondary">
+              <Download className="w-4 h-4" /> Exportar Excel
+            </button>
+            {isAdmin && (
+              <button onClick={() => setModalNuevoHito(true)} className="btn-primary">
+                <Plus className="w-4 h-4" /> Nuevo hito
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
+        {/* Panel izquierdo — lista proyectos */}
+        <div className="xl:col-span-1 space-y-3">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input className="input-field pl-9" placeholder="Buscar proyecto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+          </div>
+          <div className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
+            {proyectosFiltrados.map(p => (
+              <button key={p.id} onClick={() => seleccionarProyecto(p)}
+                className={clsx('w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all',
+                  proyectoSeleccionado?.id === p.id
+                    ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
+                    : 'bg-[#111d35] border-[#1e3a8a]/40 text-slate-300 hover:border-blue-500/40 hover:text-white')}>
+                <p className="font-medium line-clamp-2">{p.nombre}</p>
+                <p className="text-slate-500 mt-0.5">{p.clienteNombre}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Panel derecho — hitos */}
+        <div className="xl:col-span-3">
+          {!proyectoSeleccionado ? (
+            <div className="card text-center py-16">
+              <CalendarDays className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400">Selecciona un proyecto para ver su cronograma</p>
+            </div>
+          ) : loadingHitos ? (
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : hitos.length === 0 ? (
+            <div className="card text-center py-16">
+              <CalendarDays className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400">No hay hitos en este proyecto</p>
+              {isAdmin && (
+                <button onClick={() => setModalNuevoHito(true)} className="btn-primary mx-auto mt-4">
+                  <Plus className="w-4 h-4" /> Agregar primer hito
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="card p-0 overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
+                  <tr>
+                    <th className="tabla-header w-6"></th>
+                    <th className="tabla-header">Hito / Entregable</th>
+                    <th className="tabla-header">Responsable</th>
+                    <th className="tabla-header">Fecha Inicio</th>
+                    <th className="tabla-header">Fecha Límite</th>
+                    <th className="tabla-header">Estado</th>
+                    <th className="tabla-header">Fecha Real</th>
+                    <th className="tabla-header"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hitos.map(h => {
+                    const estado = estadoHito(h)
+                    return (
+                      <>
+                        <tr key={h.id} className={clsx('tabla-row', expandido === h.id && 'bg-[#1e3a8a]/10')}
+                          onClick={() => setExpandido(expandido === h.id ? null : h.id)}>
+                          <td className="tabla-cell text-slate-500">
+                            {expandido === h.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                          </td>
+                          <td className="tabla-cell">
+                            <div className="flex items-center gap-2">
+                              {h.esCritico && <span className="text-red-400 text-xs">★</span>}
+                              <p className="text-sm text-slate-200 max-w-xs line-clamp-1">{h.nombre}</p>
+                            </div>
+                          </td>
+                          <td className="tabla-cell text-xs text-slate-400">{h.responsable}</td>
+                          <td className="tabla-cell text-xs text-slate-400 whitespace-nowrap">{formatearFecha(h.fechaInicio)}</td>
+                          <td className="tabla-cell text-xs whitespace-nowrap">
+                            <span className={clsx(estado === 'vencido' && h.estado !== 'realizado' ? 'text-red-400' : 'text-slate-400')}>
+                              {formatearFecha(h.fechaLimite)}
+                            </span>
+                          </td>
+                          <td className="tabla-cell">
+                            <span className={clsx('text-xs px-2 py-0.5 rounded-full border', ESTADO_HITO[estado])}>
+                              {estado}
+                            </span>
+                          </td>
+                          <td className="tabla-cell text-xs text-green-400 whitespace-nowrap">
+                            {h.fechaRealEnvio ? formatearFecha(h.fechaRealEnvio) : '—'}
+                          </td>
+                          <td className="tabla-cell" onClick={e => e.stopPropagation()}>
+                            {isAdmin && (
+                              <div className="flex gap-2">
+                                <button onClick={() => { setExpandido(h.id); iniciarEdicion(h) }}
+                                  className="text-slate-500 hover:text-blue-400 transition-colors">
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => handleEliminar(h.id)}
+                                  className="text-slate-500 hover:text-red-400 transition-colors">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+
+                        {expandido === h.id && (
+                          <tr key={`${h.id}-exp`} className="bg-[#0d1526]/80">
+                            <td colSpan={8} className="px-6 py-4">
+                              {editando === h.id ? (
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="label">Nombre del hito</label>
+                                      <input className="input-field" value={editData.nombre} onChange={e => setEditData(d => ({ ...d, nombre: e.target.value }))} />
+                                    </div>
+                                    <div>
+                                      <label className="label">Responsable</label>
+                                      <input className="input-field" value={editData.responsable} onChange={e => setEditData(d => ({ ...d, responsable: e.target.value }))} />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="label">Descripción</label>
+                                    <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={e => setEditData(d => ({ ...d, descripcion: e.target.value }))} />
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                      <label className="label">Fecha inicio</label>
+                                      <input type="date" className="input-field" value={editData.fechaInicio} onChange={e => setEditData(d => ({ ...d, fechaInicio: e.target.value }))} />
+                                    </div>
+                                    <div>
+                                      <label className="label">Fecha límite</label>
+                                      <input type="date" className="input-field" value={editData.fechaLimite} onChange={e => setEditData(d => ({ ...d, fechaLimite: e.target.value }))} />
+                                    </div>
+                                    <div>
+                                      <label className="label">Fecha real envío</label>
+                                      <input type="date" className="input-field" value={editData.fechaRealEnvio || ''} onChange={e => setEditData(d => ({ ...d, fechaRealEnvio: e.target.value }))} />
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                      <label className="label">Plazo contractual</label>
+                                      <input className="input-field" value={editData.plazoContractual} onChange={e => setEditData(d => ({ ...d, plazoContractual: e.target.value }))} />
+                                    </div>
+                                    <div>
+                                      <label className="label">Pago / Condición</label>
+                                      <input className="input-field" value={editData.pago} onChange={e => setEditData(d => ({ ...d, pago: e.target.value }))} />
+                                    </div>
+                                    <div>
+                                      <label className="label">Origen (Cláusula)</label>
+                                      <input className="input-field" value={editData.origen} onChange={e => setEditData(d => ({ ...d, origen: e.target.value }))} />
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="label">Estado</label>
+                                      <select className="input-field" value={editData.estado} onChange={e => setEditData(d => ({ ...d, estado: e.target.value as any }))}>
+                                        <option value="pendiente">Pendiente</option>
+                                        <option value="realizado">Realizado</option>
+                                        <option value="vencido">Vencido</option>
+                                      </select>
+                                    </div>
+                                    <div className="flex items-center gap-2 pt-5">
+                                      <input type="checkbox" id={`critico-${h.id}`} checked={editData.esCritico} onChange={e => setEditData(d => ({ ...d, esCritico: e.target.checked }))} />
+                                      <label htmlFor={`critico-${h.id}`} className="text-sm text-slate-300">Hito crítico ★</label>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button onClick={() => guardarEdicion(h.id)} className="btn-primary text-xs">
+                                      <Check className="w-3.5 h-3.5" /> Guardar
+                                    </button>
+                                    <button onClick={() => setEditando(null)} className="btn-secondary text-xs">
+                                      <X className="w-3.5 h-3.5" /> Cancelar
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                  <div className="col-span-2">
+                                    <p className="text-slate-500 mb-0.5">Descripción</p>
+                                    <p className="text-slate-200">{h.descripcion || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 mb-0.5">Plazo contractual</p>
+                                    <p className="text-slate-200">{h.plazoContractual || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 mb-0.5">Pago / Condición</p>
+                                    <p className="text-slate-200">{h.pago || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 mb-0.5">Origen</p>
+                                    <p className="text-slate-200">{h.origen || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 mb-0.5">Hito crítico</p>
+                                    <p className="text-slate-200">{h.esCritico ? '★ Sí' : 'No'}</p>
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal nuevo hito */}
+      {modalNuevoHito && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModalNuevoHito(false)}>
+          <div className="modal-box">
+            <div className="flex items-center justify-between p-6 border-b border-[#1e3a8a]/50">
+              <h2 className="font-display font-semibold text-white flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-blue-400" /> Nuevo Hito
+              </h2>
+              <button onClick={() => setModalNuevoHito(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="label">Nombre del hito *</label>
+                  <input className="input-field" placeholder="Ej: Informe Técnico Mensual" value={nuevoHito.nombre} onChange={e => setNuevoHito(d => ({ ...d, nombre: e.target.value }))} />
+                </div>
+                <div className="col-span-2">
+                  <label className="label">Descripción</label>
+                  <textarea className="input-field resize-none" rows={2} value={nuevoHito.descripcion} onChange={e => setNuevoHito(d => ({ ...d, descripcion: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Responsable</label>
+                  <input className="input-field" value={nuevoHito.responsable} onChange={e => setNuevoHito(d => ({ ...d, responsable: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Plazo contractual</label>
+                  <input className="input-field" placeholder="Ej: 15 días cal." value={nuevoHito.plazoContractual} onChange={e => setNuevoHito(d => ({ ...d, plazoContractual: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Fecha inicio</label>
+                  <input type="date" className="input-field" value={nuevoHito.fechaInicio} onChange={e => setNuevoHito(d => ({ ...d, fechaInicio: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Fecha límite</label>
+                  <input type="date" className="input-field" value={nuevoHito.fechaLimite} onChange={e => setNuevoHito(d => ({ ...d, fechaLimite: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Pago / Condición</label>
+                  <input className="input-field" placeholder="Ej: Pago Único (Final)" value={nuevoHito.pago} onChange={e => setNuevoHito(d => ({ ...d, pago: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Origen (Cláusula/Doc)</label>
+                  <input className="input-field" placeholder="Ej: Cláusula Quinta" value={nuevoHito.origen} onChange={e => setNuevoHito(d => ({ ...d, origen: e.target.value }))} />
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <input type="checkbox" id="critico-nuevo" checked={nuevoHito.esCritico} onChange={e => setNuevoHito(d => ({ ...d, esCritico: e.target.checked }))} />
+                  <label htmlFor="critico-nuevo" className="text-sm text-slate-300">Hito crítico ★</label>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 px-6 pb-6">
+              <button onClick={() => setModalNuevoHito(false)} className="btn-secondary">Cancelar</button>
+              <button onClick={handleCrearHito} className="btn-primary">
+                <Plus className="w-4 h-4" /> Crear hito
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
