@@ -29,7 +29,7 @@ function sumarMeses(fechaStr: string, meses: number): string {
 }
 
 export default function ProyectosPage() {
-  const { isAdmin, usuario } = useAuth()
+  const { isAdmin } = useAuth()
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
@@ -125,7 +125,6 @@ export default function ProyectosPage() {
           <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
             <FolderKanban className="w-6 h-6 text-blue-400" /> Proyectos
           </h1>
-          <p className="text-xs text-red-400">DEBUG: isAdmin={String(isAdmin)} | rol={usuario?.rol}</p>
           <p className="text-slate-400 text-sm mt-0.5">{proyectos.length} proyectos en total</p>
         </div>
         <div className="flex gap-2">
@@ -176,7 +175,11 @@ export default function ProyectosPage() {
         <div className="card text-center py-16">
           <FolderKanban className="w-12 h-12 text-slate-600 mx-auto mb-3" />
           <p className="text-slate-400">No se encontraron proyectos</p>
-          {isAdmin && <button onClick={() => setModalAbierto(true)} className="btn-primary mx-auto mt-4"><Plus className="w-4 h-4" /> Crear primero</button>}
+          {isAdmin && (
+            <button onClick={() => setModalAbierto(true)} className="btn-primary mx-auto mt-4">
+              <Plus className="w-4 h-4" /> Crear primero
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
