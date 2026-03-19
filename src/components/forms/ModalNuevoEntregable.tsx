@@ -92,16 +92,21 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
         numeroCargo = cargo
       }
       await crearEntregable({
-        empresa, tipo,
-        clienteId, clienteNombre: clienteSeleccionado?.nombre || '',
-        proyectoId, proyectoNombre: proyectoSeleccionado?.nombre || '',
-        hitoId: hitoId || undefined,
-        fecha, asunto: asunto.trim(),
+        empresa,
+        tipo,
+        clienteId,
+        clienteNombre: clienteSeleccionado?.nombre || '',
+        proyectoId,
+        proyectoNombre: proyectoSeleccionado?.nombre || '',
+        ...(hitoId ? { hitoId } : {}),
+        fecha,
+        asunto: asunto.trim(),
         responsableUid: usuario?.uid || '',
         responsableNombre: responsable,
-        numeroDocumento: numeroDoc, numeroCargo,
+        numeroDocumento: numeroDoc,
+        numeroCargo,
         estado: tipo === 'Reservar' ? 'reservado' : 'completo',
-        descripcion: descripcion.trim() || undefined,
+        ...(descripcion.trim() ? { descripcion: descripcion.trim() } : {}),
         createdAt: new Date().toISOString(),
       })
       if (hitoId && tipo !== 'Reservar') {
