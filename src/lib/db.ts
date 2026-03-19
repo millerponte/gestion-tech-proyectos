@@ -6,7 +6,7 @@ import {
 import { db } from './firebase'
 import type { Empresa, Entregable, Hito, Proyecto, Cliente, Usuario } from '@/types'
 
-// ─── CONTADORES ──────────────────────────────────────────────────────────────
+// ─── CONTADOR GLOBAL (compartido entre todas las empresas) ───────────────────
 
 export function formatearNumeroDoc(empresa: Empresa, numero: number): { documento: string; cargo: string } {
   const n = String(numero).padStart(5, '0')
@@ -21,14 +21,14 @@ export function formatearNumeroDoc(empresa: Empresa, numero: number): { document
   }
 }
 
-export async function obtenerSiguienteNumero(empresa: Empresa): Promise<number> {
-  const ref = doc(db, 'contadores', empresa)
+export async function obtenerSiguienteNumero(): Promise<number> {
+  const ref = doc(db, 'contadores', 'GLOBAL')
   let siguiente = 1
   await runTransaction(db, async (transaction) => {
     const snap = await transaction.get(ref)
     if (!snap.exists()) {
-      transaction.set(ref, { empresa, ultimoNumero: 1 })
-      siguiente = 1
+      transaction.set(ref, { ultimoNumero: 26001 })
+      siguiente = 26001
     } else {
       const actual = snap.data().ultimoNumero as number
       siguiente = actual + 1
@@ -36,6 +36,13 @@ export async function obtenerSiguienteNumero(empresa: Empresa): Promise<number> 
     }
   })
   return siguiente
+}
+
+export async function obtenerNumeroPreview(): Promise<number> {
+  const ref = doc(db, 'contadores', 'GLOBAL')
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return 26001
+  return (snap.data().ultimoNumero as number) + 1
 }
 
 // ─── USUARIOS ────────────────────────────────────────────────────────────────
