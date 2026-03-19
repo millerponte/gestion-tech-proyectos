@@ -244,39 +244,49 @@ export default function EntregablesPage() {
                           {editando === e.id ? (
                             // Modo edición
                             <div className="space-y-3">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <label className="label">Tipo</label>
-                                  <select className="input-field" value={editData.tipo} onChange={ev => setEditData(d => ({ ...d, tipo: ev.target.value as any }))}>
-                                    {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="label">Fecha</label>
-                                  <input type="date" className="input-field" value={editData.fecha} onChange={ev => setEditData(d => ({ ...d, fecha: ev.target.value }))} />
-                                </div>
-                              </div>
-                              <div>
-                                <label className="label">Asunto</label>
-                                <input className="input-field" value={editData.asunto} onChange={ev => setEditData(d => ({ ...d, asunto: ev.target.value }))} />
-                              </div>
-                              <div>
-                                <label className="label">Responsable</label>
-                                <input className="input-field" value={editData.responsableNombre} onChange={ev => setEditData(d => ({ ...d, responsableNombre: ev.target.value }))} />
-                              </div>
-                              <div>
-                                <label className="label">Descripción</label>
-                                <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={ev => setEditData(d => ({ ...d, descripcion: ev.target.value }))} />
-                              </div>
-                              <div className="flex gap-2">
-                                <button onClick={() => guardarEdicion(e.id)} className="btn-primary text-xs">
-                                  <Check className="w-3.5 h-3.5" /> Guardar cambios
-                                </button>
-                                <button onClick={() => setEditando(null)} className="btn-secondary text-xs">
-                                  <X className="w-3.5 h-3.5" /> Cancelar
-                                </button>
-                              </div>
-                            </div>
+  <div className="grid grid-cols-2 gap-3">
+    <div>
+      <label className="label">N° Documento</label>
+      <input className="input-field font-mono" value={editData.numeroDocumento} onChange={ev => setEditData(d => ({ ...d, numeroDocumento: ev.target.value }))} />
+    </div>
+    <div>
+      <label className="label">N° Cargo</label>
+      <input className="input-field font-mono" value={editData.numeroCargo} onChange={ev => setEditData(d => ({ ...d, numeroCargo: ev.target.value }))} />
+    </div>
+  </div>
+  <div className="grid grid-cols-2 gap-3">
+    <div>
+      <label className="label">Tipo</label>
+      <select className="input-field" value={editData.tipo} onChange={ev => setEditData(d => ({ ...d, tipo: ev.target.value as any }))}>
+        {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+      </select>
+    </div>
+    <div>
+      <label className="label">Fecha</label>
+      <input type="date" className="input-field" value={editData.fecha} onChange={ev => setEditData(d => ({ ...d, fecha: ev.target.value }))} />
+    </div>
+  </div>
+  <div>
+    <label className="label">Asunto</label>
+    <input className="input-field" value={editData.asunto} onChange={ev => setEditData(d => ({ ...d, asunto: ev.target.value }))} />
+  </div>
+  <div>
+    <label className="label">Responsable</label>
+    <input className="input-field" value={editData.responsableNombre} onChange={ev => setEditData(d => ({ ...d, responsableNombre: ev.target.value }))} />
+  </div>
+  <div>
+    <label className="label">Descripción</label>
+    <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={ev => setEditData(d => ({ ...d, descripcion: ev.target.value }))} />
+  </div>
+  <div className="flex gap-2">
+    <button onClick={() => guardarEdicion(e.id)} className="btn-primary text-xs">
+      <Check className="w-3.5 h-3.5" /> Guardar cambios
+    </button>
+    <button onClick={() => setEditando(null)} className="btn-secondary text-xs">
+      <X className="w-3.5 h-3.5" /> Cancelar
+    </button>
+  </div>
+</div>
                           ) : (
                             // Modo detalle
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
