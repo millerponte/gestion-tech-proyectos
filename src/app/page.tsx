@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { obtenerProyectos, obtenerClientes, eliminarProyecto, actualizarProyecto } from '@/lib/db'
 import type { Proyecto, Cliente } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
-import { FolderKanban, Plus, Search, Filter, Trash2, CalendarDays, Clock, Building2, Pencil, Check, X, ChevronDown, ChevronUp, Download } from 'lucide-react'
+import { FolderKanban, Plus, Search, Filter, Trash2, CalendarDays, Building2, Pencil, Check, X, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { formatearFecha } from '@/lib/db'
@@ -125,9 +125,8 @@ export default function ProyectosPage() {
           <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
             <FolderKanban className="w-6 h-6 text-blue-400" /> Proyectos
           </h1>
-          <p className="text-slate-400 text-sm mt-0.5">
-            <p className="text-xs text-red-400">DEBUG: isAdmin={String(isAdmin)} | rol={usuario?.rol}</p>
-            {proyectos.length} proyectos en total</p>
+          <p className="text-xs text-red-400">DEBUG: isAdmin={String(isAdmin)} | rol={usuario?.rol}</p>
+          <p className="text-slate-400 text-sm mt-0.5">{proyectos.length} proyectos en total</p>
         </div>
         <div className="flex gap-2">
           <button onClick={exportarExcel} className="btn-secondary">
@@ -184,7 +183,6 @@ export default function ProyectosPage() {
           {proyectosFiltrados.map(p => (
             <div key={p.id} className={clsx('card-hover flex flex-col gap-3', expandido === p.id && 'border-blue-500/50')}>
 
-              {/* Header tarjeta */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandido(expandido === p.id ? null : p.id)}>
                   <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 hover:text-blue-300 transition-colors">
@@ -201,12 +199,10 @@ export default function ProyectosPage() {
                 </div>
               </div>
 
-              {/* Badges */}
               <div className="flex flex-wrap gap-1.5">
                 <span className={BADGE_EMPRESA[p.empresa] || 'badge-okinawatec'}>{p.empresa}</span>
               </div>
 
-              {/* Info básica siempre visible */}
               <div className="space-y-1.5 text-xs text-slate-400">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-slate-500" />
@@ -218,11 +214,9 @@ export default function ProyectosPage() {
                 </div>
               </div>
 
-              {/* Detalle expandido */}
               {expandido === p.id && (
                 <div className="border-t border-[#1e3a8a]/30 pt-3 mt-1 space-y-3 animate-fade-in">
                   {editando === p.id ? (
-                    // Modo edición
                     <div className="space-y-3">
                       <div>
                         <label className="label">Nombre del proyecto</label>
@@ -282,7 +276,6 @@ export default function ProyectosPage() {
                       </div>
                     </div>
                   ) : (
-                    // Modo detalle
                     <div className="space-y-2 text-xs">
                       {p.solucion && (
                         <div>
@@ -313,7 +306,6 @@ export default function ProyectosPage() {
                 </div>
               )}
 
-              {/* Footer */}
               <div className="flex items-center justify-between pt-2 border-t border-[#1e3a8a]/30 mt-auto">
                 <span className="text-xs text-slate-500">{p.contratista}</span>
                 <div className="flex items-center gap-2">
