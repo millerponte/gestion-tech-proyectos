@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { crearEntregable, obtenerSiguienteNumero, formatearNumeroDoc, obtenerHitosPorProyecto, hoy, marcarHitoRealizado } from '@/lib/db'
-import { db } from '@/lib/firebase'
-import { doc, getDoc } from 'firebase/firestore'
+import { crearEntregable, obtenerSiguienteNumero, obtenerNumeroPreview, formatearNumeroDoc, obtenerHitosPorProyecto, hoy, marcarHitoRealizado } from '@/lib/db'
 import type { Cliente, Proyecto, Hito, Empresa, TipoEntregable } from '@/types'
 import { X, FileText, Hash } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -39,16 +37,14 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   const [loading, setLoading] = useState(false)
   const [loadingNum, setLoadingNum] = useState(false)
 
+  // Preview del número siguiente (sin incrementar, contador global)
   useEffect(() => {
     if (modoManual) return
     let activo = true
     const calcular = async () => {
       setLoadingNum(true)
       try {
-        const ref = doc(db, 'contadores', empresa)
-        const snap = await getDoc(ref)
-        const actual = snap.exists() ? (snap.data().ultimoNumero as number) : 0
-        const siguiente = actual + 1
+        const siguiente = await obtenerNumeroPreview()
         if (activo) {
           const { documento, cargo } = formatearNumeroDoc(empresa, siguiente)
           setPreviewDoc(documento)
@@ -83,17 +79,21 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
       let numeroDoc = ''
       let numeroCargo = ''
       if (modoManual && numeroManual.trim()) {
-        numeroDoc = numeroManual.trim()
-        numeroCargo = `Cargo ${numeroManual.trim()}`
+        // Ingreso manual: extraer número para calcular siguiente
+        const match = numeroManual.trim().match(/(\d+)/)
+        const numManual = match ? parseInt(match[1]) : 0
+        const { documento, cargo } = formatearNumeroDoc(empresa, numManual)
+        numeroDoc = documento
+        numeroCargo = cargo
       } else {
-        const siguiente = await obtenerSiguienteNumero(empresa)
+        const siguiente = await obtenerSiguienteNumero()
         const { documento, cargo } = formatearNumeroDoc(empresa, siguiente)
         numeroDoc = documento
         numeroCargo = cargo
       }
+
       await crearEntregable({
-        empresa,
-        tipo,
+        empresa, tipo,
         clienteId,
         clienteNombre: clienteSeleccionado?.nombre || '',
         proyectoId,
@@ -109,10 +109,12 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
         ...(descripcion.trim() ? { descripcion: descripcion.trim() } : {}),
         createdAt: new Date().toISOString(),
       })
+
       if (hitoId && tipo !== 'Reservar') {
         await marcarHitoRealizado(hitoId, fecha)
       }
-      toast.success(`Entregable registrado: ${numeroDoc}`)
+
+      toast.success(`Registrado: ${numeroDoc}`)
       onSuccess()
     } catch (err) {
       console.error(err)
@@ -132,11 +134,13 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
             </div>
             <h2 className="font-display font-semibold text-white">Nuevo Entregable</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
+
         <div className="p-6 space-y-4">
+          {/* Empresa */}
           <div>
             <label className="label">Empresa *</label>
             <div className="flex gap-2">
@@ -147,18 +151,22 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
                       ? e === 'OKINAWATEC' ? 'bg-blue-600/30 border-blue-500 text-blue-300'
                         : e === 'TECH SOLUTIONS' ? 'bg-green-600/30 border-green-500 text-green-300'
                         : 'bg-purple-600/30 border-purple-500 text-purple-300'
-                      : 'bg-[#0d1526] border-[#1e3a8a]/50 text-slate-400 hover:border-slate-500')}>
+                      : 'bg-[#0d1526] border-[#1e3a8a]/50 text-slate-400')}>
                   {e === 'TECH SOLUTIONS' ? 'TECH' : e === 'OKINAWATEC' ? 'OKINA' : 'QUANTIC'}
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Tipo */}
           <div>
             <label className="label">Tipo *</label>
             <select className="input-field" value={tipo} onChange={e => setTipo(e.target.value as TipoEntregable)}>
               {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
+
+          {/* Cliente + Proyecto */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Cliente *</label>
@@ -175,6 +183,8 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
               </select>
             </div>
           </div>
+
+          {/* Hito vinculado */}
           {hitos.length > 0 && (
             <div>
               <label className="label">Hito vinculado (opcional)</label>
@@ -186,6 +196,8 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
               </select>
             </div>
           )}
+
+          {/* Fecha + Responsable */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Fecha *</label>
@@ -196,14 +208,20 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
               <input type="text" className="input-field" value={responsable} onChange={e => setResponsable(e.target.value)} />
             </div>
           </div>
+
+          {/* Asunto */}
           <div>
             <label className="label">Asunto *</label>
             <input type="text" className="input-field" placeholder="Descripción del entregable..." value={asunto} onChange={e => setAsunto(e.target.value)} />
           </div>
+
+          {/* Descripción */}
           <div>
             <label className="label">Descripción adicional</label>
             <textarea className="input-field resize-none" rows={2} value={descripcion} onChange={e => setDescripcion(e.target.value)} />
           </div>
+
+          {/* Numeración */}
           <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -215,7 +233,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
               </button>
             </div>
             {modoManual ? (
-              <input type="text" className="input-field text-xs" placeholder="Ej: ITOK-00100" value={numeroManual} onChange={e => setNumeroManual(e.target.value)} />
+              <input type="text" className="input-field text-xs" placeholder="Ej: 26050 (solo el número)" value={numeroManual} onChange={e => setNumeroManual(e.target.value)} />
             ) : (
               <div className="flex gap-4">
                 <div>
@@ -230,6 +248,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
             )}
           </div>
         </div>
+
         <div className="flex justify-end gap-3 px-6 pb-6">
           <button onClick={onClose} className="btn-secondary">Cancelar</button>
           <button onClick={handleGuardar} disabled={loading} className="btn-primary">
