@@ -29,7 +29,7 @@ function sumarMeses(fechaStr: string, meses: number): string {
 }
 
 export default function ProyectosPage() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, usuario } = useAuth()
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
