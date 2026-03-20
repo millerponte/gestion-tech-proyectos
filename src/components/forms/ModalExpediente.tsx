@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { actualizarEntregable } from '@/lib/db'
+import { actualizarEntregable, obtenerTodosUsuarios } from '@/lib/db'
 import type { Entregable } from '@/types'
 import { X, Paperclip } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -20,11 +20,42 @@ export default function ModalExpediente({ entregable, onClose, onSuccess }: Prop
     if (!expediente.trim()) { toast.error('Ingresa el número de expediente'); return }
     setLoading(true)
     try {
+      // 1. Actualizar en Firestore
       await actualizarEntregable(entregable.id, {
         expediente: expediente.trim(),
         estado: 'completo',
       })
-      toast.success('Expediente agregado')
+
+      // 2. Obtener todos los correos registrados
+      const usuarios = await obtenerTodosUsuarios()
+      const correos = usuarios.map(u => u.correo).filter(Boolean)
+
+      // 3. Enviar notificación por correo
+      if (correos.length > 0) {
+        try {
+          await fetch('/api/notificar-expediente', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              correos,
+              numeroDocumento: entregable.numeroDocumento,
+              asunto: entregable.asunto,
+              cliente: entregable.clienteNombre,
+              proyecto: entregable.proyectoNombre,
+              expediente: expediente.trim(),
+              responsable: entregable.responsableNombre,
+              fecha: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            }),
+          })
+          toast.success(`Expediente agregado y notificación enviada a ${correos.length} usuario(s)`)
+        } catch {
+          // Si falla el correo, igual guardamos el expediente
+          toast.success('Expediente agregado (correo no enviado)')
+        }
+      } else {
+        toast.success('Expediente agregado')
+      }
+
       onSuccess()
     } catch {
       toast.error('Error al guardar')
@@ -49,10 +80,20 @@ export default function ModalExpediente({ entregable, onClose, onSuccess }: Prop
           <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-3 text-xs space-y-1">
             <p className="text-slate-400">Documento: <span className="text-cyan-400 font-mono">{entregable.numeroDocumento}</span></p>
             <p className="text-slate-400">Asunto: <span className="text-slate-200">{entregable.asunto}</span></p>
+            <p className="text-slate-400">Cliente: <span className="text-slate-200">{entregable.clienteNombre}</span></p>
           </div>
           <div>
             <label className="label">Número / Referencia del expediente *</label>
-            <input className="input-field" placeholder="Ej: EXP-2026-001234" value={expediente} onChange={e => setExpediente(e.target.value)} autoFocus />
+            <input
+              className="input-field"
+              placeholder="Ej: EXP-2026-001234"
+              value={expediente}
+              onChange={e => setExpediente(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-2 text-xs text-blue-300">
+            📧 Se enviará una notificación por correo a todos los usuarios registrados.
           </div>
           <p className="text-xs text-slate-500">
             Al guardar, el entregable pasará de <span className="text-amber-400">Reservado</span> a <span className="text-green-400">Completo</span>.
@@ -63,7 +104,7 @@ export default function ModalExpediente({ entregable, onClose, onSuccess }: Prop
           <button onClick={handleGuardar} disabled={loading} className="btn-primary">
             {loading
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <><Paperclip className="w-4 h-4" /> Guardar expediente</>}
+              : <><Paperclip className="w-4 h-4" /> Guardar y notificar</>}
           </button>
         </div>
       </div>
