@@ -1,12 +1,11 @@
 'use client'
 
-import { actualizarEntregable, obtenerTodosUsuarios, marcarHitoRealizado } from '@/lib/db'
-import clsx from 'clsx'
 import { useState } from 'react'
-import { actualizarEntregable, obtenerTodosUsuarios } from '@/lib/db'
+import { actualizarEntregable, obtenerTodosUsuarios, marcarHitoRealizado } from '@/lib/db'
 import type { Entregable } from '@/types'
 import { X, Paperclip, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
+import clsx from 'clsx'
 
 interface Props {
   entregable: Entregable
@@ -20,56 +19,60 @@ export default function ModalExpediente({ entregable, onClose, onSuccess }: Prop
   const [loading, setLoading] = useState(false)
 
   const handleGuardar = async () => {
-  if (!expediente.trim()) { toast.error('Ingresa el número de expediente'); return }
-  setLoading(true)
-  try {
-    await actualizarEntregable(entregable.id, {
-      expediente: expediente.trim(),
-      estado: 'completo',
-    })
+    if (!expediente.trim()) { toast.error('Ingresa el número de expediente'); return }
+    setLoading(true)
+    try {
+      // 1. Actualizar entregable
+      await actualizarEntregable(entregable.id, {
+        expediente: expediente.trim(),
+        estado: 'completo',
+      })
 
-    // Si el entregable tiene hito vinculado, marcarlo como realizado
-    if (entregable.hitoId) {
-      await marcarHitoRealizado(entregable.hitoId, entregable.fecha)
-    }
-
-    if (notificar) {
-      try {
-        const usuarios = await obtenerTodosUsuarios()
-        const correos = usuarios.map(u => u.correo).filter(Boolean)
-        if (correos.length > 0) {
-          await fetch('/api/notificar-expediente', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              correos,
-              numeroDocumento: entregable.numeroDocumento,
-              asunto: entregable.asunto,
-              cliente: entregable.clienteNombre,
-              proyecto: entregable.proyectoNombre,
-              expediente: expediente.trim(),
-              responsable: entregable.responsableNombre,
-              fecha: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-            }),
-          })
-          toast.success(`Expediente agregado y notificación enviada a ${correos.length} usuario(s)`)
-        } else {
-          toast.success('Expediente agregado')
-        }
-      } catch {
-        toast.success('Expediente agregado (correo no enviado)')
+      // 2. Si tiene hito vinculado, marcarlo como realizado con la fecha del entregable
+      if (entregable.hitoId) {
+        await marcarHitoRealizado(entregable.hitoId, entregable.fecha)
       }
-    } else {
-      toast.success('Expediente agregado sin notificación')
-    }
 
-    onSuccess()
-  } catch {
-    toast.error('Error al guardar')
-  } finally {
-    setLoading(false)
+      // 3. Notificar por correo si está marcado
+      if (notificar) {
+        try {
+          const usuarios = await obtenerTodosUsuarios()
+          const correos = usuarios.map(u => u.correo).filter(Boolean)
+          if (correos.length > 0) {
+            await fetch('/api/notificar-expediente', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                correos,
+                numeroDocumento: entregable.numeroDocumento,
+                asunto: entregable.asunto,
+                cliente: entregable.clienteNombre,
+                proyecto: entregable.proyectoNombre,
+                expediente: expediente.trim(),
+                responsable: entregable.responsableNombre,
+                fecha: new Date().toLocaleDateString('es-PE', {
+                  day: '2-digit', month: '2-digit', year: 'numeric'
+                }),
+              }),
+            })
+            toast.success(`Expediente agregado y notificación enviada a ${correos.length} usuario(s)`)
+          } else {
+            toast.success('Expediente agregado')
+          }
+        } catch {
+          toast.success('Expediente agregado (correo no enviado)')
+        }
+      } else {
+        toast.success('Expediente agregado sin notificación')
+      }
+
+      onSuccess()
+    } catch {
+      toast.error('Error al guardar')
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -81,7 +84,9 @@ export default function ModalExpediente({ entregable, onClose, onSuccess }: Prop
             </div>
             <h2 className="font-display font-semibold text-white">Agregar Expediente</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="p-6 space-y-4">
@@ -90,9 +95,14 @@ export default function ModalExpediente({ entregable, onClose, onSuccess }: Prop
             <p className="text-slate-400">Documento: <span className="text-cyan-400 font-mono">{entregable.numeroDocumento}</span></p>
             <p className="text-slate-400">Asunto: <span className="text-slate-200">{entregable.asunto}</span></p>
             <p className="text-slate-400">Cliente: <span className="text-slate-200">{entregable.clienteNombre}</span></p>
+            {entregable.hitoId && (
+              <p className="text-slate-400">
+                Hito vinculado: <span className="text-green-400">se marcará como realizado automáticamente ✓</span>
+              </p>
+            )}
           </div>
 
-          {/* Expediente */}
+          {/* Campo expediente */}
           <div>
             <label className="label">Número / Referencia del expediente *</label>
             <input
@@ -104,14 +114,12 @@ export default function ModalExpediente({ entregable, onClose, onSuccess }: Prop
             />
           </div>
 
-          {/* Casilla de notificación */}
+          {/* Casilla notificación */}
           <div
             onClick={() => setNotificar(!notificar)}
             className={clsx(
               'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all',
-              notificar
-                ? 'bg-blue-900/20 border-blue-700/50'
-                : 'bg-[#0d1526] border-[#1e3a8a]/40'
+              notificar ? 'bg-blue-900/20 border-blue-700/50' : 'bg-[#0d1526] border-[#1e3a8a]/40'
             )}>
             <div className={clsx(
               'w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
