@@ -24,7 +24,7 @@ function formatDMY(fechaStr: string): string {
   return `${d}/${m}/${y}`
 }
 
-export default function ModalNuevoProyecto({ clientes, onClose, onSuccess }: Props) {
+export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuccess }: Props) {
   const [nombre, setNombre] = useState('')
   const [clienteId, setClienteId] = useState('')
   const [contratista, setContratista] = useState('')
@@ -44,11 +44,24 @@ export default function ModalNuevoProyecto({ clientes, onClose, onSuccess }: Pro
     : 'OKINAWATEC'
 
   const handleGuardar = async () => {
-    if (!nombre.trim() || !clienteId) {
-      toast.error('Completa nombre y cliente')
-      return
-    }
-    setLoading(true)
+  if (!nombre.trim() || !clienteId) {
+    toast.error('Completa nombre y cliente')
+    return
+  }
+
+  // Verificar duplicado: coinciden los 3 campos
+  const duplicado = proyectos.find(p =>
+    p.solucion.toLowerCase().trim() === solucion.toLowerCase().trim() &&
+    p.clienteId === clienteId &&
+    p.nombre.toLowerCase().trim() === nombre.toLowerCase().trim()
+  )
+  if (duplicado) {
+    toast.error('Ya existe un proyecto con la misma solución, cliente y nombre de contrato')
+    return
+  }
+
+  setLoading(true)
+  // ... resto igual
     try {
       await crearProyecto({
         nombre: nombre.trim(),
