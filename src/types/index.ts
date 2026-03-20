@@ -37,7 +37,7 @@ export interface Proyecto {
   empresa: Empresa
   contratista: string
   numeroContrato: string
-  plazo: number // meses
+  plazo: number
   fechaInicio: string
   fechaFin: string
   solucion: string
@@ -49,6 +49,7 @@ export interface Proyecto {
 export interface Hito {
   id: string
   proyectoId: string
+  numero: number          // <-- NUEVO: número de orden del hito
   nombre: string
   descripcion: string
   responsable: string
