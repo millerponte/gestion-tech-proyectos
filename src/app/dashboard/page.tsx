@@ -47,7 +47,6 @@ export default function DashboardPage() {
   const hitosHoy = hitosPendientes.filter(h => isSameDay(parseISO(h.fechaLimite), new Date()))
   const proyectosActivos = proyectos.filter(p => p.estado === 'activo')
 
-  // Días que tienen hitos activos (entre fechaInicio y fechaLimite)
   const diasConHitos = (dia: Date) =>
     hitosPendientes.filter(h => {
       try {
@@ -74,7 +73,6 @@ export default function DashboardPage() {
   const diasCal = eachDayOfInterval({ start: inicioCal, end: finCal })
   const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
-  // Próximos 10 pendientes ordenados por fecha límite
   const proximosPendientes = [...hitosPendientes]
     .sort((a, b) => a.fechaLimite.localeCompare(b.fechaLimite))
     .slice(0, 10)
@@ -89,7 +87,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-display font-bold text-white">
           Buen día, {usuario?.nombre?.split(' ')[0]} 👋
@@ -99,7 +96,6 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Proyectos activos" value={proyectosActivos.length} icon={<FolderKanban className="w-5 h-5" />} color="blue" />
         <StatCard label="Pendientes" value={hitosPendientes.length} icon={<Clock className="w-5 h-5" />} color="cyan" />
@@ -107,7 +103,6 @@ export default function DashboardPage() {
         <StatCard label="Vencen hoy" value={hitosHoy.length} icon={<CheckCircle2 className="w-5 h-5" />} color="amber" />
       </div>
 
-      {/* Calendario + Pendientes */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
         {/* Calendario */}
@@ -140,7 +135,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Vista Mes */}
           {vista === 'mes' && (
             <>
               <div className="grid grid-cols-7 mb-1">
@@ -161,7 +155,6 @@ export default function DashboardPage() {
                   const esFin = hitosDelDia.some(h => {
                     try { return isSameDay(parseISO(h.fechaLimite), dia) } catch { return false }
                   })
-
                   return (
                     <button key={dia.toISOString()} onClick={() => setDiaSeleccionado(dia)}
                       className={clsx(
@@ -193,33 +186,29 @@ export default function DashboardPage() {
                   )
                 })}
               </div>
-
-              {/* Hitos del día seleccionado */}
               <div className="mt-4 pt-4 border-t border-[#1e3a8a]/30">
                 <p className="text-xs text-slate-400 mb-2 font-medium">
                   {format(diaSeleccionado, "d 'de' MMMM", { locale: es })} — {hitosDiaSeleccionado.length} hito(s)
                 </p>
                 {hitosDiaSeleccionado.length === 0
                   ? <p className="text-slate-600 text-xs">Sin hitos este día</p>
-                  : hitosDiaSeleccionado.map(h => <HitoItem key={h.id} hito={h} />)
+                  : hitosDiaSeleccionado.map(h => <HitoItem key={h.id} hito={h} proyectos={proyectos} />)
                 }
               </div>
             </>
           )}
 
-          {/* Vista Lista */}
           {vista === 'lista' && (
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {hitosPendientes.length === 0
                 ? <p className="text-slate-500 text-sm text-center py-8">No hay hitos pendientes</p>
                 : [...hitosPendientes]
                     .sort((a, b) => a.fechaLimite.localeCompare(b.fechaLimite))
-                    .map(h => <HitoItem key={h.id} hito={h} />)
+                    .map(h => <HitoItem key={h.id} hito={h} proyectos={proyectos} />)
               }
             </div>
           )}
 
-          {/* Vista Semana */}
           {vista === 'semana' && (
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {(() => {
@@ -234,7 +223,7 @@ export default function DashboardPage() {
                 })
                 return hitosSemana.length === 0
                   ? <p className="text-slate-500 text-sm text-center py-8">No hay hitos esta semana</p>
-                  : hitosSemana.map(h => <HitoItem key={h.id} hito={h} />)
+                  : hitosSemana.map(h => <HitoItem key={h.id} hito={h} proyectos={proyectos} />)
               })()}
             </div>
           )}
@@ -249,40 +238,45 @@ export default function DashboardPage() {
           <div className="flex-1 space-y-2 overflow-y-auto max-h-96 pr-1">
             {proximosPendientes.length === 0
               ? <p className="text-slate-500 text-sm text-center py-8">¡Todo al día! 🎉</p>
-              : proximosPendientes.map(h => (
-                <Link
-                  key={h.id}
-                  href={`/cronogramas?proyecto=${h.proyectoId}`}
-                  className={clsx(
-                    'block p-2.5 rounded-lg border text-xs transition-all hover:border-blue-500/50 hover:bg-[#1e3a8a]/10 group',
-                    esFechaVencida(h.fechaLimite)
-                      ? 'bg-red-900/20 border-red-800/40'
-                      : 'bg-[#0d1526] border-[#1e3a8a]/40'
-                  )}>
-                  <div className="flex items-start justify-between gap-2">
-                    <p className={clsx(
-                      'font-medium truncate flex-1',
-                      esFechaVencida(h.fechaLimite) ? 'text-red-300' : 'text-slate-200'
-                    )}>
-                      {h.nombre}
-                    </p>
-                    <ArrowRight className="w-3 h-3 text-slate-500 group-hover:text-blue-400 flex-shrink-0 mt-0.5 transition-colors" />
-                  </div>
-                  <div className="flex items-center gap-3 mt-1.5 text-slate-500">
-                    <span>
-                      Inicio: <span className="text-slate-400">{formatearFecha(h.fechaInicio)}</span>
-                    </span>
-                    <span>
-                      Límite: <span className={esFechaVencida(h.fechaLimite) ? 'text-red-400' : 'text-slate-400'}>
-                        {formatearFecha(h.fechaLimite)}
-                      </span>
-                    </span>
-                  </div>
-                  {h.responsable && (
-                    <p className="text-slate-600 mt-0.5">{h.responsable}</p>
-                  )}
-                </Link>
-              ))
+              : proximosPendientes.map(h => {
+                  const proyecto = proyectos.find(p => p.id === h.proyectoId)
+                  return (
+                    <Link
+                      key={h.id}
+                      href={`/cronogramas?proyecto=${h.proyectoId}`}
+                      className={clsx(
+                        'block p-2.5 rounded-lg border text-xs transition-all hover:border-blue-500/50 hover:bg-[#1e3a8a]/10 group',
+                        esFechaVencida(h.fechaLimite)
+                          ? 'bg-red-900/20 border-red-800/40'
+                          : 'bg-[#0d1526] border-[#1e3a8a]/40'
+                      )}>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={clsx(
+                          'font-medium truncate flex-1',
+                          esFechaVencida(h.fechaLimite) ? 'text-red-300' : 'text-slate-200'
+                        )}>
+                          {h.nombre}
+                        </p>
+                        <ArrowRight className="w-3 h-3 text-slate-500 group-hover:text-blue-400 flex-shrink-0 mt-0.5 transition-colors" />
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 text-slate-500">
+                        <span>Inicio: <span className="text-slate-400">{formatearFecha(h.fechaInicio)}</span></span>
+                        <span>Límite: <span className={esFechaVencida(h.fechaLimite) ? 'text-red-400' : 'text-slate-400'}>
+                          {formatearFecha(h.fechaLimite)}
+                        </span></span>
+                      </div>
+                      {h.responsable && (
+                        <p className="text-slate-600 mt-0.5">{h.responsable}</p>
+                      )}
+                      {proyecto && (
+                        <p className="text-slate-500 mt-0.5 truncate">
+                          {proyecto.clienteNombre}
+                          {proyecto.solucion && <span className="text-slate-600"> — {proyecto.solucion}</span>}
+                        </p>
+                      )}
+                    </Link>
+                  )
+                })
             }
           </div>
           <Link href="/cronogramas" className="btn-secondary mt-4 justify-center text-xs">
