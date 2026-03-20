@@ -354,14 +354,8 @@ export default function CronogramasPage() {
                                         <label className="label">Plazo contractual</label>
                                         <input className="input-field" value={editData.plazoContractual} onChange={e => setEditData(d => ({ ...d, plazoContractual: e.target.value }))} />
                                       </div>
-                                      <div>
-                                        <label className="label">Pago / Condición</label>
-                                        <input className="input-field" value={editData.pago} onChange={e => setEditData(d => ({ ...d, pago: e.target.value }))} />
-                                      </div>
-                                      <div>
-                                        <label className="label">Origen (Cláusula)</label>
-                                        <input className="input-field" value={editData.origen} onChange={e => setEditData(d => ({ ...d, origen: e.target.value }))} />
-                                      </div>
+                                      
+                                      
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                       <div>
@@ -398,14 +392,8 @@ export default function CronogramasPage() {
                                       <p className="text-slate-500 mb-0.5">Plazo contractual</p>
                                       <p className="text-slate-200">{h.plazoContractual || '—'}</p>
                                     </div>
-                                    <div>
-                                      <p className="text-slate-500 mb-0.5">Pago / Condición</p>
-                                      <p className="text-slate-200">{h.pago || '—'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-slate-500 mb-0.5">Origen</p>
-                                      <p className="text-slate-200">{h.origen || '—'}</p>
-                                    </div>
+                                    
+                                    
                                     <div>
                                       <p className="text-slate-500 mb-0.5">Hito crítico</p>
                                       <p className="text-slate-200">{h.esCritico ? '★ Sí' : 'No'}</p>
@@ -460,10 +448,7 @@ export default function CronogramasPage() {
                   <label className="label">Plazo contractual</label>
                   <input className="input-field" placeholder="Ej: 15 días cal." value={nuevoHito.plazoContractual} onChange={e => setNuevoHito(d => ({ ...d, plazoContractual: e.target.value }))} />
                 </div>
-                <div>
-                  <label className="label">Pago / Condición</label>
-                  <input className="input-field" placeholder="Ej: Pago Único (Final)" value={nuevoHito.pago} onChange={e => setNuevoHito(d => ({ ...d, pago: e.target.value }))} />
-                </div>
+                
                 <div>
                   <label className="label">Fecha inicio</label>
                   <input type="date" className="input-field" value={nuevoHito.fechaInicio} onChange={e => setNuevoHito(d => ({ ...d, fechaInicio: e.target.value }))} />
@@ -472,10 +457,7 @@ export default function CronogramasPage() {
                   <label className="label">Fecha límite</label>
                   <input type="date" className="input-field" value={nuevoHito.fechaLimite} onChange={e => setNuevoHito(d => ({ ...d, fechaLimite: e.target.value }))} />
                 </div>
-                <div>
-                  <label className="label">Origen (Cláusula/Doc)</label>
-                  <input className="input-field" placeholder="Ej: Cláusula Quinta" value={nuevoHito.origen} onChange={e => setNuevoHito(d => ({ ...d, origen: e.target.value }))} />
-                </div>
+                
                 <div className="flex items-center gap-2 pt-5">
                   <input type="checkbox" id="critico-nuevo" checked={nuevoHito.esCritico} onChange={e => setNuevoHito(d => ({ ...d, esCritico: e.target.checked }))} />
                   <label htmlFor="critico-nuevo" className="text-sm text-slate-300">Hito crítico ★</label>
