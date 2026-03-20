@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { obtenerEntregables, obtenerClientes, obtenerProyectos, actualizarEntregable, eliminarEntregable } from '@/lib/db'
 import type { Entregable, Cliente, Proyecto } from '@/types'
