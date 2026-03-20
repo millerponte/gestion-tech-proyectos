@@ -163,13 +163,23 @@ export default function CronogramasPage() {
             <button onClick={exportarExcel} className="btn-secondary">
               <Download className="w-4 h-4" /> Exportar Excel
             </button>
-            {isAdmin && (
-              <button onClick={() => setModalNuevoHito(true)} className="btn-primary">
-                <Plus className="w-4 h-4" /> Nuevo hito
-              </button>
-            )}
-          </div>
-        )}
+            {proyectoSeleccionado && (
+  <div className="flex gap-2">
+    <button onClick={exportarExcel} className="btn-secondary">
+      <Download className="w-4 h-4" /> Exportar Excel
+    </button>
+    {isAdmin && (
+      <>
+        <button onClick={() => setModalImportar(true)} className="btn-secondary">
+          <FileSpreadsheet className="w-4 h-4" /> Importar Excel
+        </button>
+        <button onClick={() => setModalNuevoHito(true)} className="btn-primary">
+          <Plus className="w-4 h-4" /> Nuevo hito
+        </button>
+      </>
+    )}
+  </div>
+)}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
