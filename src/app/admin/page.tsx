@@ -58,25 +58,35 @@ export default function AdminPage() {
   }
 
   const handleCrearCliente = async () => {
-    if (!nuevoNombre.trim()) { toast.error('Ingresa el nombre del cliente'); return }
-    setLoadingCliente(true)
-    try {
-      const iniciales = nuevoNombre.trim().split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 3)
-      await crearCliente({
-        nombre: nuevoNombre.trim(),
-        iniciales,
-        color: nuevoColor,
-        createdAt: new Date().toISOString()
-      })
-      toast.success('Cliente creado')
-      setNuevoNombre('')
-      cargarTodo()
-    } catch {
-      toast.error('Error al crear cliente')
-    } finally {
-      setLoadingCliente(false)
-    }
+  if (!nuevoNombre.trim()) { toast.error('Ingresa el nombre del cliente'); return }
+  
+  // Verificar duplicado
+  const duplicado = clientes.find(c => 
+    c.nombre.toLowerCase().trim() === nuevoNombre.toLowerCase().trim()
+  )
+  if (duplicado) {
+    toast.error(`Ya existe un cliente con el nombre "${duplicado.nombre}"`)
+    return
   }
+
+  setLoadingCliente(true)
+  try {
+    const iniciales = nuevoNombre.trim().split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 3)
+    await crearCliente({
+      nombre: nuevoNombre.trim(),
+      iniciales,
+      color: nuevoColor,
+      createdAt: new Date().toISOString()
+    })
+    toast.success('Cliente creado')
+    setNuevoNombre('')
+    cargarTodo()
+  } catch {
+    toast.error('Error al crear cliente')
+  } finally {
+    setLoadingCliente(false)
+  }
+}
 
   const iniciarEdicionCliente = (c: Cliente) => {
     setEditandoCliente(c.id)
