@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { crearEntregable, obtenerSiguienteNumero, obtenerNumeroPreview, formatearNumeroDoc, obtenerHitosPorProyecto, hoy, marcarHitoRealizado } from '@/lib/db'
 import type { Cliente, Proyecto, Hito, Empresa, TipoEntregable } from '@/types'
-import { X, FileText, Hash } from 'lucide-react'
+import { X, FileText, Hash, Link2, Link2Off } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -25,6 +25,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   const [clienteId, setClienteId] = useState('')
   const [proyectoId, setProyectoId] = useState('')
   const [hitoId, setHitoId] = useState('')
+  const [vincularHito, setVincularHito] = useState<boolean | null>(null) // null = no decidido
   const [fecha, setFecha] = useState(hoy())
   const [asunto, setAsunto] = useState('')
   const [responsable, setResponsable] = useState(usuario?.nombre || '')
@@ -36,25 +37,24 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   const [previewCargo, setPreviewCargo] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingNum, setLoadingNum] = useState(false)
+  const [loadingHitos, setLoadingHitos] = useState(false)
 
   const esReserva = tipo === 'Reservar'
 
-  // Cuando cambia a tipo Reservar, llenar campos automáticamente
   useEffect(() => {
     if (esReserva) {
       setClienteId('RESERVADO')
       setProyectoId('RESERVADO')
       setAsunto('RESERVADO')
       setHitoId('')
+      setVincularHito(null)
     } else {
-      // Al cambiar de Reservar a otro tipo, limpiar los campos
       if (clienteId === 'RESERVADO') setClienteId('')
       if (proyectoId === 'RESERVADO') setProyectoId('')
       if (asunto === 'RESERVADO') setAsunto('')
     }
   }, [tipo])
 
-  // Preview del número siguiente
   useEffect(() => {
     if (modoManual) return
     let activo = true
@@ -77,19 +77,30 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
     return () => { activo = false }
   }, [empresa, modoManual])
 
+  // Cargar hitos cuando cambia proyecto y se decide vincular
   useEffect(() => {
-    if (!proyectoId || proyectoId === 'RESERVADO') { setHitos([]); return }
-    obtenerHitosPorProyecto(proyectoId).then(setHitos)
-  }, [proyectoId])
+    if (!proyectoId || proyectoId === 'RESERVADO' || !vincularHito) {
+      setHitos([])
+      setHitoId('')
+      return
+    }
+    setLoadingHitos(true)
+    obtenerHitosPorProyecto(proyectoId)
+      .then(h => {
+        const ordenados = [...h].sort((a, b) => (a.numero || 0) - (b.numero || 0))
+        setHitos(ordenados)
+      })
+      .finally(() => setLoadingHitos(false))
+  }, [proyectoId, vincularHito])
 
   const proyectosFiltrados = clienteId && clienteId !== 'RESERVADO'
     ? proyectos.filter(p => p.clienteId === clienteId)
     : proyectos
   const clienteSeleccionado = clientes.find(c => c.id === clienteId)
   const proyectoSeleccionado = proyectos.find(p => p.id === proyectoId)
+  const hitoSeleccionado = hitos.find(h => h.id === hitoId)
 
   const handleGuardar = async () => {
-    // Para tipo Reservar no se requieren cliente ni proyecto reales
     if (!esReserva && (!clienteId || !proyectoId || !asunto.trim())) {
       toast.error('Completa cliente, proyecto y asunto')
       return
@@ -112,8 +123,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
       }
 
       await crearEntregable({
-        empresa,
-        tipo,
+        empresa, tipo,
         clienteId: esReserva ? '' : clienteId,
         clienteNombre: esReserva ? 'RESERVADO' : (clienteSeleccionado?.nombre || ''),
         proyectoId: esReserva ? '' : proyectoId,
@@ -125,14 +135,10 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
         responsableNombre: responsable,
         numeroDocumento: numeroDoc,
         numeroCargo,
-        estado: 'reservado', // SIEMPRE inicia como reservado
+        estado: 'reservado',
         ...(descripcion.trim() ? { descripcion: descripcion.trim() } : {}),
         createdAt: new Date().toISOString(),
       })
-
-      if (hitoId && !esReserva) {
-        await marcarHitoRealizado(hitoId, fecha)
-      }
 
       toast.success(`Registrado: ${numeroDoc}`)
       onSuccess()
@@ -186,44 +192,114 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
             </select>
           </div>
 
-          {/* Aviso si es Reservar */}
+          {/* Aviso Reservar */}
           {esReserva && (
             <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg px-4 py-3 text-xs text-amber-300">
-              🔒 Modo <strong>Reservar</strong> — se generará un número de documento reservado. 
-              Podrás completar los datos del cliente, proyecto y asunto después al agregar el expediente.
+              🔒 Modo <strong>Reservar</strong> — se generará un número reservado. Completa los datos después al agregar el expediente.
             </div>
           )}
 
-          {/* Cliente + Proyecto — ocultos en modo Reservar */}
+          {/* Cliente + Proyecto */}
           {!esReserva && (
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">Cliente *</label>
-                  <select className="input-field" value={clienteId} onChange={e => { setClienteId(e.target.value); setProyectoId('') }}>
+                  <select className="input-field" value={clienteId} onChange={e => {
+                    setClienteId(e.target.value)
+                    setProyectoId('')
+                    setVincularHito(null)
+                    setHitoId('')
+                  }}>
                     <option value="">Seleccionar...</option>
                     {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="label">Proyecto *</label>
-                  <select className="input-field" value={proyectoId} onChange={e => setProyectoId(e.target.value)} disabled={!clienteId}>
+                  <select className="input-field" value={proyectoId} onChange={e => {
+                    setProyectoId(e.target.value)
+                    setVincularHito(null)
+                    setHitoId('')
+                  }} disabled={!clienteId}>
                     <option value="">Seleccionar...</option>
-                    {proyectosFiltrados.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    {proyectosFiltrados.map(p => <option key={p.id} value={p.id}>{p.solucion || p.nombre}</option>)}
                   </select>
                 </div>
               </div>
 
-              {/* Hito vinculado */}
-              {hitos.length > 0 && (
+              {/* Opción de vincular hito — aparece solo cuando hay proyecto seleccionado */}
+              {proyectoId && vincularHito === null && (
                 <div>
-                  <label className="label">Hito vinculado (opcional)</label>
-                  <select className="input-field" value={hitoId} onChange={e => setHitoId(e.target.value)}>
-                    <option value="">Sin hito vinculado</option>
-                    {hitos.filter(h => h.estado === 'pendiente').map(h => (
-                      <option key={h.id} value={h.id}>{h.nombre}</option>
-                    ))}
-                  </select>
+                  <label className="label">¿Vincular a un hito del cronograma?</label>
+                  <div className="flex gap-2 mt-1">
+                    <button onClick={() => setVincularHito(true)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-xs font-medium transition-all bg-[#0d1526] border-[#1e3a8a]/50 text-slate-300 hover:border-blue-500 hover:text-blue-300">
+                      <Link2 className="w-3.5 h-3.5" /> Sí, vincular a hito
+                    </button>
+                    <button onClick={() => setVincularHito(false)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-xs font-medium transition-all bg-[#0d1526] border-[#1e3a8a]/50 text-slate-300 hover:border-slate-500 hover:text-slate-200">
+                      <Link2Off className="w-3.5 h-3.5" /> No vincular
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Selector de hito */}
+              {proyectoId && vincularHito === true && (
+                <div className="bg-[#0d1526] border border-blue-600/30 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="label mb-0">Seleccionar hito *</label>
+                    <button onClick={() => { setVincularHito(null); setHitoId('') }}
+                      className="text-xs text-slate-500 hover:text-slate-300 underline">
+                      Cambiar opción
+                    </button>
+                  </div>
+                  {loadingHitos ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
+                      <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin" />
+                      Cargando hitos...
+                    </div>
+                  ) : hitos.length === 0 ? (
+                    <p className="text-xs text-amber-400 py-1">Este proyecto no tiene hitos en su cronograma aún.</p>
+                  ) : (
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {hitos.map(h => (
+                        <button key={h.id} onClick={() => setHitoId(h.id)}
+                          className={clsx(
+                            'w-full text-left px-3 py-2 rounded-lg text-xs transition-all border',
+                            hitoId === h.id
+                              ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
+                              : 'bg-[#111d35] border-[#1e3a8a]/30 text-slate-300 hover:border-blue-500/40'
+                          )}>
+                          <span className="font-mono text-slate-500 mr-2">{h.numero || '—'}.</span>
+                          <span className="font-medium">{h.nombre}</span>
+                          {h.fechaLimite && h.fechaLimite !== 'por definir' && (
+                            <span className="text-slate-500 ml-2">· {h.fechaLimite.split('-').reverse().join('/')}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {hitoSeleccionado && (
+                    <div className="bg-blue-900/20 border border-blue-700/30 rounded px-3 py-2 text-xs text-blue-300">
+                      ✓ Hito seleccionado: <strong>{hitoSeleccionado.nombre}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Confirmación de no vincular */}
+              {proyectoId && vincularHito === false && (
+                <div className="flex items-center justify-between bg-[#0d1526] border border-[#1e3a8a]/30 rounded-lg px-3 py-2">
+                  <p className="text-xs text-slate-400 flex items-center gap-2">
+                    <Link2Off className="w-3.5 h-3.5 text-slate-500" />
+                    Sin hito vinculado
+                  </p>
+                  <button onClick={() => setVincularHito(null)}
+                    className="text-xs text-slate-500 hover:text-slate-300 underline">
+                    Cambiar
+                  </button>
                 </div>
               )}
 
@@ -247,7 +323,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
             </div>
           </div>
 
-          {/* Descripción — solo si no es Reservar */}
+          {/* Descripción */}
           {!esReserva && (
             <div>
               <label className="label">Descripción adicional</label>
