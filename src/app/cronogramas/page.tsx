@@ -1,5 +1,7 @@
 'use client'
 
+import ModalImportarHitos from '@/components/forms/ModalImportarHitos'
+import { FileSpreadsheet } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { obtenerProyectos, obtenerClientes, obtenerHitosPorProyecto, crearHito, actualizarHito, eliminarHito } from '@/lib/db'
 import type { Proyecto, Cliente, Hito } from '@/types'
@@ -18,6 +20,7 @@ const ESTADO_HITO: Record<string, string> = {
 
 export default function CronogramasPage() {
   const { isAdmin } = useAuth()
+  const [modalImportar, setModalImportar] = useState(false)
   const searchParams = useSearchParams()
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
