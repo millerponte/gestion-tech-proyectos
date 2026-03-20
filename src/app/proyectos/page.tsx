@@ -340,6 +340,7 @@ export default function ProyectosPage() {
       {modalAbierto && (
         <ModalNuevoProyecto
           clientes={clientes}
+          proyectos={proyectos}
           onClose={() => setModalAbierto(false)}
           onSuccess={() => { setModalAbierto(false); cargar() }}
         />
