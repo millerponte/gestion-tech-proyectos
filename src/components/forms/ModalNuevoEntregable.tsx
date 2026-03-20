@@ -37,7 +37,24 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   const [loading, setLoading] = useState(false)
   const [loadingNum, setLoadingNum] = useState(false)
 
-  // Preview del número siguiente (sin incrementar, contador global)
+  const esReserva = tipo === 'Reservar'
+
+  // Cuando cambia a tipo Reservar, llenar campos automáticamente
+  useEffect(() => {
+    if (esReserva) {
+      setClienteId('RESERVADO')
+      setProyectoId('RESERVADO')
+      setAsunto('RESERVADO')
+      setHitoId('')
+    } else {
+      // Al cambiar de Reservar a otro tipo, limpiar los campos
+      if (clienteId === 'RESERVADO') setClienteId('')
+      if (proyectoId === 'RESERVADO') setProyectoId('')
+      if (asunto === 'RESERVADO') setAsunto('')
+    }
+  }, [tipo])
+
+  // Preview del número siguiente
   useEffect(() => {
     if (modoManual) return
     let activo = true
@@ -61,16 +78,19 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   }, [empresa, modoManual])
 
   useEffect(() => {
-    if (!proyectoId) { setHitos([]); return }
+    if (!proyectoId || proyectoId === 'RESERVADO') { setHitos([]); return }
     obtenerHitosPorProyecto(proyectoId).then(setHitos)
   }, [proyectoId])
 
-  const proyectosFiltrados = clienteId ? proyectos.filter(p => p.clienteId === clienteId) : proyectos
+  const proyectosFiltrados = clienteId && clienteId !== 'RESERVADO'
+    ? proyectos.filter(p => p.clienteId === clienteId)
+    : proyectos
   const clienteSeleccionado = clientes.find(c => c.id === clienteId)
   const proyectoSeleccionado = proyectos.find(p => p.id === proyectoId)
 
   const handleGuardar = async () => {
-    if (!clienteId || !proyectoId || !asunto.trim()) {
+    // Para tipo Reservar no se requieren cliente ni proyecto reales
+    if (!esReserva && (!clienteId || !proyectoId || !asunto.trim())) {
       toast.error('Completa cliente, proyecto y asunto')
       return
     }
@@ -79,7 +99,6 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
       let numeroDoc = ''
       let numeroCargo = ''
       if (modoManual && numeroManual.trim()) {
-        // Ingreso manual: extraer número para calcular siguiente
         const match = numeroManual.trim().match(/(\d+)/)
         const numManual = match ? parseInt(match[1]) : 0
         const { documento, cargo } = formatearNumeroDoc(empresa, numManual)
@@ -93,24 +112,25 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
       }
 
       await crearEntregable({
-        empresa, tipo,
-        clienteId,
-        clienteNombre: clienteSeleccionado?.nombre || '',
-        proyectoId,
-        proyectoNombre: proyectoSeleccionado?.nombre || '',
+        empresa,
+        tipo,
+        clienteId: esReserva ? '' : clienteId,
+        clienteNombre: esReserva ? 'RESERVADO' : (clienteSeleccionado?.nombre || ''),
+        proyectoId: esReserva ? '' : proyectoId,
+        proyectoNombre: esReserva ? 'RESERVADO' : (proyectoSeleccionado?.nombre || ''),
         ...(hitoId ? { hitoId } : {}),
         fecha,
-        asunto: asunto.trim(),
+        asunto: esReserva ? 'RESERVADO' : asunto.trim(),
         responsableUid: usuario?.uid || '',
         responsableNombre: responsable,
         numeroDocumento: numeroDoc,
         numeroCargo,
-        estado: tipo === 'Reservar' ? 'reservado' : 'completo',
+        estado: 'reservado', // SIEMPRE inicia como reservado
         ...(descripcion.trim() ? { descripcion: descripcion.trim() } : {}),
         createdAt: new Date().toISOString(),
       })
 
-      if (hitoId && tipo !== 'Reservar') {
+      if (hitoId && !esReserva) {
         await marcarHitoRealizado(hitoId, fecha)
       }
 
@@ -166,35 +186,53 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
             </select>
           </div>
 
-          {/* Cliente + Proyecto */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Cliente *</label>
-              <select className="input-field" value={clienteId} onChange={e => { setClienteId(e.target.value); setProyectoId('') }}>
-                <option value="">Seleccionar...</option>
-                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
+          {/* Aviso si es Reservar */}
+          {esReserva && (
+            <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg px-4 py-3 text-xs text-amber-300">
+              🔒 Modo <strong>Reservar</strong> — se generará un número de documento reservado. 
+              Podrás completar los datos del cliente, proyecto y asunto después al agregar el expediente.
             </div>
-            <div>
-              <label className="label">Proyecto *</label>
-              <select className="input-field" value={proyectoId} onChange={e => setProyectoId(e.target.value)} disabled={!clienteId}>
-                <option value="">Seleccionar...</option>
-                {proyectosFiltrados.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-              </select>
-            </div>
-          </div>
+          )}
 
-          {/* Hito vinculado */}
-          {hitos.length > 0 && (
-            <div>
-              <label className="label">Hito vinculado (opcional)</label>
-              <select className="input-field" value={hitoId} onChange={e => setHitoId(e.target.value)}>
-                <option value="">Sin hito vinculado</option>
-                {hitos.filter(h => h.estado === 'pendiente').map(h => (
-                  <option key={h.id} value={h.id}>{h.nombre}</option>
-                ))}
-              </select>
-            </div>
+          {/* Cliente + Proyecto — ocultos en modo Reservar */}
+          {!esReserva && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Cliente *</label>
+                  <select className="input-field" value={clienteId} onChange={e => { setClienteId(e.target.value); setProyectoId('') }}>
+                    <option value="">Seleccionar...</option>
+                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Proyecto *</label>
+                  <select className="input-field" value={proyectoId} onChange={e => setProyectoId(e.target.value)} disabled={!clienteId}>
+                    <option value="">Seleccionar...</option>
+                    {proyectosFiltrados.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Hito vinculado */}
+              {hitos.length > 0 && (
+                <div>
+                  <label className="label">Hito vinculado (opcional)</label>
+                  <select className="input-field" value={hitoId} onChange={e => setHitoId(e.target.value)}>
+                    <option value="">Sin hito vinculado</option>
+                    {hitos.filter(h => h.estado === 'pendiente').map(h => (
+                      <option key={h.id} value={h.id}>{h.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Asunto */}
+              <div>
+                <label className="label">Asunto *</label>
+                <input type="text" className="input-field" placeholder="Descripción del entregable..." value={asunto} onChange={e => setAsunto(e.target.value)} />
+              </div>
+            </>
           )}
 
           {/* Fecha + Responsable */}
@@ -209,17 +247,13 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
             </div>
           </div>
 
-          {/* Asunto */}
-          <div>
-            <label className="label">Asunto *</label>
-            <input type="text" className="input-field" placeholder="Descripción del entregable..." value={asunto} onChange={e => setAsunto(e.target.value)} />
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className="label">Descripción adicional</label>
-            <textarea className="input-field resize-none" rows={2} value={descripcion} onChange={e => setDescripcion(e.target.value)} />
-          </div>
+          {/* Descripción — solo si no es Reservar */}
+          {!esReserva && (
+            <div>
+              <label className="label">Descripción adicional</label>
+              <textarea className="input-field resize-none" rows={2} value={descripcion} onChange={e => setDescripcion(e.target.value)} />
+            </div>
+          )}
 
           {/* Numeración */}
           <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-3">
@@ -254,7 +288,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
           <button onClick={handleGuardar} disabled={loading} className="btn-primary">
             {loading
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <><FileText className="w-4 h-4" /> Guardar</>}
+              : <><FileText className="w-4 h-4" /> {esReserva ? 'Reservar número' : 'Guardar'}</>}
           </button>
         </div>
       </div>
