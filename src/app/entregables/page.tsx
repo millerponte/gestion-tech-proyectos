@@ -73,7 +73,7 @@ export default function EntregablesPage() {
     toast.success('Exportado correctamente')
   }
 
-  const iniciarEdicion = (e: Entregable) => {
+const iniciarEdicion = (e: Entregable) => {
   setEditando(e.id)
   setEditData({
     asunto: e.asunto,
@@ -83,6 +83,8 @@ export default function EntregablesPage() {
     descripcion: e.descripcion || '',
     numeroDocumento: e.numeroDocumento,
     numeroCargo: e.numeroCargo,
+    expediente: e.expediente || '',
+    estado: e.estado,
   })
 }
 
