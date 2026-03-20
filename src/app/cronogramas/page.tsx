@@ -201,8 +201,9 @@ export default function CronogramasPage() {
                   proyectoSeleccionado?.id === p.id
                     ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
                     : 'bg-[#111d35] border-[#1e3a8a]/40 text-slate-300 hover:border-blue-500/40 hover:text-white')}>
-                <p className="font-medium line-clamp-2">{p.nombre}</p>
-                <p className="text-slate-500 mt-0.5">{p.clienteNombre}</p>
+                <p className="font-medium line-clamp-2 text-cyan-300">{p.solucion || p.nombre}</p>
+<p className="text-slate-400 mt-0.5 line-clamp-1">{p.nombre}</p>
+<p className="text-slate-500 mt-0.5">{p.clienteNombre}</p>
               </button>
             ))}
           </div>
