@@ -283,6 +283,17 @@ export default function EntregablesPage() {
     <input className="input-field" value={editData.responsableNombre} onChange={ev => setEditData(d => ({ ...d, responsableNombre: ev.target.value }))} />
   </div>
   <div>
+    <label className="label">Expediente</label>
+    <input className="input-field" placeholder="Ej: EXP-2026-001234" value={editData.expediente || ''} onChange={ev => setEditData(d => ({ ...d, expediente: ev.target.value }))} />
+  </div>
+  <div>
+    <label className="label">Estado</label>
+    <select className="input-field" value={editData.estado || 'reservado'} onChange={ev => setEditData(d => ({ ...d, estado: ev.target.value as any }))}>
+      <option value="reservado">Reservado</option>
+      <option value="completo">Completo</option>
+    </select>
+  </div>
+  <div>
     <label className="label">Descripción</label>
     <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={ev => setEditData(d => ({ ...d, descripcion: ev.target.value }))} />
   </div>
