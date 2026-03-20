@@ -7,7 +7,7 @@ import type { Entregable, Cliente, Proyecto } from '@/types'
 import { FileText, Plus, Search, Filter, Download, ChevronDown, ChevronUp, Pencil, Trash2, Check, X } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
-import { formatearFecha, hoy } from '@/lib/db'
+import { formatearFecha } from '@/lib/db'
 import ModalNuevoEntregable from '@/components/forms/ModalNuevoEntregable'
 import ModalExpediente from '@/components/forms/ModalExpediente'
 import { useAuth } from '@/hooks/useAuth'
@@ -17,6 +17,8 @@ const BADGE_EMPRESA: Record<string, string> = {
   'TECH SOLUTIONS': 'badge-tech',
   'QUANTIC': 'badge-quantic',
 }
+
+const TIPOS = ['Reservar', 'Plan de Trabajo', 'Informe Técnico', 'Informe Mensual', 'Informe de Incidencia', 'Entregable', 'Otro']
 
 export default function EntregablesPage() {
   const { isAdmin } = useAuth()
@@ -74,20 +76,20 @@ export default function EntregablesPage() {
     toast.success('Exportado correctamente')
   }
 
-const iniciarEdicion = (e: Entregable) => {
-  setEditando(e.id)
-  setEditData({
-    asunto: e.asunto,
-    fecha: e.fecha,
-    responsableNombre: e.responsableNombre,
-    tipo: e.tipo,
-    descripcion: e.descripcion || '',
-    numeroDocumento: e.numeroDocumento,
-    numeroCargo: e.numeroCargo,
-    expediente: e.expediente || '',
-    estado: e.estado,
-  })
-}
+  const iniciarEdicion = (e: Entregable) => {
+    setEditando(e.id)
+    setEditData({
+      asunto: e.asunto,
+      fecha: e.fecha,
+      responsableNombre: e.responsableNombre,
+      tipo: e.tipo,
+      descripcion: e.descripcion || '',
+      numeroDocumento: e.numeroDocumento,
+      numeroCargo: e.numeroCargo,
+      expediente: e.expediente || '',
+      estado: e.estado,
+    })
+  }
 
   const guardarEdicion = async (id: string) => {
     try {
@@ -107,10 +109,9 @@ const iniciarEdicion = (e: Entregable) => {
     cargar()
   }
 
-  const TIPOS = ['Reservar', 'Plan de Trabajo', 'Informe Técnico', 'Informe Mensual', 'Informe de Incidencia', 'Entregable', 'Otro']
-
   return (
     <div className="space-y-5 animate-fade-in">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
@@ -128,6 +129,7 @@ const iniciarEdicion = (e: Entregable) => {
         </div>
       </div>
 
+      {/* Filtros */}
       <div className="card p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -155,6 +157,7 @@ const iniciarEdicion = (e: Entregable) => {
         )}
       </div>
 
+      {/* Tabla */}
       {loading ? (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -192,9 +195,7 @@ const iniciarEdicion = (e: Entregable) => {
                       className={clsx('tabla-row', expandido === e.id && 'bg-[#1e3a8a]/10')}
                       onClick={() => setExpandido(expandido === e.id ? null : e.id)}>
                       <td className="tabla-cell text-slate-500 w-6">
-                        {expandido === e.id
-                          ? <ChevronUp className="w-3.5 h-3.5" />
-                          : <ChevronDown className="w-3.5 h-3.5" />}
+                        {expandido === e.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </td>
                       <td className="tabla-cell">
                         <p className="font-mono text-cyan-400 text-xs">{e.numeroDocumento}</p>
@@ -253,111 +254,129 @@ const iniciarEdicion = (e: Entregable) => {
                       <tr key={`${e.id}-expand`} className="bg-[#0d1526]/80">
                         <td colSpan={9} className="px-6 py-4">
                           {editando === e.id ? (
-                            // Modo edición
+                            // ── MODO EDICIÓN ──────────────────────────────
                             <div className="space-y-3">
-  <div className="grid grid-cols-2 gap-3">
-    <div>
-      <label className="label">N° Documento</label>
-      <input className="input-field font-mono" value={editData.numeroDocumento} onChange={ev => setEditData(d => ({ ...d, numeroDocumento: ev.target.value }))} />
-    </div>
-    <div>
-      <label className="label">N° Cargo</label>
-      <input className="input-field font-mono" value={editData.numeroCargo} onChange={ev => setEditData(d => ({ ...d, numeroCargo: ev.target.value }))} />
-    </div>
-  </div>
-  <div className="grid grid-cols-2 gap-3">
-    <div>
-      <label className="label">Tipo</label>
-      <select className="input-field" value={editData.tipo} onChange={ev => setEditData(d => ({ ...d, tipo: ev.target.value as any }))}>
-        {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-      </select>
-    </div>
-    <div>
-      <label className="label">Fecha</label>
-      <input type="date" className="input-field" value={editData.fecha} onChange={ev => setEditData(d => ({ ...d, fecha: ev.target.value }))} />
-    </div>
-  </div>
-  <div>
-    <label className="label">Asunto</label>
-    <input className="input-field" value={editData.asunto} onChange={ev => setEditData(d => ({ ...d, asunto: ev.target.value }))} />
-  </div>
-  <div>
-    <label className="label">Responsable</label>
-    <input className="input-field" value={editData.responsableNombre} onChange={ev => setEditData(d => ({ ...d, responsableNombre: ev.target.value }))} />
-  </div>
-  <div>
-    <label className="label">Expediente</label>
-    <input className="input-field" placeholder="Ej: EXP-2026-001234" value={editData.expediente || ''} onChange={ev => setEditData(d => ({ ...d, expediente: ev.target.value }))} />
-  </div>
-  <div>
-    <label className="label">Estado</label>
-    <select className="input-field" value={editData.estado || 'reservado'} onChange={ev => setEditData(d => ({ ...d, estado: ev.target.value as any }))}>
-      <option value="reservado">Reservado</option>
-      <option value="completo">Completo</option>
-    </select>
-  </div>
-  <div>
-    <label className="label">Descripción</label>
-    <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={ev => setEditData(d => ({ ...d, descripcion: ev.target.value }))} />
-  </div>
-  <div className="flex gap-2">
-    <button onClick={() => guardarEdicion(e.id)} className="btn-primary text-xs">
-      <Check className="w-3.5 h-3.5" /> Guardar cambios
-    </button>
-    <button onClick={() => setEditando(null)} className="btn-secondary text-xs">
-      <X className="w-3.5 h-3.5" /> Cancelar
-    </button>
-  </div>
-</div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="label">N° Documento</label>
+                                  <input className="input-field font-mono" value={editData.numeroDocumento} onChange={ev => setEditData(d => ({ ...d, numeroDocumento: ev.target.value }))} />
+                                </div>
+                                <div>
+                                  <label className="label">N° Cargo</label>
+                                  <input className="input-field font-mono" value={editData.numeroCargo} onChange={ev => setEditData(d => ({ ...d, numeroCargo: ev.target.value }))} />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="label">Tipo</label>
+                                  <select className="input-field" value={editData.tipo} onChange={ev => setEditData(d => ({ ...d, tipo: ev.target.value as any }))}>
+                                    {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="label">Fecha</label>
+                                  <input type="date" className="input-field" value={editData.fecha} onChange={ev => setEditData(d => ({ ...d, fecha: ev.target.value }))} />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="label">Asunto</label>
+                                <input className="input-field" value={editData.asunto} onChange={ev => setEditData(d => ({ ...d, asunto: ev.target.value }))} />
+                              </div>
+                              <div>
+                                <label className="label">Responsable</label>
+                                <input className="input-field" value={editData.responsableNombre} onChange={ev => setEditData(d => ({ ...d, responsableNombre: ev.target.value }))} />
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="label">Expediente</label>
+                                  <input className="input-field" placeholder="Ej: EXP-2026-001234" value={editData.expediente || ''} onChange={ev => setEditData(d => ({ ...d, expediente: ev.target.value }))} />
+                                </div>
+                                <div>
+                                  <label className="label">Estado</label>
+                                  <select className="input-field" value={editData.estado || 'reservado'} onChange={ev => setEditData(d => ({ ...d, estado: ev.target.value as any }))}>
+                                    <option value="reservado">Reservado</option>
+                                    <option value="completo">Completo</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="label">Descripción</label>
+                                <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={ev => setEditData(d => ({ ...d, descripcion: ev.target.value }))} />
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => guardarEdicion(e.id)} className="btn-primary text-xs">
+                                  <Check className="w-3.5 h-3.5" /> Guardar cambios
+                                </button>
+                                <button onClick={() => setEditando(null)} className="btn-secondary text-xs">
+                                  <X className="w-3.5 h-3.5" /> Cancelar
+                                </button>
+                              </div>
+                            </div>
                           ) : (
-                            // Modo detalle
-                           ) : (
-  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
-    <div>
-      <p className="text-slate-500 mb-0.5">N° Documento</p>
-      <p className="font-mono text-cyan-400">{e.numeroDocumento}</p>
-    </div>
-    <div>
-      <p className="text-slate-500 mb-0.5">N° Cargo</p>
-      <p className="font-mono text-cyan-400">{e.numeroCargo}</p>
-    </div>
-    <div>
-      <p className="text-slate-500 mb-0.5">Responsable</p>
-      <p className="text-slate-200">{e.responsableNombre}</p>
-    </div>
-    <div>
-      <p className="text-slate-500 mb-0.5">Proyecto</p>
-      <p className="text-slate-200">{e.proyectoNombre}</p>
-    </div>
-    <div>
-      <p className="text-slate-500 mb-0.5">Asunto completo</p>
-      <p className="text-slate-200">{e.asunto}</p>
-    </div>
-    {e.descripcion && (
-      <div>
-        <p className="text-slate-500 mb-0.5">Descripción</p>
-        <p className="text-slate-200">{e.descripcion}</p>
-      </div>
-    )}
-    {e.expediente && (
-      <div>
-        <p className="text-slate-500 mb-0.5">Expediente</p>
-        <p className="text-green-400">{e.expediente}</p>
-      </div>
-    )}
-    {e.hitoId && (
-      <div>
-        <p className="text-slate-500 mb-0.5">Hito vinculado</p>
-        <Link
-          href={`/cronogramas?proyecto=${e.proyectoId}`}
-          className="text-blue-400 hover:text-blue-300 underline text-xs"
-          onClick={ev => ev.stopPropagation()}>
-          Ver hito en cronograma →
-        </Link>
-      </div>
-    )}
-  </div>
-)}
+                            // ── MODO DETALLE ──────────────────────────────
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                              <div>
+                                <p className="text-slate-500 mb-0.5">N° Documento</p>
+                                <p className="font-mono text-cyan-400">{e.numeroDocumento}</p>
+                              </div>
+                              <div>
+                                <p className="text-slate-500 mb-0.5">N° Cargo</p>
+                                <p className="font-mono text-cyan-400">{e.numeroCargo}</p>
+                              </div>
+                              <div>
+                                <p className="text-slate-500 mb-0.5">Responsable</p>
+                                <p className="text-slate-200">{e.responsableNombre}</p>
+                              </div>
+                              <div>
+                                <p className="text-slate-500 mb-0.5">Proyecto</p>
+                                <p className="text-slate-200">{e.proyectoNombre}</p>
+                              </div>
+                              <div className="col-span-2">
+                                <p className="text-slate-500 mb-0.5">Asunto completo</p>
+                                <p className="text-slate-200">{e.asunto}</p>
+                              </div>
+                              {e.descripcion && (
+                                <div className="col-span-2">
+                                  <p className="text-slate-500 mb-0.5">Descripción</p>
+                                  <p className="text-slate-200">{e.descripcion}</p>
+                                </div>
+                              )}
+                              {e.expediente && (
+                                <div>
+                                  <p className="text-slate-500 mb-0.5">Expediente</p>
+                                  <p className="text-green-400 font-mono">{e.expediente}</p>
+                                </div>
+                              )}
+                              {/* Hitos vinculados — soporta hitoId (único) e hitoIds (múltiples) */}
+                              {(e.hitoId || (e as any).hitoIds?.length > 0) && (
+                                <div className="col-span-3">
+                                  <p className="text-slate-500 mb-1">Hito(s) vinculado(s)</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {/* Soporte para múltiples hitos */}
+                                    {(e as any).hitoIds?.length > 0
+                                      ? (e as any).hitoIds.map((hId: string, i: number) => (
+                                          <Link
+                                            key={hId}
+                                            href={`/cronogramas?proyecto=${e.proyectoId}`}
+                                            className="text-blue-400 hover:text-blue-300 underline bg-blue-900/20 border border-blue-700/30 px-2 py-1 rounded-lg"
+                                            onClick={ev => ev.stopPropagation()}>
+                                            Hito {i + 1} → ver en cronograma
+                                          </Link>
+                                        ))
+                                      : e.hitoId && (
+                                          <Link
+                                            href={`/cronogramas?proyecto=${e.proyectoId}`}
+                                            className="text-blue-400 hover:text-blue-300 underline bg-blue-900/20 border border-blue-700/30 px-2 py-1 rounded-lg"
+                                            onClick={ev => ev.stopPropagation()}>
+                                            Ver hito en cronograma →
+                                          </Link>
+                                        )
+                                    }
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )}
