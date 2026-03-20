@@ -34,7 +34,7 @@ export default function CronogramasPage() {
   const [modalNuevoHito, setModalNuevoHito] = useState(false)
   const [modalImportar, setModalImportar] = useState(false)
   const [nuevoHito, setNuevoHito] = useState<Partial<Hito>>({
-    nombre: '', descripcion: '', responsable: '',
+    numero: 0, nombre: '', descripcion: '', responsable: '',
     plazoContractual: '', fechaInicio: hoy(),
     fechaLimite: hoy(), pago: '', origen: '',
     estado: 'pendiente', esCritico: false,
@@ -59,12 +59,8 @@ export default function CronogramasPage() {
     setProyectoSeleccionado(p)
     setLoadingHitos(true)
     const h = await obtenerHitosPorProyecto(p.id)
-    // Ordenar por fecha de inicio (por definir va al final)
-    const ordenados = [...h].sort((a, b) => {
-      if (a.fechaInicio === 'por definir') return 1
-      if (b.fechaInicio === 'por definir') return -1
-      return a.fechaInicio.localeCompare(b.fechaInicio)
-    })
+    // Ordenar por número de hito
+    const ordenados = [...h].sort((a, b) => (a.numero || 0) - (b.numero || 0))
     setHitos(ordenados)
     setLoadingHitos(false)
   }
@@ -76,10 +72,11 @@ export default function CronogramasPage() {
 
   const exportarExcel = () => {
     if (!proyectoSeleccionado) return
-    const headers = ['Hito', 'Descripción', 'Responsable', 'Plazo Contractual', 'Fecha Inicio', 'Fecha Límite', 'Fecha Real Envío', 'Estado', 'Pago', 'Origen']
+    const headers = ['N°', 'Hito / Entregable', 'Descripción', 'Responsable', 'Plazo Contractual', 'Fecha Inicio', 'Fecha Límite', 'Fecha Real Envío', 'Estado', 'Pago', 'Origen']
     const filas = hitos.map(h => [
-      h.nombre, h.descripcion, h.responsable, h.plazoContractual,
-      formatearFecha(h.fechaInicio), formatearFecha(h.fechaLimite),
+      h.numero || '—', h.nombre, h.descripcion, h.responsable, h.plazoContractual,
+      h.fechaInicio === 'por definir' ? 'por definir' : formatearFecha(h.fechaInicio),
+      h.fechaLimite === 'por definir' ? 'por definir' : formatearFecha(h.fechaLimite),
       h.fechaRealEnvio ? formatearFecha(h.fechaRealEnvio) : '',
       h.estado, h.pago, h.origen
     ])
@@ -123,6 +120,7 @@ export default function CronogramasPage() {
     try {
       await crearHito({
         proyectoId: proyectoSeleccionado.id,
+        numero: nuevoHito.numero || 0,
         nombre: nuevoHito.nombre!.trim(),
         descripcion: nuevoHito.descripcion || '',
         responsable: nuevoHito.responsable || proyectoSeleccionado.contratista,
@@ -136,7 +134,7 @@ export default function CronogramasPage() {
       })
       toast.success('Hito creado')
       setModalNuevoHito(false)
-      setNuevoHito({ nombre: '', descripcion: '', responsable: '', plazoContractual: '', fechaInicio: hoy(), fechaLimite: hoy(), pago: '', origen: '', estado: 'pendiente', esCritico: false })
+      setNuevoHito({ numero: 0, nombre: '', descripcion: '', responsable: '', plazoContractual: '', fechaInicio: hoy(), fechaLimite: hoy(), pago: '', origen: '', estado: 'pendiente', esCritico: false })
       seleccionarProyecto(proyectoSeleccionado)
     } catch {
       toast.error('Error al crear hito')
@@ -155,7 +153,6 @@ export default function CronogramasPage() {
     </div>
   )
 
-  // ─── AQUÍ EMPIEZA EL RETURN (lo que se muestra en pantalla) ───────────────
   return (
     <div className="space-y-5 animate-fade-in">
 
@@ -188,7 +185,7 @@ export default function CronogramasPage() {
         )}
       </div>
 
-      {/* CONTENIDO PRINCIPAL: lista de proyectos + tabla de hitos */}
+      {/* CONTENIDO PRINCIPAL */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
 
         {/* PANEL IZQUIERDO: lista de proyectos */}
@@ -239,6 +236,7 @@ export default function CronogramasPage() {
                   <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
                     <tr>
                       <th className="tabla-header w-6"></th>
+                      <th className="tabla-header w-10">N°</th>
                       <th className="tabla-header">Hito / Entregable</th>
                       <th className="tabla-header">Responsable</th>
                       <th className="tabla-header">Fecha Inicio</th>
@@ -253,12 +251,14 @@ export default function CronogramasPage() {
                       const estado = estadoHito(h)
                       return (
                         <>
-                          {/* FILA PRINCIPAL del hito */}
                           <tr key={h.id}
                             className={clsx('tabla-row', expandido === h.id && 'bg-[#1e3a8a]/10')}
                             onClick={() => setExpandido(expandido === h.id ? null : h.id)}>
                             <td className="tabla-cell text-slate-500">
                               {expandido === h.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </td>
+                            <td className="tabla-cell text-slate-400 text-xs font-mono">
+                              {h.numero || '—'}
                             </td>
                             <td className="tabla-cell">
                               <div className="flex items-center gap-2">
@@ -268,12 +268,16 @@ export default function CronogramasPage() {
                             </td>
                             <td className="tabla-cell text-xs text-slate-400">{h.responsable}</td>
                             <td className="tabla-cell text-xs text-slate-400 whitespace-nowrap">
-                              {h.fechaInicio === 'por definir' ? <span className="text-amber-400">por definir</span> : formatearFecha(h.fechaInicio)}
+                              {h.fechaInicio === 'por definir'
+                                ? <span className="text-amber-400">por definir</span>
+                                : formatearFecha(h.fechaInicio)}
                             </td>
                             <td className="tabla-cell text-xs whitespace-nowrap">
                               {h.fechaLimite === 'por definir'
                                 ? <span className="text-amber-400">por definir</span>
-                                : <span className={estado === 'vencido' ? 'text-red-400' : 'text-slate-400'}>{formatearFecha(h.fechaLimite)}</span>}
+                                : <span className={estado === 'vencido' ? 'text-red-400' : 'text-slate-400'}>
+                                    {formatearFecha(h.fechaLimite)}
+                                  </span>}
                             </td>
                             <td className="tabla-cell">
                               <span className={clsx('text-xs px-2 py-0.5 rounded-full border', ESTADO_HITO[estado])}>
@@ -299,14 +303,18 @@ export default function CronogramasPage() {
                             </td>
                           </tr>
 
-                          {/* FILA EXPANDIDA del hito (se muestra al hacer clic) */}
+                          {/* FILA EXPANDIDA */}
                           {expandido === h.id && (
                             <tr key={`${h.id}-exp`} className="bg-[#0d1526]/80">
-                              <td colSpan={8} className="px-6 py-4">
+                              <td colSpan={9} className="px-6 py-4">
                                 {editando === h.id ? (
                                   // MODO EDICIÓN
                                   <div className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-3 gap-3">
+                                      <div>
+                                        <label className="label">N° de hito</label>
+                                        <input type="number" className="input-field" value={editData.numero || ''} onChange={e => setEditData(d => ({ ...d, numero: Number(e.target.value) }))} />
+                                      </div>
                                       <div>
                                         <label className="label">Nombre del hito</label>
                                         <input className="input-field" value={editData.nombre} onChange={e => setEditData(d => ({ ...d, nombre: e.target.value }))} />
@@ -323,15 +331,21 @@ export default function CronogramasPage() {
                                     <div className="grid grid-cols-3 gap-3">
                                       <div>
                                         <label className="label">Fecha inicio</label>
-                                        <input type="date" className="input-field" value={editData.fechaInicio === 'por definir' ? '' : editData.fechaInicio} onChange={e => setEditData(d => ({ ...d, fechaInicio: e.target.value || 'por definir' }))} />
+                                        <input type="date" className="input-field"
+                                          value={editData.fechaInicio === 'por definir' ? '' : editData.fechaInicio}
+                                          onChange={e => setEditData(d => ({ ...d, fechaInicio: e.target.value || 'por definir' }))} />
                                       </div>
                                       <div>
                                         <label className="label">Fecha límite</label>
-                                        <input type="date" className="input-field" value={editData.fechaLimite === 'por definir' ? '' : editData.fechaLimite} onChange={e => setEditData(d => ({ ...d, fechaLimite: e.target.value || 'por definir' }))} />
+                                        <input type="date" className="input-field"
+                                          value={editData.fechaLimite === 'por definir' ? '' : editData.fechaLimite}
+                                          onChange={e => setEditData(d => ({ ...d, fechaLimite: e.target.value || 'por definir' }))} />
                                       </div>
                                       <div>
                                         <label className="label">Fecha real envío</label>
-                                        <input type="date" className="input-field" value={editData.fechaRealEnvio || ''} onChange={e => setEditData(d => ({ ...d, fechaRealEnvio: e.target.value }))} />
+                                        <input type="date" className="input-field"
+                                          value={editData.fechaRealEnvio || ''}
+                                          onChange={e => setEditData(d => ({ ...d, fechaRealEnvio: e.target.value }))} />
                                       </div>
                                     </div>
                                     <div className="grid grid-cols-3 gap-3">
@@ -358,7 +372,8 @@ export default function CronogramasPage() {
                                         </select>
                                       </div>
                                       <div className="flex items-center gap-2 pt-5">
-                                        <input type="checkbox" id={`critico-${h.id}`} checked={editData.esCritico} onChange={e => setEditData(d => ({ ...d, esCritico: e.target.checked }))} />
+                                        <input type="checkbox" id={`critico-${h.id}`} checked={editData.esCritico}
+                                          onChange={e => setEditData(d => ({ ...d, esCritico: e.target.checked }))} />
                                         <label htmlFor={`critico-${h.id}`} className="text-sm text-slate-300">Hito crítico ★</label>
                                       </div>
                                     </div>
@@ -372,7 +387,7 @@ export default function CronogramasPage() {
                                     </div>
                                   </div>
                                 ) : (
-                                  // MODO DETALLE (solo lectura)
+                                  // MODO DETALLE
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                                     <div className="col-span-2">
                                       <p className="text-slate-500 mb-0.5">Descripción</p>
@@ -424,6 +439,14 @@ export default function CronogramasPage() {
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">N° de hito</label>
+                  <input type="number" className="input-field" placeholder="Ej: 1" value={nuevoHito.numero || ''} onChange={e => setNuevoHito(d => ({ ...d, numero: Number(e.target.value) }))} />
+                </div>
+                <div>
+                  <label className="label">Responsable</label>
+                  <input className="input-field" value={nuevoHito.responsable} onChange={e => setNuevoHito(d => ({ ...d, responsable: e.target.value }))} />
+                </div>
                 <div className="col-span-2">
                   <label className="label">Nombre del hito *</label>
                   <input className="input-field" placeholder="Ej: Informe Técnico Mensual" value={nuevoHito.nombre} onChange={e => setNuevoHito(d => ({ ...d, nombre: e.target.value }))} />
@@ -433,12 +456,12 @@ export default function CronogramasPage() {
                   <textarea className="input-field resize-none" rows={2} value={nuevoHito.descripcion} onChange={e => setNuevoHito(d => ({ ...d, descripcion: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="label">Responsable</label>
-                  <input className="input-field" value={nuevoHito.responsable} onChange={e => setNuevoHito(d => ({ ...d, responsable: e.target.value }))} />
-                </div>
-                <div>
                   <label className="label">Plazo contractual</label>
                   <input className="input-field" placeholder="Ej: 15 días cal." value={nuevoHito.plazoContractual} onChange={e => setNuevoHito(d => ({ ...d, plazoContractual: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Pago / Condición</label>
+                  <input className="input-field" placeholder="Ej: Pago Único (Final)" value={nuevoHito.pago} onChange={e => setNuevoHito(d => ({ ...d, pago: e.target.value }))} />
                 </div>
                 <div>
                   <label className="label">Fecha inicio</label>
@@ -449,14 +472,10 @@ export default function CronogramasPage() {
                   <input type="date" className="input-field" value={nuevoHito.fechaLimite} onChange={e => setNuevoHito(d => ({ ...d, fechaLimite: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="label">Pago / Condición</label>
-                  <input className="input-field" placeholder="Ej: Pago Único (Final)" value={nuevoHito.pago} onChange={e => setNuevoHito(d => ({ ...d, pago: e.target.value }))} />
-                </div>
-                <div>
                   <label className="label">Origen (Cláusula/Doc)</label>
                   <input className="input-field" placeholder="Ej: Cláusula Quinta" value={nuevoHito.origen} onChange={e => setNuevoHito(d => ({ ...d, origen: e.target.value }))} />
                 </div>
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-2 pt-5">
                   <input type="checkbox" id="critico-nuevo" checked={nuevoHito.esCritico} onChange={e => setNuevoHito(d => ({ ...d, esCritico: e.target.checked }))} />
                   <label htmlFor="critico-nuevo" className="text-sm text-slate-300">Hito crítico ★</label>
                 </div>
@@ -483,6 +502,4 @@ export default function CronogramasPage() {
 
     </div>
   )
-  // ─── FIN DEL RETURN ───────────────────────────────────────────────────────
 }
-// ─── FIN DEL COMPONENTE ───────────────────────────────────────────────────────
