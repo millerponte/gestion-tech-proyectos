@@ -314,8 +314,9 @@ function StatCard({ label, value, icon, color }: {
   )
 }
 
-function HitoItem({ hito }: { hito: Hito }) {
+function HitoItem({ hito, proyectos }: { hito: Hito; proyectos: Proyecto[] }) {
   const vencido = esFechaVencida(hito.fechaLimite)
+  const proyecto = proyectos.find(p => p.id === hito.proyectoId)
   return (
     <Link
       href={`/cronogramas?proyecto=${hito.proyectoId}`}
@@ -332,6 +333,15 @@ function HitoItem({ hito }: { hito: Hito }) {
           <span>Inicio: <span className="text-slate-400">{formatearFecha(hito.fechaInicio)}</span></span>
           <span>Límite: <span className={vencido ? 'text-red-400' : 'text-slate-400'}>{formatearFecha(hito.fechaLimite)}</span></span>
         </div>
+        {hito.responsable && (
+          <p className="text-slate-600 mt-0.5">{hito.responsable}</p>
+        )}
+        {proyecto && (
+          <p className="text-slate-500 mt-0.5 truncate">
+            {proyecto.clienteNombre}
+            {proyecto.solucion && <span className="text-slate-600"> — {proyecto.solucion}</span>}
+          </p>
+        )}
       </div>
       <ArrowRight className="w-3 h-3 text-slate-600 group-hover:text-blue-400 flex-shrink-0 mt-0.5 transition-colors" />
     </Link>
