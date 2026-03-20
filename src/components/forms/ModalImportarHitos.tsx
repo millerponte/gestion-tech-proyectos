@@ -14,7 +14,7 @@ interface Props {
 }
 
 interface FilaHito {
-  numero: string
+  numero: number
   nombre: string
   descripcion: string
   plazoContractual: string
@@ -27,12 +27,14 @@ interface FilaHito {
 function parsearFecha(valor: any): string {
   if (!valor || valor === '' || valor === null || valor === undefined) return 'por definir'
   if (typeof valor === 'number') {
-    const fecha = XLSX.SSF.parse_date_code(valor)
-    if (fecha) {
-      const m = String(fecha.m).padStart(2, '0')
-      const d = String(fecha.d).padStart(2, '0')
-      return `${fecha.y}-${m}-${d}`
-    }
+    try {
+      const fecha = XLSX.SSF.parse_date_code(valor)
+      if (fecha) {
+        const m = String(fecha.m).padStart(2, '0')
+        const d = String(fecha.d).padStart(2, '0')
+        return `${fecha.y}-${m}-${d}`
+      }
+    } catch { return 'por definir' }
   }
   const str = String(valor).trim()
   if (!str) return 'por definir'
@@ -47,6 +49,12 @@ function limpiarTexto(valor: any): string {
   if (!valor || valor === null || valor === undefined) return 'por definir'
   const str = String(valor).trim()
   return str === '' ? 'por definir' : str
+}
+
+function parsearNumero(valor: any, indice: number): number {
+  if (!valor && valor !== 0) return indice + 1
+  const n = parseInt(String(valor).trim())
+  return isNaN(n) ? indice + 1 : n
 }
 
 export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Props) {
@@ -69,13 +77,12 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
         const sheet = workbook.Sheets[workbook.SheetNames[0]]
         const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
-        // Fila 0 = encabezados, fila 1 en adelante = datos
         const filasDatos = rows.slice(1).filter(r =>
           r.some(c => c !== null && c !== undefined && c !== '')
         )
 
-        const hitosParseados: FilaHito[] = filasDatos.map(r => ({
-          numero: limpiarTexto(r[0]),          // Col A: N°
+        const hitosParseados: FilaHito[] = filasDatos.map((r, i) => ({
+          numero: parsearNumero(r[0], i),      // Col A: N°
           nombre: limpiarTexto(r[1]),          // Col B: Hito / Entregable
           descripcion: limpiarTexto(r[2]),     // Col C: Características
           plazoContractual: limpiarTexto(r[3]),// Col D: Plazo Contractual
@@ -101,6 +108,7 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
       for (const fila of filas) {
         await crearHito({
           proyectoId: proyecto.id,
+          numero: fila.numero,
           nombre: fila.nombre,
           descripcion: fila.descripcion,
           responsable,
@@ -159,8 +167,8 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
                   ))}
                 </div>
                 <p className="text-slate-500 mt-2">
-                  Campos vacíos → <span className="text-amber-400">"por definir"</span>. 
-                  Responsable asignado automáticamente: <span className="text-white">{responsable}</span>
+                  Campos vacíos → <span className="text-amber-400">"por definir"</span>.
+                  Responsable: <span className="text-white">{responsable}</span>
                 </p>
               </div>
 
@@ -199,7 +207,7 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
                   <tbody>
                     {filas.map((f, i) => (
                       <tr key={i} className="border-b border-[#1e3a8a]/20">
-                        <td className="tabla-cell text-slate-500">{f.numero !== 'por definir' ? f.numero : i + 1}</td>
+                        <td className="tabla-cell text-slate-500">{f.numero}</td>
                         <td className="tabla-cell text-slate-200 max-w-xs truncate">{f.nombre}</td>
                         <td className="tabla-cell">
                           <span className={f.fechaInicio === 'por definir' ? 'text-amber-400' : 'text-slate-300'}>
@@ -220,7 +228,7 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
 
               <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-900/20 border border-amber-700/30 rounded-lg px-3 py-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                Los campos en amarillo no tienen fecha — podrás editarlos después desde el cronograma.
+                Los campos en amarillo no tienen fecha — podrás editarlos después.
               </div>
             </>
           )}
