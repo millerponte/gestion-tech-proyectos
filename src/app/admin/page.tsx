@@ -4,37 +4,37 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import {
-  obtenerClientes, crearCliente, eliminarCliente,
+  obtenerClientes, crearCliente, eliminarCliente, actualizarCliente,
   obtenerTodosUsuarios, actualizarRolUsuario,
   obtenerProyectos
 } from '@/lib/db'
 import type { Cliente, Usuario, Proyecto } from '@/types'
 import {
   Settings, Users, Building2, FolderKanban,
-  Plus, Trash2, Shield, User, X, Save
+  Plus, Trash2, Pencil, Check, X, Save
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 type Tab = 'clientes' | 'usuarios' | 'resumen'
 
-const COLORES = ['#2563eb','#16a34a','#9333ea','#dc2626','#ea580c','#0891b2','#65a30d','#db2777']
+const COLORES = ['#2563eb', '#16a34a', '#9333ea', '#dc2626', '#ea580c', '#0891b2', '#65a30d', '#db2777']
 
 export default function AdminPage() {
   const { isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('clientes')
 
-  // Clientes
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [nuevoNombre, setNuevoNombre] = useState('')
   const [nuevoColor, setNuevoColor] = useState(COLORES[0])
   const [loadingCliente, setLoadingCliente] = useState(false)
 
-  // Usuarios
-  const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [editandoCliente, setEditandoCliente] = useState<string | null>(null)
+  const [editNombre, setEditNombre] = useState('')
+  const [editColor, setEditColor] = useState(COLORES[0])
 
-  // Proyectos
+  const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function AdminPage() {
     if (!nuevoNombre.trim()) { toast.error('Ingresa el nombre del cliente'); return }
     setLoadingCliente(true)
     try {
-      const iniciales = nuevoNombre.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 3)
+      const iniciales = nuevoNombre.trim().split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 3)
       await crearCliente({
         nombre: nuevoNombre.trim(),
         iniciales,
@@ -75,6 +75,29 @@ export default function AdminPage() {
       toast.error('Error al crear cliente')
     } finally {
       setLoadingCliente(false)
+    }
+  }
+
+  const iniciarEdicionCliente = (c: Cliente) => {
+    setEditandoCliente(c.id)
+    setEditNombre(c.nombre)
+    setEditColor(c.color)
+  }
+
+  const guardarEdicionCliente = async (id: string) => {
+    if (!editNombre.trim()) { toast.error('El nombre no puede estar vacío'); return }
+    try {
+      const iniciales = editNombre.trim().split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 3)
+      await actualizarCliente(id, {
+        nombre: editNombre.trim(),
+        iniciales,
+        color: editColor,
+      })
+      toast.success('Cliente actualizado')
+      setEditandoCliente(null)
+      cargarTodo()
+    } catch {
+      toast.error('Error al actualizar')
     }
   }
 
@@ -101,7 +124,6 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
           <Settings className="w-6 h-6 text-amber-400" /> Panel Admin
@@ -109,7 +131,7 @@ export default function AdminPage() {
         <p className="text-slate-400 text-sm mt-0.5">Gestión de clientes, usuarios y resumen general</p>
       </div>
 
-      {/* Stats rápidas */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Clientes', value: clientes.length, icon: <Building2 className="w-4 h-4" />, color: 'text-blue-400' },
@@ -185,21 +207,66 @@ export default function AdminPage() {
             ) : (
               <div className="divide-y divide-[#1e3a8a]/20">
                 {clientes.map(c => (
-                  <div key={c.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                        style={{ backgroundColor: c.color }}>
-                        {c.iniciales}
+                  <div key={c.id} className="px-4 py-3 hover:bg-white/5 transition-colors">
+                    {editandoCliente === c.id ? (
+                      // Modo edición
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap gap-3 items-center">
+                          <div className="flex-1 min-w-48">
+                            <label className="label">Nombre</label>
+                            <input
+                              className="input-field"
+                              value={editNombre}
+                              onChange={e => setEditNombre(e.target.value)}
+                              autoFocus
+                            />
+                          </div>
+                          <div>
+                            <label className="label">Color</label>
+                            <div className="flex gap-1.5">
+                              {COLORES.map(col => (
+                                <button key={col} onClick={() => setEditColor(col)}
+                                  className={clsx('w-7 h-7 rounded-full border-2 transition-all',
+                                    editColor === col ? 'border-white scale-110' : 'border-transparent')}
+                                  style={{ backgroundColor: col }} />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => guardarEdicionCliente(c.id)} className="btn-primary text-xs">
+                            <Check className="w-3.5 h-3.5" /> Guardar
+                          </button>
+                          <button onClick={() => setEditandoCliente(null)} className="btn-secondary text-xs">
+                            <X className="w-3.5 h-3.5" /> Cancelar
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-white">{c.nombre}</p>
-                        <p className="text-xs text-slate-500">Iniciales: {c.iniciales}</p>
+                    ) : (
+                      // Modo lectura
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                            style={{ backgroundColor: c.color }}>
+                            {c.iniciales}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-white">{c.nombre}</p>
+                            <p className="text-xs text-slate-500">Iniciales: {c.iniciales}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => iniciarEdicionCliente(c)}
+                            className="text-slate-500 hover:text-blue-400 transition-colors">
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleEliminarCliente(c.id, c.nombre)}
+                            className="text-slate-500 hover:text-red-400 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <button onClick={() => handleEliminarCliente(c.id, c.nombre)}
-                      className="text-slate-600 hover:text-red-400 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -261,7 +328,8 @@ export default function AdminPage() {
               {proyectos.map(p => (
                 <div key={p.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors">
                   <div>
-                    <p className="text-sm font-medium text-white">{p.nombre}</p>
+                    <p className="text-sm font-medium text-white">{p.solucion || p.nombre}</p>
+                    {p.solucion && <p className="text-xs text-slate-500">{p.nombre}</p>}
                     <p className="text-xs text-slate-500">{p.clienteNombre} · {p.empresa}</p>
                   </div>
                   <span className={clsx('text-xs px-2 py-0.5 rounded-full border',
