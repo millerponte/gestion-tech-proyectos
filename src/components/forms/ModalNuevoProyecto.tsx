@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { crearProyecto, hoy } from '@/lib/db'
-import type { Cliente } from '@/types'
+import type { Cliente, Proyecto } from '@/types'
 import { X, FolderKanban, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Props {
   clientes: Cliente[]
+  proyectos: Proyecto[]
   onClose: () => void
   onSuccess: () => void
 }
@@ -37,31 +38,28 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
 
   const fechaFin = sumarMeses(fechaInicio, plazo)
   const clienteSeleccionado = clientes.find(c => c.id === clienteId)
-
-  // Detectar empresa desde contratista
   const empresa = contratista === 'TECH SOLUTIONS' ? 'TECH SOLUTIONS'
     : contratista === 'QUANTIC' ? 'QUANTIC'
     : 'OKINAWATEC'
 
   const handleGuardar = async () => {
-  if (!nombre.trim() || !clienteId) {
-    toast.error('Completa nombre y cliente')
-    return
-  }
+    if (!nombre.trim() || !clienteId) {
+      toast.error('Completa nombre y cliente')
+      return
+    }
 
-  // Verificar duplicado: coinciden los 3 campos
-  const duplicado = proyectos.find(p =>
-    p.solucion.toLowerCase().trim() === solucion.toLowerCase().trim() &&
-    p.clienteId === clienteId &&
-    p.nombre.toLowerCase().trim() === nombre.toLowerCase().trim()
-  )
-  if (duplicado) {
-    toast.error('Ya existe un proyecto con la misma solución, cliente y nombre de contrato')
-    return
-  }
+    // Verificar duplicado: solo si coinciden los 3 campos a la vez
+    const duplicado = proyectos.find(p =>
+      p.solucion.toLowerCase().trim() === solucion.toLowerCase().trim() &&
+      p.clienteId === clienteId &&
+      p.nombre.toLowerCase().trim() === nombre.toLowerCase().trim()
+    )
+    if (duplicado) {
+      toast.error('Ya existe un proyecto con la misma solución, cliente y nombre de contrato')
+      return
+    }
 
-  setLoading(true)
-  // ... resto igual
+    setLoading(true)
     try {
       await crearProyecto({
         nombre: nombre.trim(),
@@ -103,8 +101,6 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
         </div>
 
         <div className="p-6 space-y-4">
-
-          {/* Nombre */}
           <div>
             <label className="label">Nombre del proyecto *</label>
             <input
@@ -115,7 +111,6 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
             />
           </div>
 
-          {/* Cliente */}
           <div>
             <label className="label">Cliente *</label>
             <select className="input-field" value={clienteId} onChange={e => setClienteId(e.target.value)}>
@@ -124,7 +119,6 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
             </select>
           </div>
 
-          {/* Solución */}
           <div>
             <label className="label">Solución / Equipo (con marca)</label>
             <input
@@ -135,7 +129,6 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
             />
           </div>
 
-          {/* Contratista + N° Contrato */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Contratista</label>
@@ -157,7 +150,6 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
             </div>
           </div>
 
-          {/* Fecha inicio + Plazo + Estado */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="label">Fecha de inicio *</label>
@@ -186,7 +178,6 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
             </div>
           </div>
 
-          {/* Preview fecha fin */}
           {fechaInicio && (
             <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg px-4 py-2.5 flex items-center gap-2 text-sm">
               <span className="text-slate-400">Fecha de fin calculada:</span>
