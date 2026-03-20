@@ -456,6 +456,13 @@ export default function CronogramasPage() {
             </div>
           </div>
         </div>
+        {modalImportar && proyectoSeleccionado && (
+  <ModalImportarHitos
+    proyecto={proyectoSeleccionado}
+    onClose={() => setModalImportar(false)}
+    onSuccess={() => { setModalImportar(false); seleccionarProyecto(proyectoSeleccionado) }}
+  />
+)}
       )}
     </div>
   )
