@@ -1,5 +1,6 @@
 'use client'
 
+import { actualizarEntregable, obtenerTodosUsuarios, marcarHitoRealizado } from '@/lib/db'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { actualizarEntregable, obtenerTodosUsuarios } from '@/lib/db'
@@ -19,51 +20,56 @@ export default function ModalExpediente({ entregable, onClose, onSuccess }: Prop
   const [loading, setLoading] = useState(false)
 
   const handleGuardar = async () => {
-    if (!expediente.trim()) { toast.error('Ingresa el número de expediente'); return }
-    setLoading(true)
-    try {
-      await actualizarEntregable(entregable.id, {
-        expediente: expediente.trim(),
-        estado: 'completo',
-      })
+  if (!expediente.trim()) { toast.error('Ingresa el número de expediente'); return }
+  setLoading(true)
+  try {
+    await actualizarEntregable(entregable.id, {
+      expediente: expediente.trim(),
+      estado: 'completo',
+    })
 
-      if (notificar) {
-        try {
-          const usuarios = await obtenerTodosUsuarios()
-          const correos = usuarios.map(u => u.correo).filter(Boolean)
-          if (correos.length > 0) {
-            await fetch('/api/notificar-expediente', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                correos,
-                numeroDocumento: entregable.numeroDocumento,
-                asunto: entregable.asunto,
-                cliente: entregable.clienteNombre,
-                proyecto: entregable.proyectoNombre,
-                expediente: expediente.trim(),
-                responsable: entregable.responsableNombre,
-                fecha: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-              }),
-            })
-            toast.success(`Expediente agregado y notificación enviada a ${correos.length} usuario(s)`)
-          } else {
-            toast.success('Expediente agregado')
-          }
-        } catch {
-          toast.success('Expediente agregado (correo no enviado)')
-        }
-      } else {
-        toast.success('Expediente agregado sin notificación')
-      }
-
-      onSuccess()
-    } catch {
-      toast.error('Error al guardar')
-    } finally {
-      setLoading(false)
+    // Si el entregable tiene hito vinculado, marcarlo como realizado
+    if (entregable.hitoId) {
+      await marcarHitoRealizado(entregable.hitoId, entregable.fecha)
     }
+
+    if (notificar) {
+      try {
+        const usuarios = await obtenerTodosUsuarios()
+        const correos = usuarios.map(u => u.correo).filter(Boolean)
+        if (correos.length > 0) {
+          await fetch('/api/notificar-expediente', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              correos,
+              numeroDocumento: entregable.numeroDocumento,
+              asunto: entregable.asunto,
+              cliente: entregable.clienteNombre,
+              proyecto: entregable.proyectoNombre,
+              expediente: expediente.trim(),
+              responsable: entregable.responsableNombre,
+              fecha: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            }),
+          })
+          toast.success(`Expediente agregado y notificación enviada a ${correos.length} usuario(s)`)
+        } else {
+          toast.success('Expediente agregado')
+        }
+      } catch {
+        toast.success('Expediente agregado (correo no enviado)')
+      }
+    } else {
+      toast.success('Expediente agregado sin notificación')
+    }
+
+    onSuccess()
+  } catch {
+    toast.error('Error al guardar')
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
