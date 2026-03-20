@@ -310,41 +310,53 @@ const iniciarEdicion = (e: Entregable) => {
 </div>
                           ) : (
                             // Modo detalle
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
-                              <div>
-                                <p className="text-slate-500 mb-0.5">N° Documento</p>
-                                <p className="font-mono text-cyan-400">{e.numeroDocumento}</p>
-                              </div>
-                              <div>
-                                <p className="text-slate-500 mb-0.5">N° Cargo</p>
-                                <p className="font-mono text-cyan-400">{e.numeroCargo}</p>
-                              </div>
-                              <div>
-                                <p className="text-slate-500 mb-0.5">Responsable</p>
-                                <p className="text-slate-200">{e.responsableNombre}</p>
-                              </div>
-                              <div>
-                                <p className="text-slate-500 mb-0.5">Proyecto</p>
-                                <p className="text-slate-200">{e.proyectoNombre}</p>
-                              </div>
-                              <div>
-                                <p className="text-slate-500 mb-0.5">Asunto completo</p>
-                                <p className="text-slate-200">{e.asunto}</p>
-                              </div>
-                              {e.descripcion && (
-                                <div>
-                                  <p className="text-slate-500 mb-0.5">Descripción</p>
-                                  <p className="text-slate-200">{e.descripcion}</p>
-                                </div>
-                              )}
-                              {e.expediente && (
-                                <div>
-                                  <p className="text-slate-500 mb-0.5">Expediente</p>
-                                  <p className="text-green-400">{e.expediente}</p>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                           ) : (
+  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+    <div>
+      <p className="text-slate-500 mb-0.5">N° Documento</p>
+      <p className="font-mono text-cyan-400">{e.numeroDocumento}</p>
+    </div>
+    <div>
+      <p className="text-slate-500 mb-0.5">N° Cargo</p>
+      <p className="font-mono text-cyan-400">{e.numeroCargo}</p>
+    </div>
+    <div>
+      <p className="text-slate-500 mb-0.5">Responsable</p>
+      <p className="text-slate-200">{e.responsableNombre}</p>
+    </div>
+    <div>
+      <p className="text-slate-500 mb-0.5">Proyecto</p>
+      <p className="text-slate-200">{e.proyectoNombre}</p>
+    </div>
+    <div>
+      <p className="text-slate-500 mb-0.5">Asunto completo</p>
+      <p className="text-slate-200">{e.asunto}</p>
+    </div>
+    {e.descripcion && (
+      <div>
+        <p className="text-slate-500 mb-0.5">Descripción</p>
+        <p className="text-slate-200">{e.descripcion}</p>
+      </div>
+    )}
+    {e.expediente && (
+      <div>
+        <p className="text-slate-500 mb-0.5">Expediente</p>
+        <p className="text-green-400">{e.expediente}</p>
+      </div>
+    )}
+    {e.hitoId && (
+      <div>
+        <p className="text-slate-500 mb-0.5">Hito vinculado</p>
+        <Link
+          href={`/cronogramas?proyecto=${e.proyectoId}`}
+          className="text-blue-400 hover:text-blue-300 underline text-xs"
+          onClick={ev => ev.stopPropagation()}>
+          Ver hito en cronograma →
+        </Link>
+      </div>
+    )}
+  </div>
+)}
                         </td>
                       </tr>
                     )}
