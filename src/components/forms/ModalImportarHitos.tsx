@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { crearHito, hoy } from '@/lib/db'
+import { crearHito } from '@/lib/db'
 import type { Proyecto } from '@/types'
 import { X, Upload, FileSpreadsheet, Check, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -14,6 +14,7 @@ interface Props {
 }
 
 interface FilaHito {
+  numero: string
   nombre: string
   descripcion: string
   plazoContractual: string
@@ -25,7 +26,6 @@ interface FilaHito {
 
 function parsearFecha(valor: any): string {
   if (!valor || valor === '' || valor === null || valor === undefined) return 'por definir'
-  // Si es número (fecha Excel serial)
   if (typeof valor === 'number') {
     const fecha = XLSX.SSF.parse_date_code(valor)
     if (fecha) {
@@ -35,11 +35,9 @@ function parsearFecha(valor: any): string {
     }
   }
   const str = String(valor).trim()
-  if (!str || str === '') return 'por definir'
-  // Formato DD/MM/YYYY
+  if (!str) return 'por definir'
   const ddmm = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (ddmm) return `${ddmm[3]}-${ddmm[2].padStart(2, '0')}-${ddmm[1].padStart(2, '0')}`
-  // Formato YYYY-MM-DD
   const yyyymm = str.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (yyyymm) return str
   return 'por definir'
@@ -72,16 +70,19 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
         const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
         // Fila 0 = encabezados, fila 1 en adelante = datos
-        const filasDatos = rows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''))
+        const filasDatos = rows.slice(1).filter(r =>
+          r.some(c => c !== null && c !== undefined && c !== '')
+        )
 
         const hitosParseados: FilaHito[] = filasDatos.map(r => ({
-          nombre: limpiarTexto(r[0]),           // Columna A: Hito / Entregable
-          descripcion: limpiarTexto(r[1]),       // Columna B: Características
-          plazoContractual: limpiarTexto(r[2]),  // Columna C: Plazo Contractual
-          fechaInicio: parsearFecha(r[3]),        // Columna D: Fecha Inicio
-          fechaLimite: parsearFecha(r[4]),        // Columna E: Fecha Límite
-          pago: limpiarTexto(r[5]),              // Columna F: Pago / Condición
-          origen: limpiarTexto(r[6]),            // Columna G: Origen
+          numero: limpiarTexto(r[0]),          // Col A: N°
+          nombre: limpiarTexto(r[1]),          // Col B: Hito / Entregable
+          descripcion: limpiarTexto(r[2]),     // Col C: Características
+          plazoContractual: limpiarTexto(r[3]),// Col D: Plazo Contractual
+          fechaInicio: parsearFecha(r[4]),     // Col E: Fecha Inicio
+          fechaLimite: parsearFecha(r[5]),     // Col F: Fecha Límite
+          pago: limpiarTexto(r[6]),            // Col G: Pago / Condición
+          origen: limpiarTexto(r[7]),          // Col H: Origen
         })).filter(h => h.nombre !== 'por definir')
 
         setFilas(hitosParseados)
@@ -142,13 +143,25 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
             <>
               <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-4 text-xs space-y-2">
                 <p className="text-slate-300 font-medium">Formato requerido del Excel:</p>
-                <p className="text-slate-400">El archivo debe tener estas columnas en orden (fila 1 = encabezados):</p>
+                <p className="text-slate-400">Fila 1 = encabezados, fila 2 en adelante = hitos. Columnas en orden:</p>
                 <div className="grid grid-cols-2 gap-1 mt-2">
-                  {['A: Hito / Entregable', 'B: Características / Especificaciones', 'C: Plazo Contractual', 'D: Fecha Inicio', 'E: Fecha Límite', 'F: Pago / Condición', 'G: Origen (Documento)'].map(c => (
+                  {[
+                    'A: N° (número del hito)',
+                    'B: Hito / Entregable',
+                    'C: Características / Especificaciones Técnicas',
+                    'D: Plazo Contractual',
+                    'E: Fecha Inicio',
+                    'F: Fecha Límite',
+                    'G: Pago / Condición',
+                    'H: Origen (Documento)',
+                  ].map(c => (
                     <p key={c} className="text-cyan-400 font-mono">{c}</p>
                   ))}
                 </div>
-                <p className="text-slate-500 mt-2">Los campos vacíos se guardarán como "por definir". El responsable se asigna automáticamente como: <span className="text-white">{responsable}</span></p>
+                <p className="text-slate-500 mt-2">
+                  Campos vacíos → <span className="text-amber-400">"por definir"</span>. 
+                  Responsable asignado automáticamente: <span className="text-white">{responsable}</span>
+                </p>
               </div>
 
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#1e3a8a] rounded-xl cursor-pointer hover:border-blue-500 transition-colors bg-[#0d1526]/50">
@@ -166,15 +179,18 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
                 <Check className="w-4 h-4 text-green-400" />
                 <span className="text-green-400 font-medium">{filas.length} hitos encontrados</span>
                 <span className="text-slate-500">en {archivo}</span>
-                <button onClick={() => { setPaso('subir'); setFilas([]) }} className="text-blue-400 underline text-xs ml-2">Cambiar archivo</button>
+                <button onClick={() => { setPaso('subir'); setFilas([]) }}
+                  className="text-blue-400 underline text-xs ml-2">
+                  Cambiar archivo
+                </button>
               </div>
 
               <div className="max-h-64 overflow-y-auto rounded-lg border border-[#1e3a8a]/40">
                 <table className="w-full text-xs">
                   <thead className="bg-[#0d1526] sticky top-0">
                     <tr>
-                      <th className="tabla-header">#</th>
-                      <th className="tabla-header">Hito</th>
+                      <th className="tabla-header">N°</th>
+                      <th className="tabla-header">Hito / Entregable</th>
                       <th className="tabla-header">Fecha Inicio</th>
                       <th className="tabla-header">Fecha Límite</th>
                       <th className="tabla-header">Plazo</th>
@@ -183,8 +199,8 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
                   <tbody>
                     {filas.map((f, i) => (
                       <tr key={i} className="border-b border-[#1e3a8a]/20">
-                        <td className="tabla-cell text-slate-500">{i + 1}</td>
-                        <td className="tabla-cell text-slate-200 max-w-48 truncate">{f.nombre}</td>
+                        <td className="tabla-cell text-slate-500">{f.numero !== 'por definir' ? f.numero : i + 1}</td>
+                        <td className="tabla-cell text-slate-200 max-w-xs truncate">{f.nombre}</td>
                         <td className="tabla-cell">
                           <span className={f.fechaInicio === 'por definir' ? 'text-amber-400' : 'text-slate-300'}>
                             {f.fechaInicio === 'por definir' ? 'por definir' : f.fechaInicio.split('-').reverse().join('/')}
@@ -204,7 +220,7 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
 
               <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-900/20 border border-amber-700/30 rounded-lg px-3 py-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                Los hitos en amarillo no tienen fecha definida — podrás editarlos después desde el cronograma.
+                Los campos en amarillo no tienen fecha — podrás editarlos después desde el cronograma.
               </div>
             </>
           )}
