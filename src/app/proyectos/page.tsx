@@ -188,10 +188,13 @@ export default function ProyectosPage() {
 
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandido(expandido === p.id ? null : p.id)}>
-                  <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 hover:text-blue-300 transition-colors">
-                    {p.nombre}
-                  </h3>
-                </div>
+  <p className="font-semibold text-white text-sm leading-tight line-clamp-2 hover:text-blue-300 transition-colors">
+    {p.solucion || p.nombre}
+  </p>
+  {p.solucion && (
+    <p className="text-slate-500 text-xs mt-0.5 line-clamp-1">{p.nombre}</p>
+  )}
+</div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <span className={clsx('text-xs px-2 py-0.5 rounded-full border', ESTADO_BADGE[p.estado])}>
                     {p.estado}
