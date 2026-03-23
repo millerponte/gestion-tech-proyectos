@@ -1,10 +1,8 @@
 'use client'
 
-import { obtenerEntregables } from '@/lib/db'
-import type { Entregable } from '@/types'
 import { useEffect, useState } from 'react'
-import { obtenerProyectos, obtenerClientes, obtenerHitosPorProyecto, crearHito, actualizarHito, eliminarHito } from '@/lib/db'
-import type { Proyecto, Cliente, Hito } from '@/types'
+import { obtenerProyectos, obtenerClientes, obtenerHitosPorProyecto, crearHito, actualizarHito, eliminarHito, obtenerEntregables } from '@/lib/db'
+import type { Proyecto, Cliente, Hito, Entregable } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import { CalendarDays, Plus, Search, ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Download, FileSpreadsheet } from 'lucide-react'
 import clsx from 'clsx'
@@ -22,10 +20,11 @@ const ESTADO_HITO: Record<string, string> = {
 export default function CronogramasPage() {
   const { isAdmin } = useAuth()
   const searchParams = useSearchParams()
-  const [entregables, setEntregables] = useState<Entregable[]>([])
+
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [hitos, setHitos] = useState<Hito[]>([])
+  const [entregables, setEntregables] = useState<Entregable[]>([])
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState<Proyecto | null>(null)
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
@@ -44,17 +43,17 @@ export default function CronogramasPage() {
 
   useEffect(() => {
     const cargar = async () => {
-  const [p, c, e] = await Promise.all([obtenerProyectos(), obtenerClientes(), obtenerEntregables()])
-  setProyectos(p)
-  setClientes(c)
-  setEntregables(e)
-  setLoading(false)
-  const idParam = searchParams.get('proyecto')
-  if (idParam) {
-    const encontrado = p.find(x => x.id === idParam)
-    if (encontrado) seleccionarProyecto(encontrado)
-  }
-}
+      const [p, c, e] = await Promise.all([obtenerProyectos(), obtenerClientes(), obtenerEntregables()])
+      setProyectos(p)
+      setClientes(c)
+      setEntregables(e)
+      setLoading(false)
+      const idParam = searchParams.get('proyecto')
+      if (idParam) {
+        const encontrado = p.find(x => x.id === idParam)
+        if (encontrado) seleccionarProyecto(encontrado)
+      }
+    }
     cargar()
   }, [])
 
@@ -62,7 +61,6 @@ export default function CronogramasPage() {
     setProyectoSeleccionado(p)
     setLoadingHitos(true)
     const h = await obtenerHitosPorProyecto(p.id)
-    // Ordenar por número de hito
     const ordenados = [...h].sort((a, b) => (a.numero || 0) - (b.numero || 0))
     setHitos(ordenados)
     setLoadingHitos(false)
@@ -75,13 +73,13 @@ export default function CronogramasPage() {
 
   const exportarExcel = () => {
     if (!proyectoSeleccionado) return
-    const headers = ['N°', 'Hito / Entregable', 'Descripción', 'Responsable', 'Plazo Contractual', 'Fecha Inicio', 'Fecha Límite', 'Fecha Real Envío', 'Estado', 'Pago', 'Origen']
+    const headers = ['N°', 'Hito / Entregable', 'Descripción', 'Responsable', 'Plazo Contractual', 'Fecha Inicio', 'Fecha Límite', 'Fecha Real Envío', 'Estado']
     const filas = hitos.map(h => [
       h.numero || '—', h.nombre, h.descripcion, h.responsable, h.plazoContractual,
       h.fechaInicio === 'por definir' ? 'por definir' : formatearFecha(h.fechaInicio),
       h.fechaLimite === 'por definir' ? 'por definir' : formatearFecha(h.fechaLimite),
       h.fechaRealEnvio ? formatearFecha(h.fechaRealEnvio) : '',
-      h.estado, h.pago, h.origen
+      h.estado,
     ])
     const csv = [headers, ...filas].map(f => f.map(v => `"${v}"`).join(',')).join('\n')
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -191,7 +189,7 @@ export default function CronogramasPage() {
       {/* CONTENIDO PRINCIPAL */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
 
-        {/* PANEL IZQUIERDO: lista de proyectos */}
+        {/* PANEL IZQUIERDO */}
         <div className="xl:col-span-1 space-y-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -205,14 +203,14 @@ export default function CronogramasPage() {
                     ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
                     : 'bg-[#111d35] border-[#1e3a8a]/40 text-slate-300 hover:border-blue-500/40 hover:text-white')}>
                 <p className="font-medium line-clamp-2 text-cyan-300">{p.solucion || p.nombre}</p>
-<p className="text-slate-400 mt-0.5 line-clamp-1">{p.nombre}</p>
-<p className="text-slate-500 mt-0.5">{p.clienteNombre}</p>
+                <p className="text-slate-400 mt-0.5 line-clamp-1 text-xs">{p.nombre}</p>
+                <p className="text-slate-500 mt-0.5">{p.clienteNombre}</p>
               </button>
             ))}
           </div>
         </div>
 
-        {/* PANEL DERECHO: tabla de hitos */}
+        {/* PANEL DERECHO */}
         <div className="xl:col-span-3">
           {!proyectoSeleccionado ? (
             <div className="card text-center py-16">
@@ -253,6 +251,10 @@ export default function CronogramasPage() {
                   <tbody>
                     {hitos.map(h => {
                       const estado = estadoHito(h)
+                      // Entregables vinculados a este hito
+                      const entregablesVinculados = entregables.filter(e =>
+                        e.hitoId === h.id || (e as any).hitoIds?.includes(h.id)
+                      )
                       return (
                         <>
                           <tr key={h.id}
@@ -261,13 +263,16 @@ export default function CronogramasPage() {
                             <td className="tabla-cell text-slate-500">
                               {expandido === h.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                             </td>
-                            <td className="tabla-cell text-slate-400 text-xs font-mono">
-                              {h.numero || '—'}
-                            </td>
+                            <td className="tabla-cell text-slate-400 text-xs font-mono">{h.numero || '—'}</td>
                             <td className="tabla-cell">
                               <div className="flex items-center gap-2">
                                 {h.esCritico && <span className="text-red-400 text-xs">★</span>}
                                 <p className="text-sm text-slate-200 max-w-xs line-clamp-1">{h.nombre}</p>
+                                {entregablesVinculados.length > 0 && (
+                                  <span className="text-xs bg-green-900/30 text-green-400 border border-green-700/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                    {entregablesVinculados.length} entregable{entregablesVinculados.length > 1 ? 's' : ''}
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="tabla-cell text-xs text-slate-400">{h.responsable}</td>
@@ -357,10 +362,6 @@ export default function CronogramasPage() {
                                         <label className="label">Plazo contractual</label>
                                         <input className="input-field" value={editData.plazoContractual} onChange={e => setEditData(d => ({ ...d, plazoContractual: e.target.value }))} />
                                       </div>
-                                      
-                                      
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
                                       <div>
                                         <label className="label">Estado</label>
                                         <select className="input-field" value={editData.estado} onChange={e => setEditData(d => ({ ...d, estado: e.target.value as any }))}>
@@ -385,41 +386,40 @@ export default function CronogramasPage() {
                                     </div>
                                   </div>
                                 ) : (
-                              {(() => {
-  const entregablesVinculados = entregables.filter(e =>
-    e.hitoId === h.id ||
-    (e as any).hitoIds?.includes(h.id)
-  )
-  return entregablesVinculados.length > 0 ? (
-    <div className="col-span-2 md:col-span-4">
-      <p className="text-slate-500 mb-1">Entregable(s) vinculado(s)</p>
-      <div className="flex flex-wrap gap-2">
-        {entregablesVinculados.map(e => (
-          <a key={e.id} href="/entregables"
-            className="text-xs bg-green-900/20 border border-green-700/30 text-green-400 px-2 py-1 rounded-lg hover:border-green-500 transition-colors">
-            {e.numeroDocumento} — {e.asunto.slice(0, 30)}{e.asunto.length > 30 ? '...' : ''} →
-          </a>
-        ))}
-      </div>
-    </div>
-  ) : null
-})()}
                                   // MODO DETALLE
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                                    <div className="col-span-2">
-                                      <p className="text-slate-500 mb-0.5">Descripción</p>
-                                      <p className="text-slate-200">{h.descripcion || '—'}</p>
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                      <div className="col-span-2">
+                                        <p className="text-slate-500 mb-0.5">Descripción</p>
+                                        <p className="text-slate-200">{h.descripcion || '—'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-slate-500 mb-0.5">Plazo contractual</p>
+                                        <p className="text-slate-200">{h.plazoContractual || '—'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-slate-500 mb-0.5">Hito crítico</p>
+                                        <p className="text-slate-200">{h.esCritico ? '★ Sí' : 'No'}</p>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <p className="text-slate-500 mb-0.5">Plazo contractual</p>
-                                      <p className="text-slate-200">{h.plazoContractual || '—'}</p>
-                                    </div>
-                                    
-                                    
-                                    <div>
-                                      <p className="text-slate-500 mb-0.5">Hito crítico</p>
-                                      <p className="text-slate-200">{h.esCritico ? '★ Sí' : 'No'}</p>
-                                    </div>
+
+                                    {/* Entregables vinculados */}
+                                    {entregablesVinculados.length > 0 && (
+                                      <div className="border-t border-[#1e3a8a]/30 pt-3">
+                                        <p className="text-slate-500 text-xs mb-2">Entregable(s) vinculado(s)</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {entregablesVinculados.map(e => (
+                                            <a key={e.id} href="/entregables"
+                                              className="text-xs bg-green-900/20 border border-green-700/30 text-green-400 px-2.5 py-1.5 rounded-lg hover:border-green-500 hover:bg-green-900/30 transition-colors flex items-center gap-1.5">
+                                              <span className="font-mono">{e.numeroDocumento}</span>
+                                              <span className="text-green-600">—</span>
+                                              <span className="truncate max-w-32">{e.asunto}</span>
+                                              <span>→</span>
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </td>
@@ -436,7 +436,7 @@ export default function CronogramasPage() {
         </div>
       </div>
 
-      {/* MODAL: Nuevo hito manual */}
+      {/* MODAL: Nuevo hito */}
       {modalNuevoHito && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModalNuevoHito(false)}>
           <div className="modal-box">
@@ -470,7 +470,6 @@ export default function CronogramasPage() {
                   <label className="label">Plazo contractual</label>
                   <input className="input-field" placeholder="Ej: 15 días cal." value={nuevoHito.plazoContractual} onChange={e => setNuevoHito(d => ({ ...d, plazoContractual: e.target.value }))} />
                 </div>
-                
                 <div>
                   <label className="label">Fecha inicio</label>
                   <input type="date" className="input-field" value={nuevoHito.fechaInicio} onChange={e => setNuevoHito(d => ({ ...d, fechaInicio: e.target.value }))} />
@@ -479,7 +478,6 @@ export default function CronogramasPage() {
                   <label className="label">Fecha límite</label>
                   <input type="date" className="input-field" value={nuevoHito.fechaLimite} onChange={e => setNuevoHito(d => ({ ...d, fechaLimite: e.target.value }))} />
                 </div>
-                
                 <div className="flex items-center gap-2 pt-5">
                   <input type="checkbox" id="critico-nuevo" checked={nuevoHito.esCritico} onChange={e => setNuevoHito(d => ({ ...d, esCritico: e.target.checked }))} />
                   <label htmlFor="critico-nuevo" className="text-sm text-slate-300">Hito crítico ★</label>
@@ -496,7 +494,7 @@ export default function CronogramasPage() {
         </div>
       )}
 
-      {/* MODAL: Importar hitos desde Excel */}
+      {/* MODAL: Importar */}
       {modalImportar && proyectoSeleccionado && (
         <ModalImportarHitos
           proyecto={proyectoSeleccionado}
