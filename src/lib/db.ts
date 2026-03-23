@@ -179,3 +179,31 @@ export function formatearFecha(fecha: string): string {
 export function esFechaVencida(fecha: string): boolean {
   return new Date(fecha) < new Date()
 }
+
+
+// ─── COMENTARIOS ─────────────────────────────────────────────────────────────
+
+export interface Comentario {
+  id: string
+  proyectoId: string
+  usuarioNombre: string
+  usuarioUid: string
+  texto: string
+  createdAt: string
+}
+
+export async function obtenerComentarios(proyectoId: string): Promise<Comentario[]> {
+  const snap = await getDocs(
+    query(collection(db, 'comentarios'), where('proyectoId', '==', proyectoId), orderBy('createdAt', 'desc'))
+  )
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Comentario))
+}
+
+export async function crearComentario(data: Omit<Comentario, 'id'>): Promise<string> {
+  const ref = await addDoc(collection(db, 'comentarios'), data)
+  return ref.id
+}
+
+export async function eliminarComentario(id: string) {
+  await deleteDoc(doc(db, 'comentarios', id))
+}
