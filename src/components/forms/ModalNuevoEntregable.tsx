@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { crearEntregable, obtenerSiguienteNumero, obtenerNumeroPreview, formatearNumeroDoc, obtenerHitosPorProyecto, hoy, marcarHitoRealizado } from '@/lib/db'
+import { crearEntregable, obtenerSiguienteNumero, obtenerNumeroPreview, formatearNumeroDoc, obtenerHitosPorProyecto, hoy } from '@/lib/db'
 import type { Cliente, Proyecto, Hito, Empresa, TipoEntregable } from '@/types'
-import { X, FileText, Hash, Link2, Link2Off } from 'lucide-react'
+import { X, FileText, Hash, Link2, Link2Off, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -24,8 +24,8 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   const [tipo, setTipo] = useState<TipoEntregable>('Informe Técnico')
   const [clienteId, setClienteId] = useState('')
   const [proyectoId, setProyectoId] = useState('')
-  const [hitoId, setHitoId] = useState('')
-  const [vincularHito, setVincularHito] = useState<boolean | null>(null) // null = no decidido
+  const [hitoIds, setHitoIds] = useState<string[]>([])
+  const [vincularHito, setVincularHito] = useState<boolean | null>(null)
   const [fecha, setFecha] = useState(hoy())
   const [asunto, setAsunto] = useState('')
   const [responsable, setResponsable] = useState(usuario?.nombre || '')
@@ -46,7 +46,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
       setClienteId('RESERVADO')
       setProyectoId('RESERVADO')
       setAsunto('RESERVADO')
-      setHitoId('')
+      setHitoIds([])
       setVincularHito(null)
     } else {
       if (clienteId === 'RESERVADO') setClienteId('')
@@ -77,11 +77,10 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
     return () => { activo = false }
   }, [empresa, modoManual])
 
-  // Cargar hitos cuando cambia proyecto y se decide vincular
   useEffect(() => {
     if (!proyectoId || proyectoId === 'RESERVADO' || !vincularHito) {
       setHitos([])
-      setHitoId('')
+      setHitoIds([])
       return
     }
     setLoadingHitos(true)
@@ -93,16 +92,25 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
       .finally(() => setLoadingHitos(false))
   }, [proyectoId, vincularHito])
 
+  const toggleHito = (id: string) => {
+    setHitoIds(prev =>
+      prev.includes(id) ? prev.filter(h => h !== id) : [...prev, id]
+    )
+  }
+
   const proyectosFiltrados = clienteId && clienteId !== 'RESERVADO'
     ? proyectos.filter(p => p.clienteId === clienteId)
     : proyectos
   const clienteSeleccionado = clientes.find(c => c.id === clienteId)
   const proyectoSeleccionado = proyectos.find(p => p.id === proyectoId)
-  const hitoSeleccionado = hitos.find(h => h.id === hitoId)
 
   const handleGuardar = async () => {
     if (!esReserva && (!clienteId || !proyectoId || !asunto.trim())) {
       toast.error('Completa cliente, proyecto y asunto')
+      return
+    }
+    if (vincularHito && hitoIds.length === 0) {
+      toast.error('Selecciona al menos un hito o elige "No vincular"')
       return
     }
     setLoading(true)
@@ -128,7 +136,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
         clienteNombre: esReserva ? 'RESERVADO' : (clienteSeleccionado?.nombre || ''),
         proyectoId: esReserva ? '' : proyectoId,
         proyectoNombre: esReserva ? 'RESERVADO' : (proyectoSeleccionado?.nombre || ''),
-        ...(hitoId ? { hitoId } : {}),
+        ...(hitoIds.length > 0 ? { hitoIds, hitoId: hitoIds[0] } : {}),
         fecha,
         asunto: esReserva ? 'RESERVADO' : asunto.trim(),
         responsableUid: usuario?.uid || '',
@@ -192,16 +200,15 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
             </select>
           </div>
 
-          {/* Aviso Reservar */}
           {esReserva && (
             <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg px-4 py-3 text-xs text-amber-300">
               🔒 Modo <strong>Reservar</strong> — se generará un número reservado. Completa los datos después al agregar el expediente.
             </div>
           )}
 
-          {/* Cliente + Proyecto */}
           {!esReserva && (
             <>
+              {/* Cliente + Proyecto */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">Cliente *</label>
@@ -209,7 +216,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
                     setClienteId(e.target.value)
                     setProyectoId('')
                     setVincularHito(null)
-                    setHitoId('')
+                    setHitoIds([])
                   }}>
                     <option value="">Seleccionar...</option>
                     {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
@@ -220,7 +227,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
                   <select className="input-field" value={proyectoId} onChange={e => {
                     setProyectoId(e.target.value)
                     setVincularHito(null)
-                    setHitoId('')
+                    setHitoIds([])
                   }} disabled={!clienteId}>
                     <option value="">Seleccionar...</option>
                     {proyectosFiltrados.map(p => <option key={p.id} value={p.id}>{p.solucion || p.nombre}</option>)}
@@ -228,14 +235,14 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
                 </div>
               </div>
 
-              {/* Opción de vincular hito — aparece solo cuando hay proyecto seleccionado */}
+              {/* Opción vincular hito */}
               {proyectoId && vincularHito === null && (
                 <div>
-                  <label className="label">¿Vincular a un hito del cronograma?</label>
+                  <label className="label">¿Vincular a hitos del cronograma?</label>
                   <div className="flex gap-2 mt-1">
                     <button onClick={() => setVincularHito(true)}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-xs font-medium transition-all bg-[#0d1526] border-[#1e3a8a]/50 text-slate-300 hover:border-blue-500 hover:text-blue-300">
-                      <Link2 className="w-3.5 h-3.5" /> Sí, vincular a hito
+                      <Link2 className="w-3.5 h-3.5" /> Sí, vincular a hito(s)
                     </button>
                     <button onClick={() => setVincularHito(false)}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-xs font-medium transition-all bg-[#0d1526] border-[#1e3a8a]/50 text-slate-300 hover:border-slate-500 hover:text-slate-200">
@@ -245,12 +252,15 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
                 </div>
               )}
 
-              {/* Selector de hito */}
+              {/* Selector de hitos — múltiple selección */}
               {proyectoId && vincularHito === true && (
                 <div className="bg-[#0d1526] border border-blue-600/30 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="label mb-0">Seleccionar hito *</label>
-                    <button onClick={() => { setVincularHito(null); setHitoId('') }}
+                    <div>
+                      <label className="label mb-0">Seleccionar hito(s)</label>
+                      <p className="text-xs text-slate-500 mt-0.5">Puedes seleccionar varios hitos</p>
+                    </div>
+                    <button onClick={() => { setVincularHito(null); setHitoIds([]) }}
                       className="text-xs text-slate-500 hover:text-slate-300 underline">
                       Cambiar opción
                     </button>
@@ -261,43 +271,52 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
                       Cargando hitos...
                     </div>
                   ) : hitos.length === 0 ? (
-                    <p className="text-xs text-amber-400 py-1">Este proyecto no tiene hitos en su cronograma aún.</p>
+                    <p className="text-xs text-amber-400 py-1">Este proyecto no tiene hitos aún.</p>
                   ) : (
                     <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {hitos.map(h => (
-                        <button key={h.id} onClick={() => setHitoId(h.id)}
-                          className={clsx(
-                            'w-full text-left px-3 py-2 rounded-lg text-xs transition-all border',
-                            hitoId === h.id
-                              ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
-                              : 'bg-[#111d35] border-[#1e3a8a]/30 text-slate-300 hover:border-blue-500/40'
-                          )}>
-                          <span className="font-mono text-slate-500 mr-2">{h.numero || '—'}.</span>
-                          <span className="font-medium">{h.nombre}</span>
-                          {h.fechaLimite && h.fechaLimite !== 'por definir' && (
-                            <span className="text-slate-500 ml-2">· {h.fechaLimite.split('-').reverse().join('/')}</span>
-                          )}
-                        </button>
-                      ))}
+                      {hitos.map(h => {
+                        const seleccionado = hitoIds.includes(h.id)
+                        return (
+                          <button key={h.id} onClick={() => toggleHito(h.id)}
+                            className={clsx(
+                              'w-full text-left px-3 py-2 rounded-lg text-xs transition-all border flex items-center gap-2',
+                              seleccionado
+                                ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
+                                : 'bg-[#111d35] border-[#1e3a8a]/30 text-slate-300 hover:border-blue-500/40'
+                            )}>
+                            <div className={clsx(
+                              'w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center',
+                              seleccionado ? 'bg-blue-600 border-blue-500' : 'border-slate-600'
+                            )}>
+                              {seleccionado && <Check className="w-2.5 h-2.5 text-white" />}
+                            </div>
+                            <span className="font-mono text-slate-500 mr-1">{h.numero || '—'}.</span>
+                            <span className="flex-1 truncate">{h.nombre}</span>
+                            {h.fechaLimite && h.fechaLimite !== 'por definir' && (
+                              <span className="text-slate-500 flex-shrink-0">
+                                {h.fechaLimite.split('-').reverse().join('/')}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
-                  {hitoSeleccionado && (
+                  {hitoIds.length > 0 && (
                     <div className="bg-blue-900/20 border border-blue-700/30 rounded px-3 py-2 text-xs text-blue-300">
-                      ✓ Hito seleccionado: <strong>{hitoSeleccionado.nombre}</strong>
+                      ✓ {hitoIds.length} hito(s) seleccionado(s)
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Confirmación de no vincular */}
+              {/* Sin hito */}
               {proyectoId && vincularHito === false && (
                 <div className="flex items-center justify-between bg-[#0d1526] border border-[#1e3a8a]/30 rounded-lg px-3 py-2">
                   <p className="text-xs text-slate-400 flex items-center gap-2">
-                    <Link2Off className="w-3.5 h-3.5 text-slate-500" />
-                    Sin hito vinculado
+                    <Link2Off className="w-3.5 h-3.5 text-slate-500" /> Sin hitos vinculados
                   </p>
-                  <button onClick={() => setVincularHito(null)}
-                    className="text-xs text-slate-500 hover:text-slate-300 underline">
+                  <button onClick={() => setVincularHito(null)} className="text-xs text-slate-500 hover:text-slate-300 underline">
                     Cambiar
                   </button>
                 </div>
@@ -323,7 +342,6 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
             </div>
           </div>
 
-          {/* Descripción */}
           {!esReserva && (
             <div>
               <label className="label">Descripción adicional</label>
