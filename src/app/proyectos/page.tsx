@@ -354,6 +354,12 @@ export default function ProyectosPage() {
           onSuccess={() => { setModalAbierto(false); cargar() }}
         />
       )}
+      {proyectoComentarios && (
+  <ModalComentarios
+    proyecto={proyectoComentarios}
+    onClose={() => setProyectoComentarios(null)}
+  />
+)}
     </div>
   )
 }
