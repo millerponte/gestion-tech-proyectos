@@ -1,5 +1,7 @@
 'use client'
 
+import { obtenerEntregables } from '@/lib/db'
+import type { Entregable } from '@/types'
 import { useEffect, useState } from 'react'
 import { obtenerProyectos, obtenerClientes, obtenerHitosPorProyecto, crearHito, actualizarHito, eliminarHito } from '@/lib/db'
 import type { Proyecto, Cliente, Hito } from '@/types'
@@ -20,7 +22,7 @@ const ESTADO_HITO: Record<string, string> = {
 export default function CronogramasPage() {
   const { isAdmin } = useAuth()
   const searchParams = useSearchParams()
-
+  const [entregables, setEntregables] = useState<Entregable[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [hitos, setHitos] = useState<Hito[]>([])
@@ -42,16 +44,17 @@ export default function CronogramasPage() {
 
   useEffect(() => {
     const cargar = async () => {
-      const [p, c] = await Promise.all([obtenerProyectos(), obtenerClientes()])
-      setProyectos(p)
-      setClientes(c)
-      setLoading(false)
-      const idParam = searchParams.get('proyecto')
-      if (idParam) {
-        const encontrado = p.find(x => x.id === idParam)
-        if (encontrado) seleccionarProyecto(encontrado)
-      }
-    }
+  const [p, c, e] = await Promise.all([obtenerProyectos(), obtenerClientes(), obtenerEntregables()])
+  setProyectos(p)
+  setClientes(c)
+  setEntregables(e)
+  setLoading(false)
+  const idParam = searchParams.get('proyecto')
+  if (idParam) {
+    const encontrado = p.find(x => x.id === idParam)
+    if (encontrado) seleccionarProyecto(encontrado)
+  }
+}
     cargar()
   }, [])
 
@@ -382,6 +385,25 @@ export default function CronogramasPage() {
                                     </div>
                                   </div>
                                 ) : (
+                              {(() => {
+  const entregablesVinculados = entregables.filter(e =>
+    e.hitoId === h.id ||
+    (e as any).hitoIds?.includes(h.id)
+  )
+  return entregablesVinculados.length > 0 ? (
+    <div className="col-span-2 md:col-span-4">
+      <p className="text-slate-500 mb-1">Entregable(s) vinculado(s)</p>
+      <div className="flex flex-wrap gap-2">
+        {entregablesVinculados.map(e => (
+          <a key={e.id} href="/entregables"
+            className="text-xs bg-green-900/20 border border-green-700/30 text-green-400 px-2 py-1 rounded-lg hover:border-green-500 transition-colors">
+            {e.numeroDocumento} — {e.asunto.slice(0, 30)}{e.asunto.length > 30 ? '...' : ''} →
+          </a>
+        ))}
+      </div>
+    </div>
+  ) : null
+})()}
                                   // MODO DETALLE
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                                     <div className="col-span-2">
