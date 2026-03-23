@@ -328,9 +328,22 @@ export default function EntregablesPage() {
                                 <p className="text-slate-200">{e.responsableNombre}</p>
                               </div>
                               <div>
-                                <p className="text-slate-500 mb-0.5">Proyecto</p>
-                                <p className="text-slate-200">{e.proyectoNombre}</p>
-                              </div>
+  <p className="text-slate-500 mb-0.5">Cliente</p>
+  <p className="text-slate-200">{e.clienteNombre}</p>
+</div>
+<div>
+  <p className="text-slate-500 mb-0.5">Proyecto / Contrato</p>
+  <p className="text-slate-200">{e.proyectoNombre}</p>
+</div>
+{(() => {
+  const proyecto = proyectos.find(p => p.id === e.proyectoId)
+  return proyecto?.solucion ? (
+    <div className="col-span-2">
+      <p className="text-slate-500 mb-0.5">Solución</p>
+      <p className="text-slate-200">{proyecto.solucion}</p>
+    </div>
+  ) : null
+})()}
                               <div className="col-span-2">
                                 <p className="text-slate-500 mb-0.5">Asunto completo</p>
                                 <p className="text-slate-200">{e.asunto}</p>
