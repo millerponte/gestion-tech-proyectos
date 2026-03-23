@@ -28,10 +28,14 @@ export default function ModalExpediente({ entregable, onClose, onSuccess }: Prop
         estado: 'completo',
       })
 
-      // 2. Si tiene hito vinculado, marcarlo como realizado con la fecha del entregable
-      if (entregable.hitoId) {
-        await marcarHitoRealizado(entregable.hitoId, entregable.fecha)
-      }
+      // 2. Marcar TODOS los hitos vinculados como realizados
+const todosHitoIds = (entregable as any).hitoIds?.length > 0
+  ? (entregable as any).hitoIds
+  : entregable.hitoId ? [entregable.hitoId] : []
+
+for (const hId of todosHitoIds) {
+  await marcarHitoRealizado(hId, entregable.fecha)
+}
 
       // 3. Notificar por correo si está marcado
       if (notificar) {
