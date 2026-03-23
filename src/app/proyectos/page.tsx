@@ -1,5 +1,7 @@
 'use client'
 
+import ModalComentarios from '@/components/forms/ModalComentarios'
+import { MessageSquare } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { obtenerProyectos, obtenerClientes, eliminarProyecto, actualizarProyecto } from '@/lib/db'
 import type { Proyecto, Cliente } from '@/types'
@@ -38,6 +40,7 @@ export default function ProyectosPage() {
   const [filtroEstado, setFiltroEstado] = useState('')
   const [filtroCliente, setFiltroCliente] = useState('')
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [proyectoComentarios, setProyectoComentarios] = useState<Proyecto | null>(null)
   const [expandido, setExpandido] = useState<string | null>(null)
   const [editando, setEditando] = useState<string | null>(null)
   const [editData, setEditData] = useState<Partial<Proyecto>>({})
@@ -315,22 +318,28 @@ export default function ProyectosPage() {
               <div className="flex items-center justify-between pt-2 border-t border-[#1e3a8a]/30 mt-auto">
                 <span className="text-xs text-slate-500">{p.contratista}</span>
                 <div className="flex items-center gap-2">
-                  <Link href={`/cronogramas?proyecto=${p.id}`} className="text-xs text-blue-400 hover:text-blue-300 underline">
-                    Cronograma
-                  </Link>
-                  {isAdmin && (
-                    <>
-                      <button onClick={() => { setExpandido(p.id); iniciarEdicion(p) }}
-                        className="text-slate-500 hover:text-blue-400 transition-colors">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => handleEliminar(p.id, p.nombre)}
-                        className="text-slate-500 hover:text-red-400 transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </>
-                  )}
-                </div>
+  <Link href={`/cronogramas?proyecto=${p.id}`} className="text-xs text-blue-400 hover:text-blue-300 underline">
+    Cronograma
+  </Link>
+  <button
+    onClick={(e) => { e.stopPropagation(); setProyectoComentarios(p) }}
+    className="text-slate-500 hover:text-blue-400 transition-colors"
+    title="Comentarios">
+    <MessageSquare className="w-3.5 h-3.5" />
+  </button>
+  {isAdmin && (
+    <>
+      <button onClick={() => { setExpandido(p.id); iniciarEdicion(p) }}
+        className="text-slate-500 hover:text-blue-400 transition-colors">
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={() => handleEliminar(p.id, p.nombre)}
+        className="text-slate-500 hover:text-red-400 transition-colors">
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </>
+  )}
+</div>
               </div>
             </div>
           ))}
