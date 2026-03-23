@@ -71,7 +71,8 @@ export interface Entregable {
   clienteNombre: string
   proyectoId: string
   proyectoNombre: string
-  hitoId?: string
+  hitoId?: string        // legacy — un solo hito
+  hitoIds?: string[]     // nuevo — múltiples hitos
   fecha: string
   asunto: string
   responsableUid: string
