@@ -80,20 +80,28 @@ const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
     toast.success('Exportado correctamente')
   }
 
-  const iniciarEdicion = (e: Entregable) => {
-    setEditando(e.id)
-    setEditData({
-      asunto: e.asunto,
-      fecha: e.fecha,
-      responsableNombre: e.responsableNombre,
-      tipo: e.tipo,
-      descripcion: e.descripcion || '',
-      numeroDocumento: e.numeroDocumento,
-      numeroCargo: e.numeroCargo,
-      expediente: e.expediente || '',
-      estado: e.estado,
-    })
+  const iniciarEdicion = async (e: Entregable) => {
+  setEditando(e.id)
+  setEditData({
+    asunto: e.asunto,
+    fecha: e.fecha,
+    responsableNombre: e.responsableNombre,
+    tipo: e.tipo,
+    descripcion: e.descripcion || '',
+    numeroDocumento: e.numeroDocumento,
+    numeroCargo: e.numeroCargo,
+    expediente: e.expediente || '',
+    estado: e.estado,
+    hitoId: e.hitoId,
+    hitoIds: (e as any).hitoIds || [],
+  })
+  if (e.proyectoId) {
+    setLoadingHitosEdicion(true)
+    const h = await obtenerHitosPorProyecto(e.proyectoId)
+    setHitosEdicion([...h].sort((a, b) => (a.numero || 0) - (b.numero || 0)))
+    setLoadingHitosEdicion(false)
   }
+}
 
   const guardarEdicion = async (id: string) => {
     try {
