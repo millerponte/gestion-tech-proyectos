@@ -147,7 +147,7 @@ export async function marcarHitoRealizado(id: string, fecha: string) {
 // ─── ENTREGABLES ─────────────────────────────────────────────────────────────
 
 export async function obtenerEntregables(): Promise<Entregable[]> {
-  const snap = await getDocs(query(collection(db, 'entregables'), orderBy('createdAt', 'desc')))
+  const snap = await getDocs(query(collection(db, 'entregables'), orderBy('fecha', 'desc')))
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Entregable))
 }
 
