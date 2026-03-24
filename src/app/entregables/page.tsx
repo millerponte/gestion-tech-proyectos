@@ -103,16 +103,23 @@ const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
   }
 }
 
-  const guardarEdicion = async (id: string) => {
-    try {
-      await actualizarEntregable(id, editData)
-      toast.success('Entregable actualizado')
-      setEditando(null)
-      cargar()
-    } catch {
-      toast.error('Error al guardar')
+const guardarEdicion = async (id: string) => {
+  try {
+    const dataActualizar: any = { ...editData }
+    // Limpiar hitoIds vacíos
+    if (dataActualizar.hitoIds?.length === 0) {
+      dataActualizar.hitoIds = []
+      dataActualizar.hitoId = null
     }
+    await actualizarEntregable(id, dataActualizar)
+    toast.success('Entregable actualizado')
+    setEditando(null)
+    setHitosEdicion([])
+    cargar()
+  } catch {
+    toast.error('Error al guardar')
   }
+}
 
   const handleEliminar = async (id: string) => {
     if (!confirm('¿Eliminar este entregable?')) return
@@ -315,6 +322,45 @@ const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
                                 <label className="label">Descripción</label>
                                 <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={ev => setEditData(d => ({ ...d, descripcion: ev.target.value }))} />
                               </div>
+                              {/* Hitos vinculados — editable */}
+{hitosEdicion.length > 0 && (
+  <div>
+    <label className="label">Hitos vinculados</label>
+    <div className="space-y-1 max-h-40 overflow-y-auto bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-2">
+      {hitosEdicion.map(h => {
+        const hitoIdsActual: string[] = (editData as any).hitoIds || []
+        const seleccionado = hitoIdsActual.includes(h.id)
+        return (
+          <button key={h.id}
+            onClick={() => {
+              const nuevos = seleccionado
+                ? hitoIdsActual.filter((id: string) => id !== h.id)
+                : [...hitoIdsActual, h.id]
+              setEditData(d => ({ ...d, hitoIds: nuevos, hitoId: nuevos[0] || undefined }))
+            }}
+            className={clsx(
+              'w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all border flex items-center gap-2',
+              seleccionado
+                ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
+                : 'bg-[#111d35] border-[#1e3a8a]/30 text-slate-400 hover:border-blue-500/40'
+            )}>
+            <div className={clsx(
+              'w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center',
+              seleccionado ? 'bg-blue-600 border-blue-500' : 'border-slate-600'
+            )}>
+              {seleccionado && <Check className="w-2.5 h-2.5 text-white" />}
+            </div>
+            <span className="font-mono text-slate-500">{h.numero || '—'}.</span>
+            <span className="flex-1 truncate">{h.nombre}</span>
+          </button>
+        )
+      })}
+    </div>
+    {((editData as any).hitoIds?.length > 0) && (
+      <p className="text-xs text-blue-400 mt-1">{(editData as any).hitoIds.length} hito(s) seleccionado(s)</p>
+    )}
+  </div>
+)}
                               <div className="flex gap-2">
                                 <button onClick={() => guardarEdicion(e.id)} className="btn-primary text-xs">
                                   <Check className="w-3.5 h-3.5" /> Guardar cambios
