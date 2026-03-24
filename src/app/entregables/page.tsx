@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { obtenerHitosPorProyecto } from '@/lib/db'
+import type { Hito } from '@/types'
 import { useEffect, useState } from 'react'
 import { obtenerEntregables, obtenerClientes, obtenerProyectos, actualizarEntregable, eliminarEntregable } from '@/lib/db'
 import type { Entregable, Cliente, Proyecto } from '@/types'
@@ -22,6 +24,8 @@ const TIPOS = ['Reservar', 'Plan de Trabajo', 'Informe Técnico', 'Informe Mensu
 
 export default function EntregablesPage() {
   const { isAdmin } = useAuth()
+  const [hitosEdicion, setHitosEdicion] = useState<Hito[]>([])
+const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
   const [entregables, setEntregables] = useState<Entregable[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
