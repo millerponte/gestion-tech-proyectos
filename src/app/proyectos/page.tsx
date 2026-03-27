@@ -190,8 +190,7 @@ export default function ProyectosPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {proyectosFiltrados.map(p => (
-            <div key={p.id} className={clsx('card-hover flex flex-col gap-3', expandido === p.id && 'border-blue-500/50')}>
-
+            <div key={p.id} className={clsx('card-hover flex flex-col gap-3', expandido === p.id && 'border-blue-500/50', ultimoId === p.id && 'highlight-new')}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandido(expandido === p.id ? null : p.id)}>
   <p className="font-semibold text-white text-sm leading-tight line-clamp-2 hover:text-blue-300 transition-colors">
