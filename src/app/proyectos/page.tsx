@@ -355,6 +355,10 @@ export default function ProyectosPage() {
           proyectos={proyectos}
           onClose={() => setModalAbierto(false)}
           onSuccess={() => { setModalAbierto(false); cargar() }}
+          onSuccess={() => { setModalAbierto(false)  cargar().then(() => {
+    // El último se marca automáticamente al recargar
+  })
+}}
         />
       )}
       {proyectoComentarios && (
