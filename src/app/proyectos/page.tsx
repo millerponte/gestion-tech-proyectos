@@ -364,14 +364,19 @@ export default function ProyectosPage() {
       )}
 
       {modalAbierto && (
-        <ModalNuevoProyecto
-          clientes={clientes}
-          proyectos={proyectos}
-          onClose={() => setModalAbierto(false)}
-          onSuccess={() => { setModalAbierto(false)  cargar().then(() => {
-    // El último se marca automáticamente al recargar
-  })
-}}
+  <ModalNuevoProyecto
+    clientes={clientes}
+    proyectos={proyectos}
+    onClose={() => setModalAbierto(false)}
+    onSuccess={() => {
+      setModalAbierto(false);
+      cargar().then(() => {
+        // Si deseas resaltar el proyecto recién creado, necesitarías obtener su ID
+        // desde la respuesta de crearProyecto; por ahora solo recarga
+      });
+    }}
+  />
+)}
         />
       )}
       {proyectoComentarios && (
