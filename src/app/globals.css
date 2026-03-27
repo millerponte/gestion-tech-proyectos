@@ -109,3 +109,12 @@ body {
 .modal-box {
   @apply bg-[#111d35] border border-[#1e3a8a] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slide-up;
 }
+
+/* Highlight al guardar */
+@keyframes highlightRow {
+  0% { background-color: rgba(37, 99, 235, 0.3); }
+  100% { background-color: transparent; }
+}
+.highlight-new {
+  animation: highlightRow 2s ease-out;
+}
