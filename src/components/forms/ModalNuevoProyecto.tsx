@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { crearProyecto, hoy } from '@/lib/db'
 import type { Cliente, Proyecto } from '@/types'
-import { X, FolderKanban, Save } from 'lucide-react'
+import { X, FolderKanban, Save, Link } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Props {
@@ -30,13 +30,21 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
   const [clienteId, setClienteId] = useState('')
   const [contratista, setContratista] = useState('')
   const [numeroContrato, setNumeroContrato] = useState('')
+  const [plazoModo, setPlazoModo] = useState<'lista' | 'manual'>('lista')
   const [plazo, setPlazo] = useState(12)
+  const [plazoManual, setPlazoManual] = useState('')
   const [fechaInicio, setFechaInicio] = useState(hoy())
+  const [fechaFinManual, setFechaFinManual] = useState('')
+  const [editarFechaFin, setEditarFechaFin] = useState(false)
   const [solucion, setSolucion] = useState('')
   const [estado, setEstado] = useState<'activo' | 'completado' | 'suspendido'>('activo')
+  const [linkDrive, setLinkDrive] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const fechaFin = sumarMeses(fechaInicio, plazo)
+  const plazoFinal = plazoModo === 'manual' ? (parseInt(plazoManual) || 0) : plazo
+  const fechaFinCalculada = sumarMeses(fechaInicio, plazoFinal)
+  const fechaFin = editarFechaFin && fechaFinManual ? fechaFinManual : fechaFinCalculada
+
   const clienteSeleccionado = clientes.find(c => c.id === clienteId)
   const empresa = contratista === 'TECH SOLUTIONS' ? 'TECH SOLUTIONS'
     : contratista === 'QUANTIC' ? 'QUANTIC'
@@ -47,35 +55,31 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
       toast.error('Completa nombre y cliente')
       return
     }
-
-    // Verificar duplicado: solo si coinciden los 3 campos a la vez
     const duplicado = proyectos.find(p =>
       p.solucion.toLowerCase().trim() === solucion.toLowerCase().trim() &&
       p.clienteId === clienteId &&
       p.nombre.toLowerCase().trim() === nombre.toLowerCase().trim()
     )
     if (duplicado) {
-      toast.error('Ya existe un proyecto con la misma solución, cliente y nombre de contrato')
+      toast.error('Ya existe un proyecto con la misma solución, cliente y nombre')
       return
     }
-
     setLoading(true)
     try {
       await crearProyecto({
         nombre: nombre.trim(),
-        empresa,
-        clienteId,
+        empresa, clienteId,
         clienteNombre: clienteSeleccionado?.nombre || '',
         contratista: contratista.trim(),
         numeroContrato: numeroContrato.trim(),
-        plazo,
-        fechaInicio,
-        fechaFin,
+        plazo: plazoFinal,
+        fechaInicio, fechaFin,
         solucion: solucion.trim(),
         marca: '',
         estado,
+        linkDrive: linkDrive.trim(),
         createdAt: new Date().toISOString(),
-      })
+      } as any)
       toast.success('Proyecto creado')
       onSuccess()
     } catch {
@@ -95,22 +99,14 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
             </div>
             <h2 className="font-display font-semibold text-white">Nuevo Proyecto</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
-            <X className="w-5 h-5" />
-          </button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-6 space-y-4">
           <div>
             <label className="label">Nombre del proyecto *</label>
-            <input
-              className="input-field"
-              placeholder="Ej: Renovación de licencias antivirus y Soporte Técnico"
-              value={nombre}
-              onChange={e => setNombre(e.target.value)}
-            />
+            <input className="input-field" placeholder="Ej: Renovación de licencias antivirus" value={nombre} onChange={e => setNombre(e.target.value)} />
           </div>
-
           <div>
             <label className="label">Cliente *</label>
             <select className="input-field" value={clienteId} onChange={e => setClienteId(e.target.value)}>
@@ -118,17 +114,10 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
               {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </div>
-
           <div>
             <label className="label">Solución / Equipo (con marca)</label>
-            <input
-              className="input-field"
-              placeholder="Ej: Trend Micro Vision One – Endpoint Security"
-              value={solucion}
-              onChange={e => setSolucion(e.target.value)}
-            />
+            <input className="input-field" placeholder="Ej: Trend Micro Vision One – Endpoint Security" value={solucion} onChange={e => setSolucion(e.target.value)} />
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Contratista</label>
@@ -141,32 +130,34 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
             </div>
             <div>
               <label className="label">N° de contrato</label>
-              <input
-                className="input-field"
-                placeholder="Ej: TECH_100425_B"
-                value={numeroContrato}
-                onChange={e => setNumeroContrato(e.target.value)}
-              />
+              <input className="input-field" placeholder="Ej: TECH_100425_B" value={numeroContrato} onChange={e => setNumeroContrato(e.target.value)} />
             </div>
           </div>
 
+          {/* Plazo — lista o manual */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="label">Fecha de inicio *</label>
-              <input
-                type="date"
-                className="input-field"
-                value={fechaInicio}
-                onChange={e => setFechaInicio(e.target.value)}
-              />
+              <input type="date" className="input-field" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} />
             </div>
             <div>
-              <label className="label">Plazo</label>
-              <select className="input-field" value={plazo} onChange={e => setPlazo(Number(e.target.value))}>
-                {[1, 3, 6, 12, 24, 36].map(m =>
-                  <option key={m} value={m}>{m} {m === 1 ? 'mes' : 'meses'}</option>
-                )}
-              </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="label mb-0">Plazo</label>
+                <button onClick={() => setPlazoModo(plazoModo === 'lista' ? 'manual' : 'lista')}
+                  className="text-xs text-blue-400 hover:text-blue-300 underline">
+                  {plazoModo === 'lista' ? 'Ingresar manual' : 'Usar lista'}
+                </button>
+              </div>
+              {plazoModo === 'lista' ? (
+                <select className="input-field" value={plazo} onChange={e => setPlazo(Number(e.target.value))}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24, 30, 36, 48, 60].map(m =>
+                    <option key={m} value={m}>{m} {m === 1 ? 'mes' : 'meses'}</option>
+                  )}
+                </select>
+              ) : (
+                <input type="number" className="input-field" placeholder="Ej: 45" min="1"
+                  value={plazoManual} onChange={e => setPlazoManual(e.target.value)} />
+              )}
             </div>
             <div>
               <label className="label">Estado</label>
@@ -178,12 +169,32 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
             </div>
           </div>
 
-          {fechaInicio && (
-            <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg px-4 py-2.5 flex items-center gap-2 text-sm">
-              <span className="text-slate-400">Fecha de fin calculada:</span>
-              <span className="text-cyan-400 font-medium">{formatDMY(fechaFin)}</span>
+          {/* Fecha fin */}
+          <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg px-4 py-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-slate-400">Fecha de fin:</span>
+                {editarFechaFin ? (
+                  <input type="date" className="input-field py-0.5 text-xs w-36"
+                    value={fechaFinManual} onChange={e => setFechaFinManual(e.target.value)} />
+                ) : (
+                  <span className="text-cyan-400 font-medium">{formatDMY(fechaFin)}</span>
+                )}
+              </div>
+              <button onClick={() => { setEditarFechaFin(!editarFechaFin); setFechaFinManual(fechaFin) }}
+                className="text-xs text-blue-400 hover:text-blue-300 underline">
+                {editarFechaFin ? 'Usar calculada' : 'Editar fecha fin'}
+              </button>
             </div>
-          )}
+          </div>
+
+          {/* Link Drive */}
+          <div>
+            <label className="label flex items-center gap-1">
+              <Link className="w-3 h-3" /> Link de Google Drive (opcional)
+            </label>
+            <input className="input-field" placeholder="https://drive.google.com/drive/folders/..." value={linkDrive} onChange={e => setLinkDrive(e.target.value)} />
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 px-6 pb-6">
