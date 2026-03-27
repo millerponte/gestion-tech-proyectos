@@ -369,7 +369,6 @@ export default function ProyectosPage() {
           clientes={clientes}
           proyectos={proyectos}
           onClose={() => setModalAbierto(false)}
-          onSuccess={() => { setModalAbierto(false); cargar() }}
           onSuccess={() => { setModalAbierto(false)  cargar().then(() => {
     // El último se marca automáticamente al recargar
   })
