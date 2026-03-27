@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import { formatearFecha } from '@/lib/db'
 import ModalNuevoProyecto from '@/components/forms/ModalNuevoProyecto'
 import Link from 'next/link'
+import { FolderKanban, Plus, Search, Filter, Trash2, CalendarDays, Building2, Pencil, Check, X, ChevronDown, ChevronUp, Download, MessageSquare, Link } from 'lucide-react'
 
 const BADGE_EMPRESA: Record<string, string> = {
   'OKINAWATEC': 'badge-okinawatec',
@@ -277,6 +278,12 @@ export default function ProyectosPage() {
                           <option value="suspendido">Suspendido</option>
                         </select>
                       </div>
+                      <div>
+  <label className="label">Link Google Drive</label>
+  <input className="input-field" placeholder="https://drive.google.com/..." 
+    value={(editData as any).linkDrive || ''} 
+    onChange={e => setEditData(d => ({ ...d, linkDrive: e.target.value }))} />
+</div>
                       <div className="flex gap-2">
                         <button onClick={() => guardarEdicion(p.id)} className="btn-primary text-xs">
                           <Check className="w-3.5 h-3.5" /> Guardar
