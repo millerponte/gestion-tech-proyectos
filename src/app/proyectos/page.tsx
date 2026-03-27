@@ -109,6 +109,8 @@ export default function ProyectosPage() {
       })
       toast.success('Proyecto actualizado')
       setEditando(null)
+      setUltimoId(id)
+      setTimeout(() => setUltimoId(null), 2000)
       cargar()
     } catch {
       toast.error('Error al guardar')
