@@ -311,6 +311,15 @@ export default function ProyectosPage() {
                           <p className="text-slate-500">Fecha fin</p>
                           <p className="text-slate-200">{formatearFecha(p.fechaFin)}</p>
                         </div>
+                        {(p as any).linkDrive && (
+  <div>
+    <p className="text-slate-500">Google Drive</p>
+    <a href={(p as any).linkDrive} target="_blank" rel="noopener noreferrer"
+      className="text-blue-400 hover:text-blue-300 underline text-xs flex items-center gap-1 mt-0.5">
+      <Link className="w-3 h-3" /> Abrir carpeta del proyecto →
+    </a>
+  </div>
+)}
                       </div>
                     </div>
                   )}
