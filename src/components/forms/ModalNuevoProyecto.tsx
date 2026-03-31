@@ -40,7 +40,7 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
   const [estado, setEstado] = useState<'activo' | 'completado' | 'suspendido'>('activo')
   const [linkDrive, setLinkDrive] = useState('')
   const [loading, setLoading] = useState(false)
-  const hoy = new Date().toISOString().split('T')[0]
+
   const plazoFinal = plazoModo === 'manual' ? (parseInt(plazoManual) || 0) : plazo
   const fechaFinCalculada = sumarMeses(fechaInicio, plazoFinal)
   const fechaFin = editarFechaFin && fechaFinManual ? fechaFinManual : fechaFinCalculada
