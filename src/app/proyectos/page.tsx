@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { obtenerProyectos, obtenerClientes, eliminarProyecto, actualizarProyecto } from '@/lib/db'
 import type { Proyecto, Cliente } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
+import { FolderKanban, Plus, Search, Filter, Trash2, CalendarDays, Building2, Pencil, Check, X, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { formatearFecha } from '@/lib/db'
@@ -364,19 +365,15 @@ export default function ProyectosPage() {
       )}
 
       {modalAbierto && (
-  <ModalNuevoProyecto
-    clientes={clientes}
-    proyectos={proyectos}
-    onClose={() => setModalAbierto(false)}
-    onSuccess={() => {
-      setModalAbierto(false);
-      cargar().then(() => {
-        // Si deseas resaltar el proyecto recién creado, necesitarías obtener su ID
-        // desde la respuesta de crearProyecto; por ahora solo recarga
-      });
-    }}
-  />
-)}
+        <ModalNuevoProyecto
+          clientes={clientes}
+          proyectos={proyectos}
+          onClose={() => setModalAbierto(false)}
+          onSuccess={() => { setModalAbierto(false); cargar() }}
+          onSuccess={() => { setModalAbierto(false)  cargar().then(() => {
+    // El último se marca automáticamente al recargar
+  })
+}}
         />
       )}
       {proyectoComentarios && (
