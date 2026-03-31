@@ -1,18 +1,16 @@
 'use client'
 
-import ModalComentarios from '@/components/forms/ModalComentarios'
-import { MessageSquare } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { obtenerProyectos, obtenerClientes, eliminarProyecto, actualizarProyecto } from '@/lib/db'
 import type { Proyecto, Cliente } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
-import { FolderKanban, Plus, Search, Filter, Trash2, CalendarDays, Building2, Pencil, Check, X, ChevronDown, ChevronUp, Download } from 'lucide-react'
+import { FolderKanban, Plus, Search, Filter, Trash2, CalendarDays, Building2, Pencil, Check, X, ChevronDown, ChevronUp, Download, MessageSquare, Link2 } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { formatearFecha } from '@/lib/db'
 import ModalNuevoProyecto from '@/components/forms/ModalNuevoProyecto'
-import Link from 'next/link'
-import { FolderKanban, Plus, Search, Filter, Trash2, CalendarDays, Building2, Pencil, Check, X, ChevronDown, ChevronUp, Download, MessageSquare, Link } from 'lucide-react'
+import ModalComentarios from '@/components/forms/ModalComentarios'
+import NextLink from 'next/link'
 
 const BADGE_EMPRESA: Record<string, string> = {
   'OKINAWATEC': 'badge-okinawatec',
