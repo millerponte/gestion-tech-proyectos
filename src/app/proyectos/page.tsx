@@ -321,7 +321,7 @@ export default function ProyectosPage() {
     <p className="text-slate-500">Google Drive</p>
     <a href={(p as any).linkDrive} target="_blank" rel="noopener noreferrer"
       className="text-blue-400 hover:text-blue-300 underline text-xs flex items-center gap-1 mt-0.5">
-      <Link className="w-3 h-3" /> Abrir carpeta del proyecto →
+      <Link2 className="w-3 h-3" /> Abrir carpeta del proyecto →
     </a>
   </div>
 )}
@@ -368,10 +368,6 @@ export default function ProyectosPage() {
           proyectos={proyectos}
           onClose={() => setModalAbierto(false)}
           onSuccess={() => { setModalAbierto(false); cargar() }}
-          onSuccess={() => { setModalAbierto(false)  cargar().then(() => {
-    // El último se marca automáticamente al recargar
-  })
-}}
         />
       )}
       {proyectoComentarios && (
