@@ -17,6 +17,7 @@ const BADGE_EMPRESA: Record<string, string> = {
   'TECH SOLUTIONS': 'badge-tech',
   'QUANTIC': 'badge-quantic',
 }
+
 const ESTADO_BADGE: Record<string, string> = {
   activo: 'bg-green-900/40 text-green-300 border-green-700/40',
   completado: 'bg-slate-700/40 text-slate-300 border-slate-600/40',
@@ -57,7 +58,10 @@ export default function ProyectosPage() {
 
   const proyectosFiltrados = proyectos.filter(p => {
     const q = busqueda.toLowerCase()
-    const coincideBusqueda = !q || p.nombre.toLowerCase().includes(q) || p.clienteNombre.toLowerCase().includes(q) || p.solucion.toLowerCase().includes(q)
+    const coincideBusqueda = !q ||
+      p.nombre.toLowerCase().includes(q) ||
+      p.clienteNombre.toLowerCase().includes(q) ||
+      p.solucion.toLowerCase().includes(q)
     return coincideBusqueda &&
       (!filtroEmpresa || p.empresa === filtroEmpresa) &&
       (!filtroEstado || p.estado === filtroEstado) &&
@@ -69,14 +73,16 @@ export default function ProyectosPage() {
     const filas = proyectosFiltrados.map(p => [
       p.nombre, p.clienteNombre, p.empresa, p.contratista,
       p.numeroContrato, p.solucion, `${p.plazo} meses`,
-      formatearFecha(p.fechaInicio), formatearFecha(p.fechaFin), p.estado
+      formatearFecha(p.fechaInicio), formatearFecha(p.fechaFin), p.estado,
     ])
     const csv = [headers, ...filas].map(f => f.map(v => `"${v}"`).join(',')).join('\n')
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url
+    const a = document.createElement('a')
+    a.href = url
     a.download = `proyectos_${new Date().toISOString().split('T')[0]}.csv`
-    a.click(); URL.revokeObjectURL(url)
+    a.click()
+    URL.revokeObjectURL(url)
     toast.success('Exportado correctamente')
   }
 
@@ -92,6 +98,7 @@ export default function ProyectosPage() {
       plazo: p.plazo,
       fechaInicio: p.fechaInicio,
       estado: p.estado,
+      linkDrive: (p as any).linkDrive || '',
     })
   }
 
@@ -125,6 +132,8 @@ export default function ProyectosPage() {
 
   return (
     <div className="space-y-5 animate-fade-in">
+
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
@@ -144,10 +153,16 @@ export default function ProyectosPage() {
         </div>
       </div>
 
+      {/* Filtros */}
       <div className="card p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input className="input-field pl-9" placeholder="Buscar proyecto, cliente, solución..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+          <input
+            className="input-field pl-9"
+            placeholder="Buscar proyecto, cliente, solución..."
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+          />
         </div>
         <select className="input-field w-auto min-w-36" value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)}>
           <option value="">Todas las empresas</option>
@@ -166,12 +181,16 @@ export default function ProyectosPage() {
           <option value="suspendido">Suspendido</option>
         </select>
         {(busqueda || filtroEmpresa || filtroEstado || filtroCliente) && (
-          <button onClick={() => { setBusqueda(''); setFiltroEmpresa(''); setFiltroEstado(''); setFiltroCliente('') }} className="btn-secondary text-xs">
+          <button
+            onClick={() => { setBusqueda(''); setFiltroEmpresa(''); setFiltroEstado(''); setFiltroCliente('') }}
+            className="btn-secondary text-xs"
+          >
             <Filter className="w-3 h-3" /> Limpiar
           </button>
         )}
       </div>
 
+      {/* Contenido */}
       {loading ? (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -189,30 +208,46 @@ export default function ProyectosPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {proyectosFiltrados.map(p => (
-            <div key={p.id} className={clsx('card-hover flex flex-col gap-3', expandido === p.id && 'border-blue-500/50', ultimoId === p.id && 'highlight-new')}>
+            <div
+              key={p.id}
+              className={clsx(
+                'card-hover flex flex-col gap-3',
+                expandido === p.id && 'border-blue-500/50',
+                ultimoId === p.id && 'highlight-new'
+              )}
+            >
+              {/* Título + estado */}
               <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandido(expandido === p.id ? null : p.id)}>
-  <p className="font-semibold text-white text-sm leading-tight line-clamp-2 hover:text-blue-300 transition-colors">
-    {p.solucion || p.nombre}
-  </p>
-  {p.solucion && (
-    <p className="text-slate-500 text-xs mt-0.5 line-clamp-1">{p.nombre}</p>
-  )}
-</div>
+                <div
+                  className="flex-1 min-w-0 cursor-pointer"
+                  onClick={() => setExpandido(expandido === p.id ? null : p.id)}
+                >
+                  <p className="font-semibold text-white text-sm leading-tight line-clamp-2 hover:text-blue-300 transition-colors">
+                    {p.solucion || p.nombre}
+                  </p>
+                  {p.solucion && (
+                    <p className="text-slate-500 text-xs mt-0.5 line-clamp-1">{p.nombre}</p>
+                  )}
+                </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <span className={clsx('text-xs px-2 py-0.5 rounded-full border', ESTADO_BADGE[p.estado])}>
                     {p.estado}
                   </span>
-                  <button onClick={() => setExpandido(expandido === p.id ? null : p.id)} className="text-slate-500 hover:text-white transition-colors">
+                  <button
+                    onClick={() => setExpandido(expandido === p.id ? null : p.id)}
+                    className="text-slate-500 hover:text-white transition-colors"
+                  >
                     {expandido === p.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
+              {/* Badge empresa */}
               <div className="flex flex-wrap gap-1.5">
                 <span className={BADGE_EMPRESA[p.empresa] || 'badge-okinawatec'}>{p.empresa}</span>
               </div>
 
+              {/* Info básica */}
               <div className="space-y-1.5 text-xs text-slate-400">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-slate-500" />
@@ -224,28 +259,45 @@ export default function ProyectosPage() {
                 </div>
               </div>
 
+              {/* Panel expandido */}
               {expandido === p.id && (
                 <div className="border-t border-[#1e3a8a]/30 pt-3 mt-1 space-y-3 animate-fade-in">
                   {editando === p.id ? (
                     <div className="space-y-3">
                       <div>
                         <label className="label">Nombre del proyecto</label>
-                        <input className="input-field" value={editData.nombre} onChange={e => setEditData(d => ({ ...d, nombre: e.target.value }))} />
+                        <input
+                          className="input-field"
+                          value={editData.nombre}
+                          onChange={e => setEditData(d => ({ ...d, nombre: e.target.value }))}
+                        />
                       </div>
                       <div>
                         <label className="label">Cliente</label>
-                        <select className="input-field" value={editData.clienteId} onChange={e => setEditData(d => ({ ...d, clienteId: e.target.value }))}>
+                        <select
+                          className="input-field"
+                          value={editData.clienteId}
+                          onChange={e => setEditData(d => ({ ...d, clienteId: e.target.value }))}
+                        >
                           {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                         </select>
                       </div>
                       <div>
                         <label className="label">Solución / Equipo</label>
-                        <input className="input-field" value={editData.solucion} onChange={e => setEditData(d => ({ ...d, solucion: e.target.value }))} />
+                        <input
+                          className="input-field"
+                          value={editData.solucion}
+                          onChange={e => setEditData(d => ({ ...d, solucion: e.target.value }))}
+                        />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="label">Contratista</label>
-                          <select className="input-field" value={editData.contratista} onChange={e => setEditData(d => ({ ...d, contratista: e.target.value }))}>
+                          <select
+                            className="input-field"
+                            value={editData.contratista}
+                            onChange={e => setEditData(d => ({ ...d, contratista: e.target.value }))}
+                          >
                             <option value="GRUPO OKINAWATEC">GRUPO OKINAWATEC</option>
                             <option value="TECH SOLUTIONS">TECH SOLUTIONS</option>
                             <option value="QUANTIC">QUANTIC</option>
@@ -253,35 +305,57 @@ export default function ProyectosPage() {
                         </div>
                         <div>
                           <label className="label">N° Contrato</label>
-                          <input className="input-field" value={editData.numeroContrato} onChange={e => setEditData(d => ({ ...d, numeroContrato: e.target.value }))} />
+                          <input
+                            className="input-field"
+                            value={editData.numeroContrato}
+                            onChange={e => setEditData(d => ({ ...d, numeroContrato: e.target.value }))}
+                          />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="label">Fecha inicio</label>
-                          <input type="date" className="input-field" value={editData.fechaInicio} onChange={e => setEditData(d => ({ ...d, fechaInicio: e.target.value }))} />
+                          <input
+                            type="date"
+                            className="input-field"
+                            value={editData.fechaInicio}
+                            onChange={e => setEditData(d => ({ ...d, fechaInicio: e.target.value }))}
+                          />
                         </div>
                         <div>
                           <label className="label">Plazo</label>
-                          <select className="input-field" value={editData.plazo} onChange={e => setEditData(d => ({ ...d, plazo: Number(e.target.value) }))}>
-                            {[1, 3, 6, 12, 24, 36].map(m => <option key={m} value={m}>{m} {m === 1 ? 'mes' : 'meses'}</option>)}
+                          <select
+                            className="input-field"
+                            value={editData.plazo}
+                            onChange={e => setEditData(d => ({ ...d, plazo: Number(e.target.value) }))}
+                          >
+                            {[1, 3, 6, 12, 24, 36].map(m => (
+                              <option key={m} value={m}>{m} {m === 1 ? 'mes' : 'meses'}</option>
+                            ))}
                           </select>
                         </div>
                       </div>
                       <div>
                         <label className="label">Estado</label>
-                        <select className="input-field" value={editData.estado} onChange={e => setEditData(d => ({ ...d, estado: e.target.value as any }))}>
+                        <select
+                          className="input-field"
+                          value={editData.estado}
+                          onChange={e => setEditData(d => ({ ...d, estado: e.target.value as any }))}
+                        >
                           <option value="activo">Activo</option>
                           <option value="completado">Completado</option>
                           <option value="suspendido">Suspendido</option>
                         </select>
                       </div>
                       <div>
-  <label className="label">Link Google Drive</label>
-  <input className="input-field" placeholder="https://drive.google.com/..." 
-    value={(editData as any).linkDrive || ''} 
-    onChange={e => setEditData(d => ({ ...d, linkDrive: e.target.value }))} />
-</div>
+                        <label className="label">Link Google Drive</label>
+                        <input
+                          className="input-field"
+                          placeholder="https://drive.google.com/..."
+                          value={(editData as any).linkDrive || ''}
+                          onChange={e => setEditData(d => ({ ...d, linkDrive: e.target.value }))}
+                        />
+                      </div>
                       <div className="flex gap-2">
                         <button onClick={() => guardarEdicion(p.id)} className="btn-primary text-xs">
                           <Check className="w-3.5 h-3.5" /> Guardar
@@ -317,51 +391,65 @@ export default function ProyectosPage() {
                           <p className="text-slate-200">{formatearFecha(p.fechaFin)}</p>
                         </div>
                         {(p as any).linkDrive && (
-  <div>
-    <p className="text-slate-500">Google Drive</p>
-    <a href={(p as any).linkDrive} target="_blank" rel="noopener noreferrer"
-      className="text-blue-400 hover:text-blue-300 underline text-xs flex items-center gap-1 mt-0.5">
-      <Link2 className="w-3 h-3" /> Abrir carpeta del proyecto →
-    </a>
-  </div>
-)}
+                          <div className="col-span-2">
+                            <p className="text-slate-500">Google Drive</p>
+                            
+                              href={(p as any).linkDrive}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 underline text-xs flex items-center gap-1 mt-0.5"
+                            >
+                              <Link2 className="w-3 h-3" /> Abrir carpeta del proyecto →
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
               )}
 
+              {/* Footer */}
               <div className="flex items-center justify-between pt-2 border-t border-[#1e3a8a]/30 mt-auto">
                 <span className="text-xs text-slate-500">{p.contratista}</span>
                 <div className="flex items-center gap-2">
-  <NextLink href={`/cronogramas?proyecto=${p.id}`} className="text-xs text-blue-400 hover:text-blue-300 underline">
-    Cronograma
-  </NextLink>
-  <button
-    onClick={(e) => { e.stopPropagation(); setProyectoComentarios(p) }}
-    className="text-slate-500 hover:text-blue-400 transition-colors"
-    title="Comentarios">
-    <MessageSquare className="w-3.5 h-3.5" />
-  </button>
-  {isAdmin && (
-    <>
-      <button onClick={() => { setExpandido(p.id); iniciarEdicion(p) }}
-        className="text-slate-500 hover:text-blue-400 transition-colors">
-        <Pencil className="w-3.5 h-3.5" />
-      </button>
-      <button onClick={() => handleEliminar(p.id, p.nombre)}
-        className="text-slate-500 hover:text-red-400 transition-colors">
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
-    </>
-  )}
-</div>
+                  <NextLink
+                    href={`/cronogramas?proyecto=${p.id}`}
+                    className="text-xs text-blue-400 hover:text-blue-300 underline"
+                  >
+                    Cronograma
+                  </NextLink>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setProyectoComentarios(p) }}
+                    className="text-slate-500 hover:text-blue-400 transition-colors"
+                    title="Comentarios"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => { setExpandido(p.id); iniciarEdicion(p) }}
+                        className="text-slate-500 hover:text-blue-400 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleEliminar(p.id, p.nombre)}
+                        className="text-slate-500 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Modales */}
       {modalAbierto && (
         <ModalNuevoProyecto
           clientes={clientes}
@@ -371,11 +459,11 @@ export default function ProyectosPage() {
         />
       )}
       {proyectoComentarios && (
-  <ModalComentarios
-    proyecto={proyectoComentarios}
-    onClose={() => setProyectoComentarios(null)}
-  />
-)}
+        <ModalComentarios
+          proyecto={proyectoComentarios}
+          onClose={() => setProyectoComentarios(null)}
+        />
+      )}
     </div>
   )
 }
