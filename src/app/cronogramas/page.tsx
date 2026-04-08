@@ -68,6 +68,14 @@ export default function CronogramasPage() {
     const ordenados = [...h].sort((a, b) => (a.numero || 0) - (b.numero || 0))
     setHitos(ordenados)
     setLoadingHitos(false)
+    if (expandirPendiente) {
+      setTimeout(() => {
+        setExpandido(expandirPendiente)
+        const el = document.getElementById(`hito-${expandirPendiente}`)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setExpandirPendiente(null)
+      }, 150)
+    }
   }
 
   const proyectosFiltrados = proyectos.filter(p => {
