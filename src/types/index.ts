@@ -44,6 +44,7 @@ export interface Proyecto {
   marca: string
   estado: 'activo' | 'completado' | 'suspendido'
   createdAt: string
+  linkDrive?: string
 }
 
 export interface Hito {
