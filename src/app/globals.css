@@ -112,9 +112,13 @@ body {
 
 /* Highlight al guardar */
 @keyframes highlightRow {
-  0% { background-color: rgba(37, 99, 235, 0.3); }
-  100% { background-color: transparent; }
+  0%   { background-color: rgba(37, 99, 235, 0.0); box-shadow: 0 0 0 2px #2563eb; }
+  15%  { background-color: rgba(37, 99, 235, 0.35); box-shadow: 0 0 0 3px #60a5fa; }
+  50%  { background-color: rgba(37, 99, 235, 0.2); box-shadow: 0 0 0 2px #2563eb; }
+  85%  { background-color: rgba(37, 99, 235, 0.35); box-shadow: 0 0 0 3px #60a5fa; }
+  100% { background-color: rgba(37, 99, 235, 0.0); box-shadow: 0 0 0 0px transparent; }
 }
 .highlight-new {
-  animation: highlightRow 2s ease-out;
+  animation: highlightRow 5s ease-in-out;
+  border-radius: 0.75rem;
 }
