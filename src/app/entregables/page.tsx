@@ -117,6 +117,13 @@ const guardarEdicion = async (id: string) => {
     setEditando(null)
     setHitosEdicion([])
     cargar()
+    setTimeout(() => {
+      setUltimoId(null)
+      requestAnimationFrame(() => {
+        setUltimoId(id)
+        setTimeout(() => setUltimoId(null), 5500)
+      })
+    }, 300)
   } catch {
     toast.error('Error al guardar')
   }
