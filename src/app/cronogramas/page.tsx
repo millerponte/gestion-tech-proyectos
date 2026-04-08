@@ -144,7 +144,14 @@ export default function CronogramasPage() {
       toast.success('Hito creado')
       setModalNuevoHito(false)
       setNuevoHito({ numero: 0, nombre: '', descripcion: '', responsable: '', plazoContractual: '', fechaInicio: hoy(), fechaLimite: hoy(), pago: '', origen: '', estado: 'pendiente', esCritico: false })
-      seleccionarProyecto(proyectoSeleccionado)
+      await seleccionarProyecto(proyectoSeleccionado)
+      setTimeout(() => {
+        setUltimoId(null)
+        requestAnimationFrame(() => {
+          setUltimoId('__nuevo__')
+          setTimeout(() => setUltimoId(null), 5500)
+        })
+      }, 300)
     } catch {
       toast.error('Error al crear hito')
     }
