@@ -51,6 +51,8 @@ export default function CronogramasPage() {
       setEntregables(e)
       setLoading(false)
       const idParam = searchParams.get('proyecto')
+      const expandirParam = searchParams.get('expandir')
+      if (expandirParam) setExpandirPendiente(expandirParam)
       if (idParam) {
         const encontrado = p.find(x => x.id === idParam)
         if (encontrado) seleccionarProyecto(encontrado)
