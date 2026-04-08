@@ -273,7 +273,7 @@ export default function CronogramasPage() {
                       return (
                         <>
                           <tr key={h.id}
-                            className={clsx('tabla-row', expandido === h.id && 'bg-[#1e3a8a]/10')}
+                            className={clsx('tabla-row', expandido === h.id && 'bg-[#1e3a8a]/10', ultimoId === h.id && 'highlight-new')}
                             onClick={() => setExpandido(expandido === h.id ? null : h.id)}>
                             <td className="tabla-cell text-slate-500">
                               {expandido === h.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
