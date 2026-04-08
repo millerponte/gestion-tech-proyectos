@@ -219,7 +219,7 @@ const guardarEdicion = async (id: string) => {
                   <>
                     {/* Fila principal */}
                     <tr key={e.id}
-                      className={clsx('tabla-row', expandido === e.id && 'bg-[#1e3a8a]/10')}
+                      className={clsx('tabla-row', expandido === e.id && 'bg-[#1e3a8a]/10', ultimoId === e.id && 'highlight-new')}
                       onClick={() => setExpandido(expandido === e.id ? null : e.id)}>
                       <td className="tabla-cell text-slate-500 w-6">
                         {expandido === e.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
