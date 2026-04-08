@@ -31,6 +31,7 @@ export default function AdminPage() {
   const [loadingCliente, setLoadingCliente] = useState(false)
 
   const [editandoCliente, setEditandoCliente] = useState<string | null>(null)
+  const [ultimoId, setUltimoId] = useState<string | null>(null)
   const [editNombre, setEditNombre] = useState('')
   const [editColor, setEditColor] = useState(COLORES[0])
 
