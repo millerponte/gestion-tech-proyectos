@@ -24,6 +24,7 @@ const TIPOS = ['Reservar', 'Plan de Trabajo', 'Informe Técnico', 'Informe Mensu
 
 export default function EntregablesPage() {
   const { isAdmin } = useAuth()
+  const searchParams = useSearchParams()
   const [hitosEdicion, setHitosEdicion] = useState<Hito[]>([])
 const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
   const [entregables, setEntregables] = useState<Entregable[]>([])
