@@ -233,6 +233,7 @@ const guardarEdicion = async (id: string) => {
                   <>
                     {/* Fila principal */}
                     <tr key={e.id}
+                      id={`entregable-${e.id}`}
                       className={clsx('tabla-row', expandido === e.id && 'bg-[#1e3a8a]/10', ultimoId === e.id && 'highlight-new')}
                       onClick={() => setExpandido(expandido === e.id ? null : e.id)}>
                       <td className="tabla-cell text-slate-500 w-6">
