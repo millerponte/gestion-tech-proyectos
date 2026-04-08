@@ -451,7 +451,7 @@ const guardarEdicion = async (id: string) => {
                                       ? (e as any).hitoIds.map((hId: string, i: number) => (
                                           <Link
                                             key={hId}
-                                            href={`/cronogramas?proyecto=${e.proyectoId}`}
+                                            href={`/cronogramas?proyecto=${e.proyectoId}&expandir=${hId}`}
                                             className="text-blue-400 hover:text-blue-300 underline bg-blue-900/20 border border-blue-700/30 px-2 py-1 rounded-lg"
                                             onClick={ev => ev.stopPropagation()}>
                                             Hito {i + 1} → ver en cronograma
@@ -459,7 +459,7 @@ const guardarEdicion = async (id: string) => {
                                         ))
                                       : e.hitoId && (
                                           <Link
-                                            href={`/cronogramas?proyecto=${e.proyectoId}`}
+                                            href={`/cronogramas?proyecto=${e.proyectoId}&expandir=${e.hitoId}`}
                                             className="text-blue-400 hover:text-blue-300 underline bg-blue-900/20 border border-blue-700/30 px-2 py-1 rounded-lg"
                                             onClick={ev => ev.stopPropagation()}>
                                             Ver hito en cronograma →
