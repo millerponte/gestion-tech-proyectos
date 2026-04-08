@@ -52,7 +52,18 @@ const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
     setLoading(false)
   }
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => {
+    const expandirParam = searchParams.get('expandir')
+    cargar().then(() => {
+      if (expandirParam) {
+        setTimeout(() => {
+          setExpandido(expandirParam)
+          const el = document.getElementById(`entregable-${expandirParam}`)
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 300)
+      }
+    })
+  }, [])
 
   const filtrados = entregables.filter(e => {
     const q = busqueda.toLowerCase()
