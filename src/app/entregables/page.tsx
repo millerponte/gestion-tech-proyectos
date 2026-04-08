@@ -39,6 +39,7 @@ const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
   const [expandido, setExpandido] = useState<string | null>(null)
   const [editando, setEditando] = useState<string | null>(null)
   const [editData, setEditData] = useState<Partial<Entregable>>({})
+  const [ultimoId, setUltimoId] = useState<string | null>(null)
 
   const cargar = async () => {
     setLoading(true)
