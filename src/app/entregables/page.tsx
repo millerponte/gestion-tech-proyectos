@@ -50,6 +50,7 @@ const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
     setClientes(c)
     setProyectos(p)
     setLoading(false)
+    return e
   }
 
   useEffect(() => {
