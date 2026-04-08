@@ -102,6 +102,13 @@ export default function CronogramasPage() {
       toast.success('Hito actualizado')
       setEditando(null)
       if (proyectoSeleccionado) seleccionarProyecto(proyectoSeleccionado)
+      setTimeout(() => {
+        setUltimoId(null)
+        requestAnimationFrame(() => {
+          setUltimoId(id)
+          setTimeout(() => setUltimoId(null), 5500)
+        })
+      }, 300)
     } catch {
       toast.error('Error al guardar')
     }
