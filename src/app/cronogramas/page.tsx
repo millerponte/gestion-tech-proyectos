@@ -32,6 +32,7 @@ export default function CronogramasPage() {
   const [expandido, setExpandido] = useState<string | null>(null)
   const [editando, setEditando] = useState<string | null>(null)
   const [editData, setEditData] = useState<Partial<Hito>>({})
+  const [ultimoId, setUltimoId] = useState<string | null>(null)
   const [modalNuevoHito, setModalNuevoHito] = useState(false)
   const [modalImportar, setModalImportar] = useState(false)
   const [nuevoHito, setNuevoHito] = useState<Partial<Hito>>({
