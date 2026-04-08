@@ -393,7 +393,7 @@ export default function ProyectosPage() {
                         {(p as any).linkDrive && (
                           <div className="col-span-2">
                             <p className="text-slate-500">Google Drive</p>
-                            
+                            <a
                               href={(p as any).linkDrive}
                               target="_blank"
                               rel="noopener noreferrer"
