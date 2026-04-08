@@ -82,6 +82,13 @@ export default function AdminPage() {
     toast.success('Cliente creado')
     setNuevoNombre('')
     cargarTodo()
+    setTimeout(() => {
+      setUltimoId(null)
+      requestAnimationFrame(() => {
+        setUltimoId('__nuevo__')
+        setTimeout(() => setUltimoId(null), 5500)
+      })
+    }, 400)
   } catch {
     toast.error('Error al crear cliente')
   } finally {
