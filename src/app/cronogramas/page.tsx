@@ -284,6 +284,7 @@ export default function CronogramasPage() {
                       return (
                         <>
                           <tr key={h.id}
+                            id={`hito-${h.id}`}
                             className={clsx('tabla-row', expandido === h.id && 'bg-[#1e3a8a]/10', ultimoId === h.id && 'highlight-new')}
                             onClick={() => setExpandido(expandido === h.id ? null : h.id)}>
                             <td className="tabla-cell text-slate-500">
