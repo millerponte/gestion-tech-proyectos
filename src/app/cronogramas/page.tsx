@@ -30,6 +30,7 @@ export default function CronogramasPage() {
   const [loading, setLoading] = useState(true)
   const [loadingHitos, setLoadingHitos] = useState(false)
   const [expandido, setExpandido] = useState<string | null>(null)
+  const [expandirPendiente, setExpandirPendiente] = useState<string | null>(null)
   const [editando, setEditando] = useState<string | null>(null)
   const [editData, setEditData] = useState<Partial<Hito>>({})
   const [ultimoId, setUltimoId] = useState<string | null>(null)
