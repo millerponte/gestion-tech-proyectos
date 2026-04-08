@@ -42,6 +42,7 @@ module.exports = {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.4s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'highlight-new': 'highlightNew 1.5s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -51,6 +52,11 @@ module.exports = {
         slideUp: {
           '0%': { transform: 'translateY(20px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        highlightNew: {
+          '0%': { boxShadow: '0 0 0 0 rgba(59,130,246,0.7)' },
+          '50%': { boxShadow: '0 0 0 8px rgba(59,130,246,0.2)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(59,130,246,0)' },
         },
       },
     },
