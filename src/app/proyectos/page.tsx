@@ -115,13 +115,14 @@ export default function ProyectosPage() {
       })
       toast.success('Proyecto actualizado')
       setEditando(null)
-      setUltimoId(id)
-      setUltimoId(null)
-      setTimeout(() => {
-        setUltimoId(id)
-        setTimeout(() => setUltimoId(null), 2000)
-      }, 50)
       cargar()
+      setTimeout(() => {
+        setUltimoId(null)
+        requestAnimationFrame(() => {
+          setUltimoId(id)
+          setTimeout(() => setUltimoId(null), 5500)
+        })
+      }, 300)
     } catch {
       toast.error('Error al guardar')
     }
