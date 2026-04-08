@@ -232,7 +232,7 @@ export default function AdminPage() {
             ) : (
               <div className="divide-y divide-[#1e3a8a]/20">
                 {clientes.map(c => (
-                  <div key={c.id} className="px-4 py-3 hover:bg-white/5 transition-colors">
+                  <div key={c.id} className={clsx('px-4 py-3 hover:bg-white/5 transition-colors', ultimoId === c.id && 'highlight-new')}>
                     {editandoCliente === c.id ? (
                       // Modo edición
                       <div className="space-y-3">
