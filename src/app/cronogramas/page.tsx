@@ -436,7 +436,7 @@ export default function CronogramasPage() {
                                         <p className="text-slate-500 text-xs mb-2">Entregable(s) vinculado(s)</p>
                                         <div className="flex flex-wrap gap-2">
                                           {entregablesVinculados.map(e => (
-                                            <a key={e.id} href="/entregables"
+                                            <a key={e.id} href={`/entregables?expandir=${e.id}`}
                                               className="text-xs bg-green-900/20 border border-green-700/30 text-green-400 px-2.5 py-1.5 rounded-lg hover:border-green-500 hover:bg-green-900/30 transition-colors flex items-center gap-1.5">
                                               <span className="font-mono">{e.numeroDocumento}</span>
                                               <span className="text-green-600">—</span>
