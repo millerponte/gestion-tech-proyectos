@@ -105,8 +105,15 @@ export default function AdminPage() {
         color: editColor,
       })
       toast.success('Cliente actualizado')
-      setEditandoCliente(null)
-      cargarTodo()
+    setEditandoCliente(null)
+    cargarTodo()
+    setTimeout(() => {
+      setUltimoId(null)
+      requestAnimationFrame(() => {
+        setUltimoId(id)
+        setTimeout(() => setUltimoId(null), 5500)
+      })
+    }, 300)
     } catch {
       toast.error('Error al actualizar')
     }
