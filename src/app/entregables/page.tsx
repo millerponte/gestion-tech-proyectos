@@ -471,7 +471,17 @@ const guardarEdicion = async (id: string) => {
         <ModalNuevoEntregable
           clientes={clientes} proyectos={proyectos}
           onClose={() => setModalNuevo(false)}
-          onSuccess={() => { setModalNuevo(false); cargar() }}
+          onSuccess={(nuevoId?: string) => {
+            setModalNuevo(false)
+            cargar()
+            setTimeout(() => {
+              setUltimoId(null)
+              requestAnimationFrame(() => {
+                setUltimoId(nuevoId || '__nuevo__')
+                setTimeout(() => setUltimoId(null), 5500)
+              })
+            }, 400)
+          }}
         />
       )}
       {entregableExpediente && (
