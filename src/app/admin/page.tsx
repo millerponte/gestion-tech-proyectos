@@ -11,8 +11,10 @@ import {
 import type { Cliente, Usuario, Proyecto } from '@/types'
 import {
   Settings, Users, Building2, FolderKanban,
-  Plus, Trash2, Pencil, Check, X, Save
+  Plus, Trash2, Pencil, Check, X, Save, ChevronDown, ChevronUp
 } from 'lucide-react'
+import { actualizarPermisosUsuario } from '@/lib/db'
+import type { PermisoUsuario } from '@/types'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
