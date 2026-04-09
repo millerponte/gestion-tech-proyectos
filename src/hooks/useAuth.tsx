@@ -61,10 +61,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(null)
   }
 
-  const isAdmin = usuario?.rol === 'admin'
+const isAdmin = usuario?.rol === 'admin'
+
+  const tienePermiso = (permiso: keyof import('@/types').PermisoUsuario): boolean => {
+    if (isAdmin) return true
+    if (!usuario) return false
+    if (usuario.permisos) return !!usuario.permisos[permiso]
+    // Permisos por defecto según rol
+    const rol = usuario.rol
+    const defaults: Record<string, Partial<import('@/types').PermisoUsuario>> = {
+      ingeniero: {
+        proyectos_ver: true,
+        cronogramas_ver: true, cronogramas_agregar: true, cronogramas_editar: true,
+        entregables_ver: true, entregables_agregar: true, entregables_editar: true,
+        comentarios: true,
+      },
+      administracion: {
+        proyectos_ver: true, proyectos_agregar: true, proyectos_editar: true,
+        cronogramas_ver: true, cronogramas_agregar: true, cronogramas_editar: true,
+        entregables_ver: true,
+        comentarios: true,
+      },
+      legal: {
+        proyectos_ver: true,
+        cronogramas_ver: true,
+        entregables_ver: true,
+        comentarios: true,
+      },
+      gerente: {
+        proyectos_ver: true,
+        cronogramas_ver: true,
+        entregables_ver: true,
+        comentarios: true,
+      },
+      usuario: {
+        proyectos_ver: true,
+        cronogramas_ver: true,
+        entregables_ver: true,
+        comentarios: true,
+      },
+    }
+    return !!(defaults[rol]?.[permiso])
+  }
 
   return (
-    <AuthContext.Provider value={{ user, usuario, loading, login, register, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, usuario, loading, login, register, logout, isAdmin, tienePermiso }}>
       {children}
     </AuthContext.Provider>
   )
