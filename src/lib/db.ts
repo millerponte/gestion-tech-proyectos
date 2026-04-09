@@ -65,6 +65,10 @@ export async function actualizarRolUsuario(uid: string, rol: string) {
   await updateDoc(doc(db, 'usuarios', uid), { rol })
 }
 
+export async function actualizarPermisosUsuario(uid: string, permisos: Partial<import('@/types').PermisoUsuario>) {
+  await updateDoc(doc(db, 'usuarios', uid), { permisos })
+}
+
 // ─── CLIENTES ────────────────────────────────────────────────────────────────
 
 export async function obtenerClientes(): Promise<Cliente[]> {
