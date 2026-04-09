@@ -9,7 +9,7 @@ export type TipoEntregable =
   | 'Entregable'
   | 'Otro'
 
-export type RolUsuario = 'admin' | 'usuario' | 'visitante'
+export type RolUsuario = 'admin' | 'ingeniero' | 'administracion' | 'legal' | 'gerente' | 'usuario'
 
 export interface Usuario {
   uid: string
