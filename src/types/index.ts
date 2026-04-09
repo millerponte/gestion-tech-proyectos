@@ -18,6 +18,20 @@ export interface Usuario {
   rol: RolUsuario
   empresa?: Empresa
   createdAt: string
+  permisos?: PermisoUsuario
+}
+
+export interface PermisoUsuario {
+  proyectos_ver: boolean
+  proyectos_agregar: boolean
+  proyectos_editar: boolean
+  cronogramas_ver: boolean
+  cronogramas_agregar: boolean
+  cronogramas_editar: boolean
+  entregables_ver: boolean
+  entregables_agregar: boolean
+  entregables_editar: boolean
+  comentarios: boolean
 }
 
 export interface Cliente {
