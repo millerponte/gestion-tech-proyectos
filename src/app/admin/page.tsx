@@ -146,6 +146,45 @@ const [editandoCliente, setEditandoCliente] = useState<string | null>(null)
     cargarTodo()
   }
 
+const PERMISOS_LABELS: Record<keyof PermisoUsuario, string> = {
+    proyectos_ver: 'Proyectos — Ver',
+    proyectos_agregar: 'Proyectos — Agregar',
+    proyectos_editar: 'Proyectos — Editar',
+    cronogramas_ver: 'Cronogramas — Ver',
+    cronogramas_agregar: 'Cronogramas — Agregar',
+    cronogramas_editar: 'Cronogramas — Editar',
+    entregables_ver: 'Entregables — Ver',
+    entregables_agregar: 'Entregables — Agregar',
+    entregables_editar: 'Entregables — Editar',
+    comentarios: 'Comentarios en proyectos',
+  }
+
+  const PERMISOS_POR_ROL: Record<string, PermisoUsuario> = {
+    ingeniero:     { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: true,  entregables_editar: true,  comentarios: true },
+    administracion:{ proyectos_ver: true,  proyectos_agregar: true,  proyectos_editar: true,  cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true },
+    legal:         { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true },
+    gerente:       { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true },
+    usuario:       { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true },
+  }
+
+  const iniciarEdicionPermisos = (u: Usuario) => {
+    const base = PERMISOS_POR_ROL[u.rol] || PERMISOS_POR_ROL['usuario']
+    setPermisosTemp({ ...base, ...(u.permisos || {}) })
+    setEditandoPermisos(u.uid)
+  }
+
+  const guardarPermisos = async (uid: string) => {
+    if (!permisosTemp) return
+    try {
+      await actualizarPermisosUsuario(uid, permisosTemp)
+      toast.success('Permisos actualizados')
+      setEditandoPermisos(null)
+      cargarTodo()
+    } catch {
+      toast.error('Error al guardar permisos')
+    }
+  }
+
   if (authLoading) return (
     <div className="flex justify-center py-16">
       <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
