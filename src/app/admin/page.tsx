@@ -345,7 +345,7 @@ const PERMISOS_LABELS: Record<keyof PermisoUsuario, string> = {
       )}
 
       {/* Tab: Usuarios */}
-      {tab === 'usuarios' && (
+{tab === 'usuarios' && (
         <div className="card p-0 overflow-hidden">
           <div className="px-4 py-3 border-b border-[#1e3a8a]/50">
             <h3 className="font-semibold text-white text-sm">Usuarios registrados ({usuarios.length})</h3>
@@ -355,28 +355,118 @@ const PERMISOS_LABELS: Record<keyof PermisoUsuario, string> = {
           ) : (
             <div className="divide-y divide-[#1e3a8a]/20">
               {usuarios.map(u => (
-                <div key={u.uid} className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-600/30 flex items-center justify-center text-blue-300 text-xs font-bold">
-                      {u.nombre?.charAt(0).toUpperCase()}
+                <div key={u.uid} className="transition-colors">
+                  {/* Fila principal */}
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-white/5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-600/30 flex items-center justify-center text-blue-300 text-xs font-bold">
+                        {u.nombre?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">{u.nombre}</p>
+                        <p className="text-xs text-slate-500">{u.correo}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">{u.nombre}</p>
-                      <p className="text-xs text-slate-500">{u.correo}</p>
+                    <div className="flex items-center gap-3">
+                      {/* Selector de rol */}
+                      <select
+                        className="input-field w-auto text-xs py-1"
+                        value={u.rol}
+                        onChange={async e => {
+                          await actualizarRolUsuario(u.uid, e.target.value)
+                          toast.success('Rol actualizado')
+                          cargarTodo()
+                        }}
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="ingeniero">Ingeniero</option>
+                        <option value="administracion">Administración</option>
+                        <option value="legal">Legal</option>
+                        <option value="gerente">Gerente</option>
+                        <option value="usuario">Usuario</option>
+                      </select>
+                      <button
+                        onClick={() => setExpandidoUsuario(expandidoUsuario === u.uid ? null : u.uid)}
+                        className="text-slate-400 hover:text-white transition-colors"
+                        title="Ver/editar permisos"
+                      >
+                        {expandidoUsuario === u.uid ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={clsx('text-xs px-2 py-0.5 rounded-full border',
-                      u.rol === 'admin'
-                        ? 'bg-amber-900/30 text-amber-300 border-amber-700/40'
-                        : 'bg-slate-800/50 text-slate-300 border-slate-600/40')}>
-                      {u.rol}
-                    </span>
-                    <button onClick={() => handleCambiarRol(u.uid, u.rol)}
-                      className="text-xs text-blue-400 hover:text-blue-300 underline">
-                      {u.rol === 'admin' ? 'Quitar admin' : 'Hacer admin'}
-                    </button>
-                  </div>
+
+                  {/* Panel de permisos expandido */}
+                  {expandidoUsuario === u.uid && (
+                    <div className="px-4 pb-4 bg-[#0d1526]/60 border-t border-[#1e3a8a]/30">
+                      <div className="pt-3 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-slate-400">Permisos personalizados</p>
+                          {editandoPermisos !== u.uid && (
+                            <button onClick={() => iniciarEdicionPermisos(u)} className="btn-secondary text-xs py-1">
+                              <Pencil className="w-3 h-3" /> Editar permisos
+                            </button>
+                          )}
+                        </div>
+
+                        {editandoPermisos === u.uid && permisosTemp ? (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              {(Object.keys(PERMISOS_LABELS) as (keyof PermisoUsuario)[]).map(key => (
+                                <button
+                                  key={key}
+                                  onClick={() => setPermisosTemp(p => p ? { ...p, [key]: !p[key] } : p)}
+                                  className={clsx(
+                                    'flex items-center gap-2 px-3 py-2 rounded-lg border text-xs transition-all text-left',
+                                    permisosTemp[key]
+                                      ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
+                                      : 'bg-[#111d35] border-[#1e3a8a]/30 text-slate-500'
+                                  )}
+                                >
+                                  <div className={clsx(
+                                    'w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center',
+                                    permisosTemp[key] ? 'bg-blue-600 border-blue-500' : 'border-slate-600'
+                                  )}>
+                                    {permisosTemp[key] && <Check className="w-2.5 h-2.5 text-white" />}
+                                  </div>
+                                  {PERMISOS_LABELS[key]}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                              <button onClick={() => guardarPermisos(u.uid)} className="btn-primary text-xs">
+                                <Check className="w-3 h-3" /> Guardar permisos
+                              </button>
+                              <button onClick={() => setEditandoPermisos(null)} className="btn-secondary text-xs">
+                                <X className="w-3 h-3" /> Cancelar
+                              </button>
+                              <button
+                                onClick={() => setPermisosTemp({ ...PERMISOS_POR_ROL[u.rol] || PERMISOS_POR_ROL['usuario'] })}
+                                className="text-xs text-slate-400 hover:text-white underline ml-auto"
+                              >
+                                Restaurar defaults del rol
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {(Object.keys(PERMISOS_LABELS) as (keyof PermisoUsuario)[]).map(key => {
+                              const base = PERMISOS_POR_ROL[u.rol] || PERMISOS_POR_ROL['usuario']
+                              const activo = u.permisos ? !!u.permisos[key] : !!base[key]
+                              return (
+                                <div key={key} className={clsx(
+                                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs',
+                                  activo ? 'text-green-400' : 'text-slate-600'
+                                )}>
+                                  <span>{activo ? '✓' : '✗'}</span>
+                                  {PERMISOS_LABELS[key]}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
