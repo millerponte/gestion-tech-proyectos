@@ -32,7 +32,10 @@ export default function AdminPage() {
   const [nuevoColor, setNuevoColor] = useState(COLORES[0])
   const [loadingCliente, setLoadingCliente] = useState(false)
 
-  const [editandoCliente, setEditandoCliente] = useState<string | null>(null)
+const [editandoCliente, setEditandoCliente] = useState<string | null>(null)
+  const [expandidoUsuario, setExpandidoUsuario] = useState<string | null>(null)
+  const [editandoPermisos, setEditandoPermisos] = useState<string | null>(null)
+  const [permisosTemp, setPermisosTemp] = useState<PermisoUsuario | null>(null)
   const [ultimoId, setUltimoId] = useState<string | null>(null)
   const [editNombre, setEditNombre] = useState('')
   const [editColor, setEditColor] = useState(COLORES[0])
