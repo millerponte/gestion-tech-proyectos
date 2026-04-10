@@ -38,6 +38,8 @@ export default function CronogramasPage() {
   const [modalImportar, setModalImportar] = useState(false)
   const [filtroResponsable, setFiltroResponsable] = useState('')
   const [filtroEstadoHito, setFiltroEstadoHito] = useState('')
+const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
+
   const [nuevoHito, setNuevoHito] = useState<Partial<Hito>>({
     numero: 0, nombre: '', descripcion: '', responsable: '',
     plazoContractual: '', fechaInicio: hoy(),
