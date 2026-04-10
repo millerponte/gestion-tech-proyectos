@@ -565,7 +565,8 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
       </div>
 
       </div>
-            </div>
+          </div>
+        </div>
 
       {/* MODAL: Nuevo hito */}
       {modalNuevoHito && (
