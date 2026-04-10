@@ -318,6 +318,41 @@ export default function CronogramasPage() {
               )}
             </div>
           ) : (
+            <div className="space-y-3">
+            {/* Filtros de hitos */}
+            <div className="flex flex-wrap gap-2">
+              <select
+                className="input-field w-auto min-w-36 text-xs"
+                value={filtroResponsable}
+                onChange={e => setFiltroResponsable(e.target.value)}
+              >
+                <option value="">Todos los responsables</option>
+                {responsablesUnicos.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+              <select
+                className="input-field w-auto min-w-32 text-xs"
+                value={filtroEstadoHito}
+                onChange={e => setFiltroEstadoHito(e.target.value)}
+              >
+                <option value="">Todos los estados</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="realizado">Realizado</option>
+                <option value="vencido">Vencido</option>
+              </select>
+              {(filtroResponsable || filtroEstadoHito) && (
+                <button
+                  onClick={() => { setFiltroResponsable(''); setFiltroEstadoHito('') }}
+                  className="btn-secondary text-xs py-1"
+                >
+                  Limpiar
+                </button>
+              )}
+              <span className="text-xs text-slate-500 self-center ml-auto">
+                {hitosFiltrados.length} de {hitos.length} hitos
+              </span>
+            </div>
             <div className="card p-0 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
