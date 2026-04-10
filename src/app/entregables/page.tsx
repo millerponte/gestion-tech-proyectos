@@ -276,6 +276,14 @@ const guardarEdicion = async (id: string) => {
                               + Exp.
                             </button>
                           )}
+                          {e.estado === 'completo' && e.expediente && (
+                            <button onClick={() => setEntregableReenvio(e)}
+                              className="text-xs text-slate-400 hover:text-blue-400 transition-colors"
+                              title="Reenviar correo">
+                              <Mail className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          )}
                           {isAdmin && (
                             <>
                               <button onClick={() => { setExpandido(e.id); iniciarEdicion(e) }}
