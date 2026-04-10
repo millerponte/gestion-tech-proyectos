@@ -455,7 +455,10 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
                                       </div>
                                       <div>
                                         <label className="label">Responsable</label>
-                                        <input className="input-field" value={editData.responsable} onChange={e => setEditData(d => ({ ...d, responsable: e.target.value }))} />
+                                        <select className="input-field" value={editData.responsable} onChange={e => setEditData(d => ({ ...d, responsable: e.target.value }))}>
+                                          <option value="">Seleccionar...</option>
+                                          {ROLES_RESPONSABLE.map(r => <option key={r} value={r}>{r}</option>)}
+                                        </select>
                                       </div>
                                     </div>
                                     <div>
