@@ -176,6 +176,14 @@ export default function CronogramasPage() {
     return 'pendiente'
   }
 
+  const hitosFiltrados = hitos.filter(h => {
+    const estado = estadoHito(h)
+    return (!filtroResponsable || h.responsable === filtroResponsable) &&
+           (!filtroEstadoHito || estado === filtroEstadoHito)
+  })
+
+  const responsablesUnicos = [...new Set(hitos.map(h => h.responsable).filter(Boolean))]
+
   if (loading) return (
     <div className="flex justify-center py-16">
       <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
