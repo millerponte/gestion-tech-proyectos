@@ -112,7 +112,7 @@ const isAdmin = usuario?.rol === 'admin'
   }
 
   return (
-    <AuthContext.Provider value={{ user, usuario, loading, login, register, logout, isAdmin, tienePermiso }}>
+    <AuthContext.Provider value={{ user, usuario, loading, login, register, logout, isAdmin, tienePermiso, recargarUsuario }}>
       {children}
     </AuthContext.Provider>
   )
