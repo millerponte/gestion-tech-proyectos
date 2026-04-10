@@ -150,10 +150,11 @@ export default function ProyectosPage() {
           <button onClick={exportarExcel} className="btn-secondary">
             <Download className="w-4 h-4" /> Exportar Excel
           </button>
-          {isAdmin && (
+          {tienePermiso('proyectos_agregar') && (
             <button onClick={() => setModalAbierto(true)} className="btn-primary">
               <Plus className="w-4 h-4" /> Nuevo proyecto
             </button>
+          )}
           )}
         </div>
       </div>
