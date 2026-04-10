@@ -251,7 +251,7 @@ export default function CronogramasPage() {
             <div className="card text-center py-16">
               <CalendarDays className="w-12 h-12 text-slate-600 mx-auto mb-3" />
               <p className="text-slate-400">No hay hitos en este proyecto</p>
-              {isAdmin && (
+              {tienePermiso('cronogramas_agregar') && (
                 <button onClick={() => setModalNuevoHito(true)} className="btn-primary mx-auto mt-4">
                   <Plus className="w-4 h-4" /> Agregar primer hito
                 </button>
