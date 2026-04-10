@@ -109,9 +109,24 @@ export default function Sidebar() {
                 <p className="text-slate-500 text-xs truncate">{usuario.correo}</p>
               </div>
             </div>
-            {isAdmin && (
-              <span className="mt-2 inline-block text-xs text-amber-400 bg-amber-900/30 border border-amber-700/30 rounded-full px-2 py-0.5">
-                Admin
+            {usuario && (
+              <span className={clsx(
+                'mt-2 inline-block text-xs rounded-full px-2 py-0.5 border',
+                usuario.rol === 'admin'        && 'text-amber-400 bg-amber-900/30 border-amber-700/30',
+                usuario.rol === 'ingeniero'    && 'text-blue-400 bg-blue-900/30 border-blue-700/30',
+                usuario.rol === 'administracion' && 'text-green-400 bg-green-900/30 border-green-700/30',
+                usuario.rol === 'legal'        && 'text-purple-400 bg-purple-900/30 border-purple-700/30',
+                usuario.rol === 'gerente'      && 'text-cyan-400 bg-cyan-900/30 border-cyan-700/30',
+                usuario.rol === 'usuario'      && 'text-slate-400 bg-slate-800/30 border-slate-600/30',
+              )}>
+                {{
+                  admin: 'Admin',
+                  ingeniero: 'Ingeniero',
+                  administracion: 'Administración',
+                  legal: 'Legal',
+                  gerente: 'Gerente',
+                  usuario: 'Usuario',
+                }[usuario.rol] || usuario.rol}
               </span>
             )}
           </div>
