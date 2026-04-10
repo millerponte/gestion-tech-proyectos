@@ -155,7 +155,7 @@ export default function ProyectosPage() {
               <Plus className="w-4 h-4" /> Nuevo proyecto
             </button>
           )}
-          )}
+          
         </div>
       </div>
 
