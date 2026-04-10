@@ -58,12 +58,13 @@ function parsearNumero(valor: any, indice: number): number {
 }
 
 export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Props) {
+  const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
+
   const [filas, setFilas] = useState<FilaHito[]>([])
   const [archivo, setArchivo] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [paso, setPaso] = useState<'subir' | 'revisar'>('subir')
-
-  const responsable = proyecto.contratista || proyecto.empresa
+  const [responsable, setResponsable] = useState(ROLES_RESPONSABLE[0])
 
   const handleArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
