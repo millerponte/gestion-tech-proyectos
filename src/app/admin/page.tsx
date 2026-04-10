@@ -23,7 +23,7 @@ type Tab = 'clientes' | 'usuarios' | 'resumen'
 const COLORES = ['#2563eb', '#16a34a', '#9333ea', '#dc2626', '#ea580c', '#0891b2', '#65a30d', '#db2777']
 
 export default function AdminPage() {
-  const { isAdmin, loading: authLoading } = useAuth()
+  const { isAdmin, loading: authLoading, usuario: usuarioActual, recargarUsuario } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('clientes')
 
