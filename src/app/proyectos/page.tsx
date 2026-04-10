@@ -205,7 +205,7 @@ export default function ProyectosPage() {
         <div className="card text-center py-16">
           <FolderKanban className="w-12 h-12 text-slate-600 mx-auto mb-3" />
           <p className="text-slate-400">No se encontraron proyectos</p>
-          {isAdmin && (
+          {tienePermiso('proyectos_agregar') && (
             <button onClick={() => setModalAbierto(true)} className="btn-primary mx-auto mt-4">
               <Plus className="w-4 h-4" /> Crear primero
             </button>
