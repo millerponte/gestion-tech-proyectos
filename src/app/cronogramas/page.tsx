@@ -584,7 +584,10 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
                 </div>
                 <div>
                   <label className="label">Responsable</label>
-                  <input className="input-field" value={nuevoHito.responsable} onChange={e => setNuevoHito(d => ({ ...d, responsable: e.target.value }))} />
+                  <select className="input-field" value={nuevoHito.responsable} onChange={e => setNuevoHito(d => ({ ...d, responsable: e.target.value }))}>
+                    <option value="">Seleccionar...</option>
+                    {ROLES_RESPONSABLE.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
                 </div>
                 <div className="col-span-2">
                   <label className="label">Nombre del hito *</label>
