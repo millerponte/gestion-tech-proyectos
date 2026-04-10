@@ -515,6 +515,14 @@ const guardarEdicion = async (id: string) => {
           onSuccess={() => { setEntregableExpediente(null); cargar() }}
         />
       )}
+      {entregableReenvio && (
+        <ModalExpediente
+          entregable={entregableReenvio}
+          esReenvio={true}
+          onClose={() => setEntregableReenvio(null)}
+          onSuccess={() => setEntregableReenvio(null)}
+        />
+      )}
     </div>
   )
 }
