@@ -283,7 +283,7 @@ const guardarEdicion = async (id: string) => {
                               <Mail className="w-3.5 h-3.5" />
                             </button>
                           )}
-                          )}
+                    
                           {isAdmin && (
                             <>
                               <button onClick={() => { setExpandido(e.id); iniciarEdicion(e) }}
