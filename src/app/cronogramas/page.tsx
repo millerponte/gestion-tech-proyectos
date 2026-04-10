@@ -36,6 +36,8 @@ export default function CronogramasPage() {
   const [ultimoId, setUltimoId] = useState<string | null>(null)
   const [modalNuevoHito, setModalNuevoHito] = useState(false)
   const [modalImportar, setModalImportar] = useState(false)
+  const [filtroResponsable, setFiltroResponsable] = useState('')
+  const [filtroEstadoHito, setFiltroEstadoHito] = useState('')
   const [nuevoHito, setNuevoHito] = useState<Partial<Hito>>({
     numero: 0, nombre: '', descripcion: '', responsable: '',
     plazoContractual: '', fechaInicio: hoy(),
