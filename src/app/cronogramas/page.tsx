@@ -559,6 +559,9 @@ export default function CronogramasPage() {
         </div>
       </div>
 
+      </div>
+            </div>
+
       {/* MODAL: Nuevo hito */}
       {modalNuevoHito && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModalNuevoHito(false)}>
