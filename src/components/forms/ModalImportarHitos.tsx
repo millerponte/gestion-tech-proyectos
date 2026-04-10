@@ -169,7 +169,7 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
                 </div>
                 <p className="text-slate-500 mt-2">
                   Campos vacíos → <span className="text-amber-400">"por definir"</span>.
-                  Responsable: <span className="text-white">{responsable}</span>
+                  El responsable se asignará según tu selección abajo.
                 </p>
               </div>
 
