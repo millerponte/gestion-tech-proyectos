@@ -77,9 +77,9 @@ export default function ModalExpediente({ entregable, onClose, onSuccess, esReen
                 expediente: expediente.trim() || entregable.expediente,
                 responsable: entregable.responsableNombre,
                 esReenvio,
-                fecha: new Date().toLocaleDateString('es-PE', {
-                  day: '2-digit', month: '2-digit', year: 'numeric'
-                }),
+                fecha: entregable.fecha
+                  ? entregable.fecha.split('-').reverse().join('/')
+                  : new Date().toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
               }),
             })
             toast.success(`${esReenvio ? 'Correo reenviado' : 'Expediente guardado y notificado'} a ${correos.length} usuario(s)`)
