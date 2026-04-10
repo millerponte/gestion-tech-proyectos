@@ -18,6 +18,7 @@ interface AuthContextType {
   logout: () => Promise<void>
   isAdmin: boolean
   tienePermiso: (permiso: keyof import('@/types').PermisoUsuario) => boolean
+  recargarUsuario: (uid: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType)
