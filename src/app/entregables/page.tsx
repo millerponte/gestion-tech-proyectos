@@ -24,7 +24,7 @@ const BADGE_EMPRESA: Record<string, string> = {
 const TIPOS = ['Reservar', 'Plan de Trabajo', 'Informe Técnico', 'Informe Mensual', 'Informe de Incidencia', 'Entregable', 'Otro']
 
 export default function EntregablesPage() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, tienePermiso } = useAuth()
   const searchParams = useSearchParams()
   const [hitosEdicion, setHitosEdicion] = useState<Hito[]>([])
 const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
