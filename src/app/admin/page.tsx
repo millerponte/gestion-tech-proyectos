@@ -173,13 +173,14 @@ const PERMISOS_LABELS: Record<keyof PermisoUsuario, string> = {
     setEditandoPermisos(u.uid)
   }
 
-  const guardarPermisos = async (uid: string) => {
+const guardarPermisos = async (uid: string) => {
     if (!permisosTemp) return
     try {
       await actualizarPermisosUsuario(uid, permisosTemp)
       toast.success('Permisos actualizados')
       setEditandoPermisos(null)
       cargarTodo()
+      if (uid === usuarioActual?.uid) recargarUsuario(uid)
     } catch {
       toast.error('Error al guardar permisos')
     }
