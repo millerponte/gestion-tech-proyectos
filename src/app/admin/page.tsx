@@ -376,6 +376,7 @@ const PERMISOS_LABELS: Record<keyof PermisoUsuario, string> = {
                           await actualizarRolUsuario(u.uid, e.target.value)
                           toast.success('Rol actualizado')
                           cargarTodo()
+                          if (u.uid === usuarioActual?.uid) recargarUsuario(u.uid)
                         }}
                       >
                         <option value="admin">Admin</option>
