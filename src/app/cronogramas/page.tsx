@@ -192,7 +192,7 @@ export default function CronogramasPage() {
     )
   })
 
-  const responsablesUnicos = [...new Set(hitos.map(h => h.responsable).filter(Boolean))]
+  const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filter(Boolean)))
 
   if (loading) {
     return (
