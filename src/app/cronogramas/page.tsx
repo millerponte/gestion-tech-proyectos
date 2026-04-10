@@ -18,7 +18,7 @@ const ESTADO_HITO: Record<string, string> = {
 }
 
 export default function CronogramasPage() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, tienePermiso, usuario } = useAuth()
   const searchParams = useSearchParams()
 
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
