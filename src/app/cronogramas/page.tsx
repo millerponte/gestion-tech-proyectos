@@ -17,6 +17,8 @@ const ESTADO_HITO: Record<string, string> = {
   vencido: 'bg-red-900/30 text-red-300 border-red-700/40',
 }
 
+const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
+
 export default function CronogramasPage() {
   const { isAdmin, tienePermiso, usuario } = useAuth()
   const searchParams = useSearchParams()
@@ -38,8 +40,6 @@ export default function CronogramasPage() {
   const [modalImportar, setModalImportar] = useState(false)
   const [filtroResponsable, setFiltroResponsable] = useState('')
   const [filtroEstadoHito, setFiltroEstadoHito] = useState('')
-const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
-
   const [nuevoHito, setNuevoHito] = useState<Partial<Hito>>({
     numero: 0, nombre: '', descripcion: '', responsable: '',
     plazoContractual: '', fechaInicio: hoy(),
@@ -100,9 +100,11 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
     const csv = [headers, ...filas].map(f => f.map(v => `"${v}"`).join(',')).join('\n')
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url
+    const a = document.createElement('a')
+    a.href = url
     a.download = `cronograma_${proyectoSeleccionado.clienteNombre}_${new Date().toISOString().split('T')[0]}.csv`
-    a.click(); URL.revokeObjectURL(url)
+    a.click()
+    URL.revokeObjectURL(url)
     toast.success('Exportado correctamente')
   }
 
@@ -147,7 +149,7 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
         numero: nuevoHito.numero || 0,
         nombre: nuevoHito.nombre!.trim(),
         descripcion: nuevoHito.descripcion || '',
-        responsable: nuevoHito.responsable || proyectoSeleccionado.contratista,
+        responsable: nuevoHito.responsable || '',
         plazoContractual: nuevoHito.plazoContractual || '',
         fechaInicio: nuevoHito.fechaInicio || hoy(),
         fechaLimite: nuevoHito.fechaLimite || hoy(),
@@ -158,7 +160,11 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
       })
       toast.success('Hito creado')
       setModalNuevoHito(false)
-      setNuevoHito({ numero: 0, nombre: '', descripcion: '', responsable: '', plazoContractual: '', fechaInicio: hoy(), fechaLimite: hoy(), pago: '', origen: '', estado: 'pendiente', esCritico: false })
+      setNuevoHito({
+        numero: 0, nombre: '', descripcion: '', responsable: '',
+        plazoContractual: '', fechaInicio: hoy(), fechaLimite: hoy(),
+        pago: '', origen: '', estado: 'pendiente', esCritico: false,
+      })
       await seleccionarProyecto(proyectoSeleccionado)
       setTimeout(() => {
         setUltimoId(null)
@@ -180,17 +186,21 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
 
   const hitosFiltrados = hitos.filter(h => {
     const estado = estadoHito(h)
-    return (!filtroResponsable || h.responsable === filtroResponsable) &&
-           (!filtroEstadoHito || estado === filtroEstadoHito)
+    return (
+      (!filtroResponsable || h.responsable === filtroResponsable) &&
+      (!filtroEstadoHito || estado === filtroEstadoHito)
+    )
   })
 
   const responsablesUnicos = [...new Set(hitos.map(h => h.responsable).filter(Boolean))]
 
-  if (loading) return (
-    <div className="flex justify-center py-16">
-      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -228,28 +238,32 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
 
         {/* PANEL IZQUIERDO */}
-        {/* PANEL IZQUIERDO */}
         <div className="xl:col-span-1 space-y-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input className="input-field pl-9" placeholder="Buscar proyecto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+            <input
+              className="input-field pl-9"
+              placeholder="Buscar proyecto..."
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
             {proyectosFiltrados.map(p => (
-              <div key={p.id} className="rounded-lg border overflow-hidden transition-all
-                bg-[#111d35] border-[#1e3a8a]/40">
-                {/* Botón seleccionar */}
+              <div key={p.id} className="rounded-lg border overflow-hidden transition-all bg-[#111d35] border-[#1e3a8a]/40">
                 <button
                   onClick={() => seleccionarProyecto(p)}
-                  className={clsx('w-full text-left px-3 py-2.5 text-xs transition-all',
+                  className={clsx(
+                    'w-full text-left px-3 py-2.5 text-xs transition-all',
                     proyectoSeleccionado?.id === p.id
                       ? 'bg-blue-600/20 text-blue-300'
-                      : 'text-slate-300 hover:bg-[#1e3a8a]/20 hover:text-white')}>
+                      : 'text-slate-300 hover:bg-[#1e3a8a]/20 hover:text-white'
+                  )}
+                >
                   <p className="font-medium line-clamp-2 text-cyan-300">{p.solucion || p.nombre}</p>
                   <p className="text-slate-400 mt-0.5 line-clamp-1 text-xs">{p.nombre}</p>
                   <p className="text-slate-500 mt-0.5">{p.clienteNombre}</p>
                 </button>
-                {/* Info expandida — solo visible cuando está seleccionado */}
                 {proyectoSeleccionado?.id === p.id && (
                   <div className="border-t border-[#1e3a8a]/40 px-3 py-2.5 space-y-1.5 text-xs bg-[#0d1526]/60 animate-fade-in">
                     <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
@@ -257,7 +271,8 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
                         <p className="text-slate-500">Estado</p>
                         <p className={clsx('font-medium',
                           p.estado === 'activo' ? 'text-green-400' :
-                          p.estado === 'suspendido' ? 'text-red-400' : 'text-slate-400')}>
+                          p.estado === 'suspendido' ? 'text-red-400' : 'text-slate-400'
+                        )}>
                           {p.estado}
                         </p>
                       </div>
@@ -298,6 +313,7 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
             ))}
           </div>
         </div>
+
         {/* PANEL DERECHO */}
         <div className="xl:col-span-3">
           {!proyectoSeleccionado ? (
@@ -321,244 +337,300 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
             </div>
           ) : (
             <div className="space-y-3">
-            {/* Filtros de hitos */}
-            <div className="flex flex-wrap gap-2">
-              <select
-                className="input-field w-auto min-w-36 text-xs"
-                value={filtroResponsable}
-                onChange={e => setFiltroResponsable(e.target.value)}
-              >
-                <option value="">Todos los responsables</option>
-                {responsablesUnicos.map(r => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
-              <select
-                className="input-field w-auto min-w-32 text-xs"
-                value={filtroEstadoHito}
-                onChange={e => setFiltroEstadoHito(e.target.value)}
-              >
-                <option value="">Todos los estados</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="realizado">Realizado</option>
-                <option value="vencido">Vencido</option>
-              </select>
-              {(filtroResponsable || filtroEstadoHito) && (
-                <button
-                  onClick={() => { setFiltroResponsable(''); setFiltroEstadoHito('') }}
-                  className="btn-secondary text-xs py-1"
+              {/* Filtros */}
+              <div className="flex flex-wrap gap-2">
+                <select
+                  className="input-field w-auto min-w-36 text-xs"
+                  value={filtroResponsable}
+                  onChange={e => setFiltroResponsable(e.target.value)}
                 >
-                  Limpiar
-                </button>
-              )}
-              <span className="text-xs text-slate-500 self-center ml-auto">
-                {hitosFiltrados.length} de {hitos.length} hitos
-              </span>
-            </div>
-            <div className="card p-0 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
-                    <tr>
-                      <th className="tabla-header w-6"></th>
-                      <th className="tabla-header w-10">N°</th>
-                      <th className="tabla-header">Hito / Entregable</th>
-                      <th className="tabla-header">Responsable</th>
-                      <th className="tabla-header">Fecha Inicio</th>
-                      <th className="tabla-header">Fecha Límite</th>
-                      <th className="tabla-header">Estado</th>
-                      <th className="tabla-header">Fecha Real</th>
-                      <th className="tabla-header"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hitosFiltrados.map(h => {
-                      const estado = estadoHito(h)
-                      // Entregables vinculados a este hito
-                      const entregablesVinculados = entregables.filter(e =>
-                        e.hitoId === h.id || (e as any).hitoIds?.includes(h.id)
-                      )
-                      return (
-                        <>
-                          <tr key={h.id}
-                            id={`hito-${h.id}`}
-                            className={clsx('tabla-row', expandido === h.id && 'bg-[#1e3a8a]/10', ultimoId === h.id && 'highlight-new')}
-                            onClick={() => setExpandido(expandido === h.id ? null : h.id)}>
-                            <td className="tabla-cell text-slate-500">
-                              {expandido === h.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                            </td>
-                            <td className="tabla-cell text-slate-400 text-xs font-mono">{h.numero || '—'}</td>
-                            <td className="tabla-cell">
-                              <div className="flex items-center gap-2">
-                                {h.esCritico && <span className="text-red-400 text-xs">★</span>}
-                                <p className="text-sm text-slate-200 max-w-xs line-clamp-1">{h.nombre}</p>
-                                {entregablesVinculados.length > 0 && (
-                                  <span className="text-xs bg-green-900/30 text-green-400 border border-green-700/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                                    {entregablesVinculados.length} entregable{entregablesVinculados.length > 1 ? 's' : ''}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="tabla-cell text-xs text-slate-400">{h.responsable}</td>
-                            <td className="tabla-cell text-xs text-slate-400 whitespace-nowrap">
-                              {h.fechaInicio === 'por definir'
-                                ? <span className="text-amber-400">por definir</span>
-                                : formatearFecha(h.fechaInicio)}
-                            </td>
-                            <td className="tabla-cell text-xs whitespace-nowrap">
-                              {h.fechaLimite === 'por definir'
-                                ? <span className="text-amber-400">por definir</span>
-                                : <span className={estado === 'vencido' ? 'text-red-400' : 'text-slate-400'}>
-                                    {formatearFecha(h.fechaLimite)}
-                                  </span>}
-                            </td>
-                            <td className="tabla-cell">
-                              <span className={clsx('text-xs px-2 py-0.5 rounded-full border', ESTADO_HITO[estado])}>
-                                {estado}
-                              </span>
-                            </td>
-                            <td className="tabla-cell text-xs text-green-400 whitespace-nowrap">
-                              {h.fechaRealEnvio ? formatearFecha(h.fechaRealEnvio) : '—'}
-                            </td>
-                            <td className="tabla-cell" onClick={e => e.stopPropagation()}>
-                              <div className="flex gap-2">
-                                {tienePermiso('cronogramas_editar') && (
-                                  <button onClick={() => { setExpandido(h.id); iniciarEdicion(h) }}
-                                    className="text-slate-500 hover:text-blue-400 transition-colors">
-                                    <Pencil className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                                {isAdmin && (
-                                  <button onClick={() => handleEliminar(h.id)}
-                                    className="text-slate-500 hover:text-red-400 transition-colors">
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
+                  <option value="">Todos los responsables</option>
+                  {responsablesUnicos.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                <select
+                  className="input-field w-auto min-w-32 text-xs"
+                  value={filtroEstadoHito}
+                  onChange={e => setFiltroEstadoHito(e.target.value)}
+                >
+                  <option value="">Todos los estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="realizado">Realizado</option>
+                  <option value="vencido">Vencido</option>
+                </select>
+                {(filtroResponsable || filtroEstadoHito) && (
+                  <button
+                    onClick={() => { setFiltroResponsable(''); setFiltroEstadoHito('') }}
+                    className="btn-secondary text-xs py-1"
+                  >
+                    Limpiar
+                  </button>
+                )}
+                <span className="text-xs text-slate-500 self-center ml-auto">
+                  {hitosFiltrados.length} de {hitos.length} hitos
+                </span>
+              </div>
 
-                          {/* FILA EXPANDIDA */}
-                          {expandido === h.id && (
-                            <tr key={`${h.id}-exp`} className="bg-[#0d1526]/80">
-                              <td colSpan={9} className="px-6 py-4">
-                                {editando === h.id ? (
-                                  // MODO EDICIÓN
-                                  <div className="space-y-3">
-                                    <div className="grid grid-cols-3 gap-3">
-                                      <div>
-                                        <label className="label">N° de hito</label>
-                                        <input type="number" className="input-field" value={editData.numero || ''} onChange={e => setEditData(d => ({ ...d, numero: Number(e.target.value) }))} />
-                                      </div>
-                                      <div>
-                                        <label className="label">Nombre del hito</label>
-                                        <input className="input-field" value={editData.nombre} onChange={e => setEditData(d => ({ ...d, nombre: e.target.value }))} />
-                                      </div>
-                                      <div>
-                                        <label className="label">Responsable</label>
-                                        <select className="input-field" value={editData.responsable} onChange={e => setEditData(d => ({ ...d, responsable: e.target.value }))}>
-                                          <option value="">Seleccionar...</option>
-                                          {ROLES_RESPONSABLE.map(r => <option key={r} value={r}>{r}</option>)}
-                                        </select>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <label className="label">Descripción</label>
-                                      <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={e => setEditData(d => ({ ...d, descripcion: e.target.value }))} />
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-3">
-                                      <div>
-                                        <label className="label">Fecha inicio</label>
-                                        <input type="date" className="input-field"
-                                          value={editData.fechaInicio === 'por definir' ? '' : editData.fechaInicio}
-                                          onChange={e => setEditData(d => ({ ...d, fechaInicio: e.target.value || 'por definir' }))} />
-                                      </div>
-                                      <div>
-                                        <label className="label">Fecha límite</label>
-                                        <input type="date" className="input-field"
-                                          value={editData.fechaLimite === 'por definir' ? '' : editData.fechaLimite}
-                                          onChange={e => setEditData(d => ({ ...d, fechaLimite: e.target.value || 'por definir' }))} />
-                                      </div>
-                                      <div>
-                                        <label className="label">Fecha real envío</label>
-                                        <input type="date" className="input-field"
-                                          value={editData.fechaRealEnvio || ''}
-                                          onChange={e => setEditData(d => ({ ...d, fechaRealEnvio: e.target.value }))} />
-                                      </div>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-3">
-                                      <div>
-                                        <label className="label">Plazo contractual</label>
-                                        <input className="input-field" value={editData.plazoContractual} onChange={e => setEditData(d => ({ ...d, plazoContractual: e.target.value }))} />
-                                      </div>
-                                      <div>
-                                        <label className="label">Estado</label>
-                                        <select className="input-field" value={editData.estado} onChange={e => setEditData(d => ({ ...d, estado: e.target.value as any }))}>
-                                          <option value="pendiente">Pendiente</option>
-                                          <option value="realizado">Realizado</option>
-                                          <option value="vencido">Vencido</option>
-                                        </select>
-                                      </div>
-                                      <div className="flex items-center gap-2 pt-5">
-                                        <input type="checkbox" id={`critico-${h.id}`} checked={editData.esCritico}
-                                          onChange={e => setEditData(d => ({ ...d, esCritico: e.target.checked }))} />
-                                        <label htmlFor={`critico-${h.id}`} className="text-sm text-slate-300">Hito crítico ★</label>
-                                      </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <button onClick={() => guardarEdicion(h.id)} className="btn-primary text-xs">
-                                        <Check className="w-3.5 h-3.5" /> Guardar
-                                      </button>
-                                      <button onClick={() => setEditando(null)} className="btn-secondary text-xs">
-                                        <X className="w-3.5 h-3.5" /> Cancelar
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  // MODO DETALLE
-                                  <div className="space-y-3">
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                                      <div className="col-span-2">
-                                        <p className="text-slate-500 mb-0.5">Descripción</p>
-                                        <p className="text-slate-200">{h.descripcion || '—'}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-slate-500 mb-0.5">Plazo contractual</p>
-                                        <p className="text-slate-200">{h.plazoContractual || '—'}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-slate-500 mb-0.5">Hito crítico</p>
-                                        <p className="text-slate-200">{h.esCritico ? '★ Sí' : 'No'}</p>
-                                      </div>
-                                    </div>
-
-                                    {/* Entregables vinculados */}
-                                    {entregablesVinculados.length > 0 && (
-                                      <div className="border-t border-[#1e3a8a]/30 pt-3">
-                                        <p className="text-slate-500 text-xs mb-2">Entregable(s) vinculado(s)</p>
-                                        <div className="flex flex-wrap gap-2">
-                                          {entregablesVinculados.map(e => (
-                                            <a key={e.id} href={`/entregables?expandir=${e.id}`}
-                                              className="text-xs bg-green-900/20 border border-green-700/30 text-green-400 px-2.5 py-1.5 rounded-lg hover:border-green-500 hover:bg-green-900/30 transition-colors flex items-center gap-1.5">
-                                              <span className="font-mono">{e.numeroDocumento}</span>
-                                              <span className="text-green-600">—</span>
-                                              <span className="truncate max-w-32">{e.asunto}</span>
-                                              <span>→</span>
-                                            </a>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+              {/* Tabla */}
+              <div className="card p-0 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
+                      <tr>
+                        <th className="tabla-header w-6"></th>
+                        <th className="tabla-header w-10">N°</th>
+                        <th className="tabla-header">Hito / Entregable</th>
+                        <th className="tabla-header">Responsable</th>
+                        <th className="tabla-header">Fecha Inicio</th>
+                        <th className="tabla-header">Fecha Límite</th>
+                        <th className="tabla-header">Estado</th>
+                        <th className="tabla-header">Fecha Real</th>
+                        <th className="tabla-header"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hitosFiltrados.map(h => {
+                        const estado = estadoHito(h)
+                        const entregablesVinculados = entregables.filter(e =>
+                          e.hitoId === h.id || (e as any).hitoIds?.includes(h.id)
+                        )
+                        return (
+                          <>
+                            <tr
+                              key={h.id}
+                              id={`hito-${h.id}`}
+                              className={clsx(
+                                'tabla-row',
+                                expandido === h.id && 'bg-[#1e3a8a]/10',
+                                ultimoId === h.id && 'highlight-new'
+                              )}
+                              onClick={() => setExpandido(expandido === h.id ? null : h.id)}
+                            >
+                              <td className="tabla-cell text-slate-500">
+                                {expandido === h.id
+                                  ? <ChevronUp className="w-3.5 h-3.5" />
+                                  : <ChevronDown className="w-3.5 h-3.5" />}
+                              </td>
+                              <td className="tabla-cell text-slate-400 text-xs font-mono">{h.numero || '—'}</td>
+                              <td className="tabla-cell">
+                                <div className="flex items-center gap-2">
+                                  {h.esCritico && <span className="text-red-400 text-xs">★</span>}
+                                  <p className="text-sm text-slate-200 max-w-xs line-clamp-1">{h.nombre}</p>
+                                  {entregablesVinculados.length > 0 && (
+                                    <span className="text-xs bg-green-900/30 text-green-400 border border-green-700/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                      {entregablesVinculados.length} entregable{entregablesVinculados.length > 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="tabla-cell text-xs text-slate-400">{h.responsable}</td>
+                              <td className="tabla-cell text-xs text-slate-400 whitespace-nowrap">
+                                {h.fechaInicio === 'por definir'
+                                  ? <span className="text-amber-400">por definir</span>
+                                  : formatearFecha(h.fechaInicio)}
+                              </td>
+                              <td className="tabla-cell text-xs whitespace-nowrap">
+                                {h.fechaLimite === 'por definir'
+                                  ? <span className="text-amber-400">por definir</span>
+                                  : <span className={estado === 'vencido' ? 'text-red-400' : 'text-slate-400'}>
+                                      {formatearFecha(h.fechaLimite)}
+                                    </span>}
+                              </td>
+                              <td className="tabla-cell">
+                                <span className={clsx('text-xs px-2 py-0.5 rounded-full border', ESTADO_HITO[estado])}>
+                                  {estado}
+                                </span>
+                              </td>
+                              <td className="tabla-cell text-xs text-green-400 whitespace-nowrap">
+                                {h.fechaRealEnvio ? formatearFecha(h.fechaRealEnvio) : '—'}
+                              </td>
+                              <td className="tabla-cell" onClick={e => e.stopPropagation()}>
+                                <div className="flex gap-2">
+                                  {tienePermiso('cronogramas_editar') && (
+                                    <button
+                                      onClick={() => { setExpandido(h.id); iniciarEdicion(h) }}
+                                      className="text-slate-500 hover:text-blue-400 transition-colors"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                  {isAdmin && (
+                                    <button
+                                      onClick={() => handleEliminar(h.id)}
+                                      className="text-slate-500 hover:text-red-400 transition-colors"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
-                          )}
-                        </>
-                      )
-                    })}
-                  </tbody>
-                </table>
+
+                            {/* FILA EXPANDIDA */}
+                            {expandido === h.id && (
+                              <tr key={`${h.id}-exp`} className="bg-[#0d1526]/80">
+                                <td colSpan={9} className="px-6 py-4">
+                                  {editando === h.id ? (
+                                    <div className="space-y-3">
+                                      <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                          <label className="label">N° de hito</label>
+                                          <input
+                                            type="number"
+                                            className="input-field"
+                                            value={editData.numero || ''}
+                                            onChange={e => setEditData(d => ({ ...d, numero: Number(e.target.value) }))}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="label">Nombre del hito</label>
+                                          <input
+                                            className="input-field"
+                                            value={editData.nombre}
+                                            onChange={e => setEditData(d => ({ ...d, nombre: e.target.value }))}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="label">Responsable</label>
+                                          <select
+                                            className="input-field"
+                                            value={editData.responsable}
+                                            onChange={e => setEditData(d => ({ ...d, responsable: e.target.value }))}
+                                          >
+                                            <option value="">Seleccionar...</option>
+                                            {ROLES_RESPONSABLE.map(r => (
+                                              <option key={r} value={r}>{r}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <label className="label">Descripción</label>
+                                        <textarea
+                                          className="input-field resize-none"
+                                          rows={2}
+                                          value={editData.descripcion}
+                                          onChange={e => setEditData(d => ({ ...d, descripcion: e.target.value }))}
+                                        />
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                          <label className="label">Fecha inicio</label>
+                                          <input
+                                            type="date"
+                                            className="input-field"
+                                            value={editData.fechaInicio === 'por definir' ? '' : editData.fechaInicio}
+                                            onChange={e => setEditData(d => ({ ...d, fechaInicio: e.target.value || 'por definir' }))}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="label">Fecha límite</label>
+                                          <input
+                                            type="date"
+                                            className="input-field"
+                                            value={editData.fechaLimite === 'por definir' ? '' : editData.fechaLimite}
+                                            onChange={e => setEditData(d => ({ ...d, fechaLimite: e.target.value || 'por definir' }))}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="label">Fecha real envío</label>
+                                          <input
+                                            type="date"
+                                            className="input-field"
+                                            value={editData.fechaRealEnvio || ''}
+                                            onChange={e => setEditData(d => ({ ...d, fechaRealEnvio: e.target.value }))}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                          <label className="label">Plazo contractual</label>
+                                          <input
+                                            className="input-field"
+                                            value={editData.plazoContractual}
+                                            onChange={e => setEditData(d => ({ ...d, plazoContractual: e.target.value }))}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="label">Estado</label>
+                                          <select
+                                            className="input-field"
+                                            value={editData.estado}
+                                            onChange={e => setEditData(d => ({ ...d, estado: e.target.value as any }))}
+                                          >
+                                            <option value="pendiente">Pendiente</option>
+                                            <option value="realizado">Realizado</option>
+                                            <option value="vencido">Vencido</option>
+                                          </select>
+                                        </div>
+                                        <div className="flex items-center gap-2 pt-5">
+                                          <input
+                                            type="checkbox"
+                                            id={`critico-${h.id}`}
+                                            checked={editData.esCritico}
+                                            onChange={e => setEditData(d => ({ ...d, esCritico: e.target.checked }))}
+                                          />
+                                          <label htmlFor={`critico-${h.id}`} className="text-sm text-slate-300">
+                                            Hito crítico ★
+                                          </label>
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button onClick={() => guardarEdicion(h.id)} className="btn-primary text-xs">
+                                          <Check className="w-3.5 h-3.5" /> Guardar
+                                        </button>
+                                        <button onClick={() => setEditando(null)} className="btn-secondary text-xs">
+                                          <X className="w-3.5 h-3.5" /> Cancelar
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-3">
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                        <div className="col-span-2">
+                                          <p className="text-slate-500 mb-0.5">Descripción</p>
+                                          <p className="text-slate-200">{h.descripcion || '—'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-slate-500 mb-0.5">Plazo contractual</p>
+                                          <p className="text-slate-200">{h.plazoContractual || '—'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-slate-500 mb-0.5">Hito crítico</p>
+                                          <p className="text-slate-200">{h.esCritico ? '★ Sí' : 'No'}</p>
+                                        </div>
+                                      </div>
+                                      {entregablesVinculados.length > 0 && (
+                                        <div className="border-t border-[#1e3a8a]/30 pt-3">
+                                          <p className="text-slate-500 text-xs mb-2">Entregable(s) vinculado(s)</p>
+                                          <div className="flex flex-wrap gap-2">
+                                            {entregablesVinculados.map(e => (
+                                              <a
+                                                key={e.id}
+                                                href={`/entregables?expandir=${e.id}`}
+                                                className="text-xs bg-green-900/20 border border-green-700/30 text-green-400 px-2.5 py-1.5 rounded-lg hover:border-green-500 hover:bg-green-900/30 transition-colors flex items-center gap-1.5"
+                                              >
+                                                <span className="font-mono">{e.numeroDocumento}</span>
+                                                <span className="text-green-600">—</span>
+                                                <span className="truncate max-w-32">{e.asunto}</span>
+                                                <span>→</span>
+                                              </a>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -581,37 +653,79 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">N° de hito</label>
-                  <input type="number" className="input-field" placeholder="Ej: 1" value={nuevoHito.numero || ''} onChange={e => setNuevoHito(d => ({ ...d, numero: Number(e.target.value) }))} />
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="Ej: 1"
+                    value={nuevoHito.numero || ''}
+                    onChange={e => setNuevoHito(d => ({ ...d, numero: Number(e.target.value) }))}
+                  />
                 </div>
                 <div>
                   <label className="label">Responsable</label>
-                  <select className="input-field" value={nuevoHito.responsable} onChange={e => setNuevoHito(d => ({ ...d, responsable: e.target.value }))}>
+                  <select
+                    className="input-field"
+                    value={nuevoHito.responsable}
+                    onChange={e => setNuevoHito(d => ({ ...d, responsable: e.target.value }))}
+                  >
                     <option value="">Seleccionar...</option>
-                    {ROLES_RESPONSABLE.map(r => <option key={r} value={r}>{r}</option>)}
+                    {ROLES_RESPONSABLE.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="col-span-2">
                   <label className="label">Nombre del hito *</label>
-                  <input className="input-field" placeholder="Ej: Informe Técnico Mensual" value={nuevoHito.nombre} onChange={e => setNuevoHito(d => ({ ...d, nombre: e.target.value }))} />
+                  <input
+                    className="input-field"
+                    placeholder="Ej: Informe Técnico Mensual"
+                    value={nuevoHito.nombre}
+                    onChange={e => setNuevoHito(d => ({ ...d, nombre: e.target.value }))}
+                  />
                 </div>
                 <div className="col-span-2">
                   <label className="label">Descripción</label>
-                  <textarea className="input-field resize-none" rows={2} value={nuevoHito.descripcion} onChange={e => setNuevoHito(d => ({ ...d, descripcion: e.target.value }))} />
+                  <textarea
+                    className="input-field resize-none"
+                    rows={2}
+                    value={nuevoHito.descripcion}
+                    onChange={e => setNuevoHito(d => ({ ...d, descripcion: e.target.value }))}
+                  />
                 </div>
                 <div>
                   <label className="label">Plazo contractual</label>
-                  <input className="input-field" placeholder="Ej: 15 días cal." value={nuevoHito.plazoContractual} onChange={e => setNuevoHito(d => ({ ...d, plazoContractual: e.target.value }))} />
+                  <input
+                    className="input-field"
+                    placeholder="Ej: 15 días cal."
+                    value={nuevoHito.plazoContractual}
+                    onChange={e => setNuevoHito(d => ({ ...d, plazoContractual: e.target.value }))}
+                  />
                 </div>
                 <div>
                   <label className="label">Fecha inicio</label>
-                  <input type="date" className="input-field" value={nuevoHito.fechaInicio} onChange={e => setNuevoHito(d => ({ ...d, fechaInicio: e.target.value }))} />
+                  <input
+                    type="date"
+                    className="input-field"
+                    value={nuevoHito.fechaInicio}
+                    onChange={e => setNuevoHito(d => ({ ...d, fechaInicio: e.target.value }))}
+                  />
                 </div>
                 <div>
                   <label className="label">Fecha límite</label>
-                  <input type="date" className="input-field" value={nuevoHito.fechaLimite} onChange={e => setNuevoHito(d => ({ ...d, fechaLimite: e.target.value }))} />
+                  <input
+                    type="date"
+                    className="input-field"
+                    value={nuevoHito.fechaLimite}
+                    onChange={e => setNuevoHito(d => ({ ...d, fechaLimite: e.target.value }))}
+                  />
                 </div>
                 <div className="flex items-center gap-2 pt-5">
-                  <input type="checkbox" id="critico-nuevo" checked={nuevoHito.esCritico} onChange={e => setNuevoHito(d => ({ ...d, esCritico: e.target.checked }))} />
+                  <input
+                    type="checkbox"
+                    id="critico-nuevo"
+                    checked={nuevoHito.esCritico}
+                    onChange={e => setNuevoHito(d => ({ ...d, esCritico: e.target.checked }))}
+                  />
                   <label htmlFor="critico-nuevo" className="text-sm text-slate-300">Hito crítico ★</label>
                 </div>
               </div>
