@@ -436,6 +436,7 @@ const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
                                 )}
                               </div>
                             </td>
+                          </tr>
 
                           {/* FILA EXPANDIDA */}
                           {expandido === h.id && (
