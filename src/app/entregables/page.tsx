@@ -284,17 +284,17 @@ const guardarEdicion = async (id: string) => {
                             </button>
                           )}
                     
+                         {tienePermiso('entregables_editar') && (
+                            <button onClick={() => { setExpandido(e.id); iniciarEdicion(e) }}
+                              className="text-slate-500 hover:text-blue-400 transition-colors">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           {isAdmin && (
-                            <>
-                              <button onClick={() => { setExpandido(e.id); iniciarEdicion(e) }}
-                                className="text-slate-500 hover:text-blue-400 transition-colors">
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <button onClick={() => handleEliminar(e.id)}
-                                className="text-slate-500 hover:text-red-400 transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                            <button onClick={() => handleEliminar(e.id)}
+                              className="text-slate-500 hover:text-red-400 transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           )}
                         </div>
                       </td>
