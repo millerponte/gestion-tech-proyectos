@@ -370,7 +370,7 @@ export default function CronogramasPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {hitos.map(h => {
+                    {hitosFiltrados.map(h => {
                       const estado = estadoHito(h)
                       // Entregables vinculados a este hito
                       const entregablesVinculados = entregables.filter(e =>
