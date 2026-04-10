@@ -324,20 +324,21 @@ export default function CronogramasPage() {
                               {h.fechaRealEnvio ? formatearFecha(h.fechaRealEnvio) : '—'}
                             </td>
                             <td className="tabla-cell" onClick={e => e.stopPropagation()}>
-                              {isAdmin && (
-                                <div className="flex gap-2">
+                              <div className="flex gap-2">
+                                {tienePermiso('cronogramas_editar') && (
                                   <button onClick={() => { setExpandido(h.id); iniciarEdicion(h) }}
                                     className="text-slate-500 hover:text-blue-400 transition-colors">
                                     <Pencil className="w-3.5 h-3.5" />
                                   </button>
+                                )}
+                                {isAdmin && (
                                   <button onClick={() => handleEliminar(h.id)}
                                     className="text-slate-500 hover:text-red-400 transition-colors">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </td>
-                          </tr>
 
                           {/* FILA EXPANDIDA */}
                           {expandido === h.id && (
