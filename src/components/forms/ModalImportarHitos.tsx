@@ -173,6 +173,13 @@ export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Pro
                 </p>
               </div>
 
+              <div>
+                <label className="label">Responsable para todos los hitos importados</label>
+                <select className="input-field" value={responsable} onChange={e => setResponsable(e.target.value)}>
+                  {ROLES_RESPONSABLE.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#1e3a8a] rounded-xl cursor-pointer hover:border-blue-500 transition-colors bg-[#0d1526]/50">
                 <Upload className="w-8 h-8 text-slate-400 mb-2" />
                 <p className="text-slate-400 text-sm">Haz clic para seleccionar el archivo Excel</p>
