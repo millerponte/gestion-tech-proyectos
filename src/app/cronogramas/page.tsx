@@ -216,6 +216,7 @@ export default function CronogramasPage() {
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
 
         {/* PANEL IZQUIERDO */}
+        {/* PANEL IZQUIERDO */}
         <div className="xl:col-span-1 space-y-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -223,19 +224,68 @@ export default function CronogramasPage() {
           </div>
           <div className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
             {proyectosFiltrados.map(p => (
-              <button key={p.id} onClick={() => seleccionarProyecto(p)}
-                className={clsx('w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all',
-                  proyectoSeleccionado?.id === p.id
-                    ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
-                    : 'bg-[#111d35] border-[#1e3a8a]/40 text-slate-300 hover:border-blue-500/40 hover:text-white')}>
-                <p className="font-medium line-clamp-2 text-cyan-300">{p.solucion || p.nombre}</p>
-                <p className="text-slate-400 mt-0.5 line-clamp-1 text-xs">{p.nombre}</p>
-                <p className="text-slate-500 mt-0.5">{p.clienteNombre}</p>
-              </button>
+              <div key={p.id} className="rounded-lg border overflow-hidden transition-all
+                bg-[#111d35] border-[#1e3a8a]/40">
+                {/* Botón seleccionar */}
+                <button
+                  onClick={() => seleccionarProyecto(p)}
+                  className={clsx('w-full text-left px-3 py-2.5 text-xs transition-all',
+                    proyectoSeleccionado?.id === p.id
+                      ? 'bg-blue-600/20 text-blue-300'
+                      : 'text-slate-300 hover:bg-[#1e3a8a]/20 hover:text-white')}>
+                  <p className="font-medium line-clamp-2 text-cyan-300">{p.solucion || p.nombre}</p>
+                  <p className="text-slate-400 mt-0.5 line-clamp-1 text-xs">{p.nombre}</p>
+                  <p className="text-slate-500 mt-0.5">{p.clienteNombre}</p>
+                </button>
+                {/* Info expandida — solo visible cuando está seleccionado */}
+                {proyectoSeleccionado?.id === p.id && (
+                  <div className="border-t border-[#1e3a8a]/40 px-3 py-2.5 space-y-1.5 text-xs bg-[#0d1526]/60 animate-fade-in">
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                      <div>
+                        <p className="text-slate-500">Estado</p>
+                        <p className={clsx('font-medium',
+                          p.estado === 'activo' ? 'text-green-400' :
+                          p.estado === 'suspendido' ? 'text-red-400' : 'text-slate-400')}>
+                          {p.estado}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Empresa</p>
+                        <p className="text-slate-300">{p.empresa}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Contratista</p>
+                        <p className="text-slate-300">{p.contratista || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">N° Contrato</p>
+                        <p className="text-slate-300 break-all">{p.numeroContrato || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Inicio</p>
+                        <p className="text-slate-300">{formatearFecha(p.fechaInicio)}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Fin</p>
+                        <p className="text-slate-300">{formatearFecha(p.fechaFin)}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-slate-500">Plazo</p>
+                        <p className="text-slate-300">{p.plazo} meses</p>
+                      </div>
+                      {p.solucion && (
+                        <div className="col-span-2">
+                          <p className="text-slate-500">Solución</p>
+                          <p className="text-slate-300">{p.solucion}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
-
         {/* PANEL DERECHO */}
         <div className="xl:col-span-3">
           {!proyectoSeleccionado ? (
