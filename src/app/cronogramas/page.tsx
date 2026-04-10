@@ -198,7 +198,7 @@ export default function CronogramasPage() {
             <button onClick={exportarExcel} className="btn-secondary">
               <Download className="w-4 h-4" /> Exportar Excel
             </button>
-            {isAdmin && (
+            {tienePermiso('cronogramas_agregar') && (
               <>
                 <button onClick={() => setModalImportar(true)} className="btn-secondary">
                   <FileSpreadsheet className="w-4 h-4" /> Importar Excel
