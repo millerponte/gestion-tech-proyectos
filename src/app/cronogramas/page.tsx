@@ -264,6 +264,60 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
               onChange={e => setBusqueda(e.target.value)}
             />
           </div>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              className="input-field pl-9"
+              placeholder="Buscar hito en todos los proyectos..."
+              value={busquedaHito}
+              onChange={e => {
+                setBusquedaHito(e.target.value)
+                buscarHitosGlobal(e.target.value)
+              }}
+            />
+          </div>
+          {modoGlobalHitos && (
+            <div className="card p-0 overflow-hidden">
+              <div className="px-3 py-2 border-b border-[#1e3a8a]/30 flex items-center justify-between">
+                <p className="text-xs text-slate-400">
+                  {loadingGlobal ? 'Buscando...' : `${todosHitos.length} hito(s) encontrado(s)`}
+                </p>
+                <button onClick={() => { setBusquedaHito(''); setModoGlobalHitos(false) }}
+                  className="text-xs text-slate-500 hover:text-white">✕</button>
+              </div>
+              <div className="max-h-64 overflow-y-auto divide-y divide-[#1e3a8a]/20">
+                {loadingGlobal ? (
+                  <div className="flex justify-center py-4">
+                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : todosHitos.length === 0 ? (
+                  <p className="text-slate-500 text-xs text-center py-4">Sin resultados</p>
+                ) : todosHitos.map(h => {
+                  const proy = proyectos.find(p => p.id === h.proyectoId)
+                  return (
+                    <button key={h.id}
+                      onClick={() => {
+                        if (proy) {
+                          seleccionarProyecto(proy)
+                          setExpandirPendiente(h.id)
+                          setBusquedaHito('')
+                          setModoGlobalHitos(false)
+                        }
+                      }}
+                      className="w-full text-left px-3 py-2 hover:bg-[#1e3a8a]/20 transition-colors">
+                      <p className="text-xs text-slate-200 truncate">{h.nombre}</p>
+                      <p className="text-xs text-slate-500 truncate">{proy?.clienteNombre} — {proy?.solucion || proy?.nombre}</p>
+                      <div className="flex gap-2 mt-0.5 text-xs text-slate-600">
+                        <span>{formatearFecha(h.fechaInicio)}</span>
+                        <span>→</span>
+                        <span>{formatearFecha(h.fechaLimite)}</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           <div className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
             {proyectosFiltrados.map(p => (
               <div key={p.id} className="rounded-lg border overflow-hidden transition-all bg-[#111d35] border-[#1e3a8a]/40">
