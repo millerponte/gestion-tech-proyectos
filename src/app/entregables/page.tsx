@@ -13,6 +13,7 @@ import toast from 'react-hot-toast'
 import { formatearFecha } from '@/lib/db'
 import ModalNuevoEntregable from '@/components/forms/ModalNuevoEntregable'
 import ModalExpediente from '@/components/forms/ModalExpediente'
+import ModalSubsanacion from '@/components/forms/ModalSubsanacion'
 import { useAuth } from '@/hooks/useAuth'
 
 const BADGE_EMPRESA: Record<string, string> = {
