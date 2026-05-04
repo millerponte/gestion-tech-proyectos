@@ -40,6 +40,10 @@ export default function CronogramasPage() {
   const [modalImportar, setModalImportar] = useState(false)
   const [filtroResponsable, setFiltroResponsable] = useState('')
   const [filtroEstadoHito, setFiltroEstadoHito] = useState('')
+  const [busquedaHito, setBusquedaHito] = useState('')
+  const [modoGlobalHitos, setModoGlobalHitos] = useState(false)
+  const [todosHitos, setTodosHitos] = useState<Hito[]>([])
+  const [loadingGlobal, setLoadingGlobal] = useState(false)
   const [nuevoHito, setNuevoHito] = useState<Partial<Hito>>({
     numero: 0, nombre: '', descripcion: '', responsable: '',
     plazoContractual: '', fechaInicio: hoy(),
