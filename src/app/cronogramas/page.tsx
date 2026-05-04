@@ -196,7 +196,19 @@ export default function CronogramasPage() {
     )
   })
 
-  const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filter(Boolean)))
+const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filter(Boolean)))
+
+  const buscarHitosGlobal = async (q: string) => {
+    if (!q.trim()) { setModoGlobalHitos(false); setTodosHitos([]); return }
+    setModoGlobalHitos(true)
+    setLoadingGlobal(true)
+    const todos = await obtenerTodosHitos()
+    const filtrados = todos.filter(h =>
+      h.nombre.toLowerCase().includes(q.toLowerCase())
+    )
+    setTodosHitos(filtrados)
+    setLoadingGlobal(false)
+  }
 
   if (loading) {
     return (
