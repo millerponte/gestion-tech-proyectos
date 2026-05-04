@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { obtenerProyectos, obtenerClientes, obtenerHitosPorProyecto, crearHito, actualizarHito, eliminarHito, obtenerEntregables } from '@/lib/db'
+import { obtenerProyectos, obtenerClientes, obtenerHitosPorProyecto, crearHito, actualizarHito, eliminarHito, obtenerEntregables, obtenerTodosHitos } from '@/lib/db'
 import type { Proyecto, Cliente, Hito, Entregable } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import { CalendarDays, Plus, Search, ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Download, FileSpreadsheet } from 'lucide-react'
