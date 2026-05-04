@@ -523,6 +523,23 @@ const guardarEdicion = async (id: string) => {
           onSuccess={() => { setEntregableExpediente(null); cargar() }}
         />
       )}
+      {entregableSubsanar && (
+        <ModalSubsanacion
+          entregable={entregableSubsanar}
+          onClose={() => setEntregableSubsanar(null)}
+          onSuccess={(nuevoId?: string) => {
+            setEntregableSubsanar(null)
+            cargar()
+            setTimeout(() => {
+              setUltimoId(null)
+              requestAnimationFrame(() => {
+                setUltimoId(nuevoId || '__nuevo__')
+                setTimeout(() => setUltimoId(null), 5500)
+              })
+            }, 400)
+          }}
+        />
+      )}
       {entregableReenvio && (
         <ModalExpediente
           entregable={entregableReenvio}
