@@ -284,6 +284,13 @@ const guardarEdicion = async (id: string) => {
                               <Mail className="w-3.5 h-3.5" />
                             </button>
                           )}
+                          {e.estado === 'completo' && (
+                            <button onClick={() => setEntregableSubsanar(e)}
+                              className="text-xs text-slate-400 hover:text-amber-400 transition-colors"
+                              title="Crear subsanación">
+                              <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                     
                          {tienePermiso('entregables_editar') && (
                             <button onClick={() => { setExpandido(e.id); iniciarEdicion(e) }}
