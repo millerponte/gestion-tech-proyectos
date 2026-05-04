@@ -61,7 +61,8 @@ export default function ProyectosPage() {
     const coincideBusqueda = !q ||
       p.nombre.toLowerCase().includes(q) ||
       p.clienteNombre.toLowerCase().includes(q) ||
-      p.solucion.toLowerCase().includes(q)
+      p.solucion.toLowerCase().includes(q) ||
+      (p.numeroContrato || '').toLowerCase().includes(q)
     return coincideBusqueda &&
       (!filtroEmpresa || p.empresa === filtroEmpresa) &&
       (!filtroEstado || p.estado === filtroEstado) &&
