@@ -22,6 +22,7 @@ export interface Usuario {
 }
 
 export interface PermisoUsuario {
+  ventas_ver: boolean
   proyectos_ver: boolean
   proyectos_agregar: boolean
   proyectos_editar: boolean
