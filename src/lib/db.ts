@@ -211,3 +211,25 @@ export async function crearComentario(data: Omit<Comentario, 'id'>): Promise<str
 export async function eliminarComentario(id: string) {
   await deleteDoc(doc(db, 'comentarios', id))
 }
+
+import type { ClienteVentas, CitaVentas, FirmaVentas, LicitacionVentas } from '@/types'
+
+export async function obtenerClientesVentas(): Promise<ClienteVentas[]> { const snap = await getDocs(query(collection(db, 'ventas_clientes'), orderBy('createdAt', 'desc'))); return snap.docs.map(d => ({ id: d.id, ...d.data() } as ClienteVentas)) }
+export async function crearClienteVentas(data: Omit<ClienteVentas, 'id'>): Promise<string> { const ref = await addDoc(collection(db, 'ventas_clientes'), data); return ref.id }
+export async function actualizarClienteVentas(id: string, data: Partial<ClienteVentas>) { await updateDoc(doc(db, 'ventas_clientes', id), data) }
+export async function eliminarClienteVentas(id: string) { await deleteDoc(doc(db, 'ventas_clientes', id)) }
+
+export async function obtenerCitasVentas(): Promise<CitaVentas[]> { const snap = await getDocs(query(collection(db, 'ventas_citas'), orderBy('createdAt', 'desc'))); return snap.docs.map(d => ({ id: d.id, ...d.data() } as CitaVentas)) }
+export async function crearCitaVentas(data: Omit<CitaVentas, 'id'>): Promise<string> { const ref = await addDoc(collection(db, 'ventas_citas'), data); return ref.id }
+export async function actualizarCitaVentas(id: string, data: Partial<CitaVentas>) { await updateDoc(doc(db, 'ventas_citas', id), data) }
+export async function eliminarCitaVentas(id: string) { await deleteDoc(doc(db, 'ventas_citas', id)) }
+
+export async function obtenerFirmasVentas(): Promise<FirmaVentas[]> { const snap = await getDocs(query(collection(db, 'ventas_firmas'), orderBy('fecha', 'desc'))); return snap.docs.map(d => ({ id: d.id, ...d.data() } as FirmaVentas)) }
+export async function crearFirmaVentas(data: Omit<FirmaVentas, 'id'>): Promise<string> { const ref = await addDoc(collection(db, 'ventas_firmas'), data); return ref.id }
+export async function actualizarFirmaVentas(id: string, data: Partial<FirmaVentas>) { await updateDoc(doc(db, 'ventas_firmas', id), data) }
+export async function eliminarFirmaVentas(id: string) { await deleteDoc(doc(db, 'ventas_firmas', id)) }
+
+export async function obtenerLicitacionesVentas(): Promise<LicitacionVentas[]> { const snap = await getDocs(query(collection(db, 'ventas_licitaciones'), orderBy('createdAt', 'desc'))); return snap.docs.map(d => ({ id: d.id, ...d.data() } as LicitacionVentas)) }
+export async function crearLicitacionVentas(data: Omit<LicitacionVentas, 'id'>): Promise<string> { const ref = await addDoc(collection(db, 'ventas_licitaciones'), data); return ref.id }
+export async function actualizarLicitacionVentas(id: string, data: Partial<LicitacionVentas>) { await updateDoc(doc(db, 'ventas_licitaciones', id), data) }
+export async function eliminarLicitacionVentas(id: string) { await deleteDoc(doc(db, 'ventas_licitaciones', id)) }
