@@ -12,11 +12,14 @@ import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 
+import { LayoutDashboard, FolderKanban, FileText, CalendarDays, TrendingUp } from 'lucide-react'
+
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/proyectos', label: 'Proyectos', icon: FolderKanban },
   { href: '/entregables', label: 'Entregables', icon: FileText },
   { href: '/cronogramas', label: 'Cronogramas', icon: CalendarDays },
+  { href: '/ventas', label: 'Ventas', icon: TrendingUp },
 ]
 
 const EMPRESA_COLORS: Record<string, string> = {
