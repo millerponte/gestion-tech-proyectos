@@ -12,7 +12,6 @@ import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 
-import { LayoutDashboard, FolderKanban, FileText, CalendarDays, TrendingUp } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
