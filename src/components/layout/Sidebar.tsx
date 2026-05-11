@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import {
-  LayoutDashboard, FolderKanban, FileText, CalendarDays,
+  LayoutDashboard, FolderKanban, FileText, CalendarDays, TrendingUp,
   Settings, LogOut, Shield, ChevronRight, Menu, X
 } from 'lucide-react'
 import { useState } from 'react'
