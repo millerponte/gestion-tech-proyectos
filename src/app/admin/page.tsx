@@ -161,11 +161,11 @@ const PERMISOS_LABELS: Record<keyof PermisoUsuario, string> = {
 }
 
   const PERMISOS_POR_ROL: Record<string, PermisoUsuario> = {
-    ingeniero:     { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: true,  entregables_editar: true,  comentarios: true comentarios: true, ventas_ver: false },
-    administracion:{ proyectos_ver: true,  proyectos_agregar: true,  proyectos_editar: true,  cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true comentarios: true, ventas_ver: true },
-    legal:         { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true comentarios: true, ventas_ver: false },
-    gerente:       { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true comentarios: true, ventas_ver: true },
-    usuario:       { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true comentarios: true, ventas_ver: false },
+    ingeniero:     { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: true,  entregables_editar: true,  comentarios: true, ventas_ver: false },
+    administracion:{ proyectos_ver: true,  proyectos_agregar: true,  proyectos_editar: true,  cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: true },
+    legal:         { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: false },
+    gerente:       { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: true },
+    usuario:       { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: false },
   }
 
   const iniciarEdicionPermisos = (u: Usuario) => {
