@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import {
   LayoutDashboard, FolderKanban, FileText, CalendarDays, TrendingUp,
-  Settings, LogOut, Shield, ChevronRight, Menu, X
+  Settings, LogOut, Shield, ChevronRight, Menu, X, Building2
 } from 'lucide-react'
 import { useState } from 'react'
 import clsx from 'clsx'
