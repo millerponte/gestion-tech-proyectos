@@ -464,7 +464,7 @@ export default function VentasPage() {
       {modalNuevoC && (
         <ModalVentas title="Registrar Cliente en Pipeline" onClose={() => setModalNuevoC(false)}>
           <FormClienteVentas data={nuevoC} globalClientes={globalClientes} onChange={setNuevoC} router={router}
-            onSave={async (clienteValidado) => {
+            onSave={async (clienteValidado: boolean) => {
               if (!clienteValidado) { toast.error('Selecciona un cliente válido del directorio'); return }
               await crearClienteVentas({ ...nuevoC as any, nombre: nuevoC.nombre, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Agregó a pipeline: ${nuevoC.nombre}`)
