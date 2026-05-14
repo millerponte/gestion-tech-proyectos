@@ -477,7 +477,7 @@ export default function VentasPage() {
       {modalNuevoCi && (
         <ModalVentas title="Agendar Nueva Cita" onClose={() => setModalNuevoCi(false)}>
           <FormCitaVentas data={nuevoCi} globalClientes={globalClientes} onChange={setNuevoCi} router={router}
-            onSave={async (clienteValidado) => {
+            onSave={async (clienteValidado: boolean) => {
               if (!clienteValidado) { toast.error('Selecciona un cliente válido'); return }
               await crearCitaVentas({ ...nuevoCi as any, cliente: nuevoCi.cliente, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró cita con: ${nuevoCi.cliente}`)
@@ -490,7 +490,7 @@ export default function VentasPage() {
       {modalNuevoF && (
         <ModalVentas title="Registrar Firma" onClose={() => setModalNuevoF(false)}>
           <FormFirmaVentas data={nuevoF} globalClientes={globalClientes} onChange={setNuevoF} router={router}
-            onSave={async (clienteValidado) => {
+            onSave={async (clienteValidado: boolean) => {
               if (!clienteValidado) { toast.error('Selecciona un cliente válido'); return }
               const firmaProcesada = processFirma(nuevoF)
               if (!firmaProcesada.documento) { toast.error('Elige al menos un tipo de documento'); return }
