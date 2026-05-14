@@ -116,7 +116,8 @@ export default function Sidebar() {
               <span className={clsx(
                 'mt-2 inline-block text-xs rounded-full px-2 py-0.5 border',
                 usuario.rol === 'admin'        && 'text-amber-400 bg-amber-900/30 border-amber-700/30',
-                usuario.rol === 'ingeniero'    && 'text-blue-400 bg-blue-900/30 border-blue-700/30',
+                usuario.rol === 'soc'          && 'text-blue-400 bg-blue-900/30 border-blue-700/30',
+                usuario.rol === 'preventa'     && 'text-indigo-400 bg-indigo-900/30 border-indigo-700/30',
                 usuario.rol === 'administracion' && 'text-green-400 bg-green-900/30 border-green-700/30',
                 usuario.rol === 'legal'        && 'text-purple-400 bg-purple-900/30 border-purple-700/30',
                 usuario.rol === 'gerente'      && 'text-cyan-400 bg-cyan-900/30 border-cyan-700/30',
@@ -124,7 +125,8 @@ export default function Sidebar() {
               )}>
                 {{
                   admin: 'Admin',
-                  ingeniero: 'Ingeniero',
+                  soc: 'SOC',
+                  preventa: 'Pre venta',
                   administracion: 'Administración',
                   legal: 'Legal',
                   gerente: 'Gerente',
