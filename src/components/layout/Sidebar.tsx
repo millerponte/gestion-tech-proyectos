@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/clientes', label: 'Clientes', icon: Building2 }, // Agregado afuera
   { href: '/proyectos', label: 'Proyectos', icon: FolderKanban },
   { href: '/entregables', label: 'Entregables', icon: FileText },
   { href: '/cronogramas', label: 'Cronogramas', icon: CalendarDays },
