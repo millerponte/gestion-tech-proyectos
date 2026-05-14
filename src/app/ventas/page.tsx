@@ -505,7 +505,7 @@ export default function VentasPage() {
       {modalNuevoL && (
         <ModalVentas title="Nueva Licitación" onClose={() => setModalNuevoL(false)}>
           <FormLicitacionVentas data={nuevoL} globalClientes={globalClientes} onChange={setNuevoL} router={router}
-            onSave={async (clienteValidado) => {
+            onSave={async (clienteValidado: boolean) => {
               if (!clienteValidado) { toast.error('Selecciona una entidad válida'); return }
               await crearLicitacionVentas({ ...nuevoL as any, entidad: nuevoL.entidad, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró licitación: ${nuevoL.entidad}`)
