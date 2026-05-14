@@ -233,3 +233,35 @@ export async function obtenerLicitacionesVentas(): Promise<LicitacionVentas[]> {
 export async function crearLicitacionVentas(data: Omit<LicitacionVentas, 'id'>): Promise<string> { const ref = await addDoc(collection(db, 'ventas_licitaciones'), data); return ref.id }
 export async function actualizarLicitacionVentas(id: string, data: Partial<LicitacionVentas>) { await updateDoc(doc(db, 'ventas_licitaciones', id), data) }
 export async function eliminarLicitacionVentas(id: string) { await deleteDoc(doc(db, 'ventas_licitaciones', id)) }
+// ─── SISTEMA DE AUDITORÍA Y CONSOLA ──────────────────────────────────────────
+
+export async function registrarLog(usuarioUid: string, usuarioNombre: string, modulo: string, accion: string) {
+  // Validar si el registro está deshabilitado globalmente
+  const configRef = doc(db, 'configuracion', 'auditoria')
+  const configSnap = await getDoc(configRef)
+  if (configSnap.exists() && configSnap.data().deshabilitado === true) {
+    return // No registrar si está deshabilitado
+  }
+
+  await addDoc(collection(db, 'audit_logs'), {
+    usuarioUid,
+    usuarioNombre,
+    modulo,
+    accion,
+    fechaHora: new Date().toISOString()
+  })
+}
+
+export async function obtenerLogs(): Promise<any[]> {
+  const snap = await getDocs(query(collection(db, 'audit_logs'), orderBy('fechaHora', 'desc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function cambiarEstadoAuditoria(deshabilitado: boolean) {
+  await setDoc(doc(db, 'configuracion', 'auditoria'), { deshabilitado }, { merge: true })
+}
+
+export async function obtenerEstadoAuditoria(): Promise<boolean> {
+  const snap = await getDoc(doc(db, 'configuracion', 'auditoria'))
+  return snap.exists() ? !!snap.data().deshabilitado : false
+}
