@@ -9,7 +9,16 @@ export type TipoEntregable =
   | 'Entregable'
   | 'Otro'
 
-export type RolUsuario = 'admin' | 'ingeniero' | 'administracion' | 'legal' | 'gerente' | 'usuario'
+export type RolUsuario = 'admin' | 'soc' | 'administracion' | 'legal' | 'gerente' | 'usuario' | 'preventa'
+
+export interface AuditLog {
+  id?: string
+  usuarioNombre: string
+  usuarioUid: string
+  accion: string
+  modulo: string
+  fechaHora: string // ISO string
+}
 
 export interface Usuario {
   uid: string
