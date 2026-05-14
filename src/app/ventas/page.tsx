@@ -489,8 +489,8 @@ export default function VentasPage() {
 
       {modalNuevoF && (
         <ModalVentas title="Registrar Firma" onClose={() => setModalNuevoF(false)}>
-          onSave={async (clienteValidado: boolean) => {
-              if (!clienteValidado) { toast.error('Selecciona un cliente válido'); return }
+          <FormFirmaVentas data={nuevoF} globalClientes={globalClientes} onChange={setNuevoF} router={router}
+            onSave={async (clienteValidado: boolean) => {
               if (!clienteValidado) { toast.error('Selecciona un cliente válido'); return }
               const firmaProcesada = processFirma(nuevoF)
               if (!firmaProcesada.documento) { toast.error('Elige al menos un tipo de documento'); return }
