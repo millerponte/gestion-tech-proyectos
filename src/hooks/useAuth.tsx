@@ -77,11 +77,18 @@ const isAdmin = usuario?.rol === 'admin'
     // Permisos por defecto según rol
     const rol = usuario.rol
     const defaults: Record<string, Partial<import('@/types').PermisoUsuario>> = {
-      ingeniero: {
+      soc: {
         proyectos_ver: true,
         cronogramas_ver: true, cronogramas_agregar: true, cronogramas_editar: true,
         entregables_ver: true, entregables_agregar: true, entregables_editar: true,
         comentarios: true,
+      },
+      preventa: {
+        proyectos_ver: true,
+        cronogramas_ver: true,
+        entregables_ver: true,
+        comentarios: true,
+        ventas_ver: true
       },
       administracion: {
         proyectos_ver: true, proyectos_agregar: true, proyectos_editar: true,
