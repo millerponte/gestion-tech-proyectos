@@ -177,7 +177,7 @@ export default function ClientesPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => handleOriginalGuardar(c.id)} className="btn-primary text-xs"><Check className="w-3.5 h-3.5" /> Guardar</button>
+                    <button onClick={() => handleGuardarEdicion(c.id)} className="btn-primary text-xs"><Check className="w-3.5 h-3.5" /> Guardar</button>
                     <button onClick={() => setEditandoCliente(null)} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /> Cancelar</button>
                   </div>
                 </div>
