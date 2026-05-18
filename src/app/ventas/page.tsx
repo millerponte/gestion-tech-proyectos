@@ -71,7 +71,7 @@ export default function VentasPage() {
   const [editandoC, setEditandoC] = useState<string | null>(null)
   const [editDataC, setEditDataC] = useState<Partial<ClienteVentas>>({})
   const [modalNuevoC, setModalNuevoC] = useState(false)
-  const [nuevoC, setNuevoC] = useState<Partial<ClienteVentas>>({ status: 'nuevo', año: '2026' })
+  const [nuevoC, setNuevoC] = useState<Partial<ClienteVentas>>({ status: 'nuevo', año: new Date().getFullYear().toString(), fechaCotizacion: hoy() })
 
   // ── CITAS ───────────────────────────────────────────────────────────────
   const [citas, setCitas] = useState<CitaVentas[]>([])
