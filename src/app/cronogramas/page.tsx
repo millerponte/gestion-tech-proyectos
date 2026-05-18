@@ -17,7 +17,7 @@ const ESTADO_HITO: Record<string, string> = {
   vencido: 'bg-red-900/30 text-red-300 border-red-700/40',
 }
 
-const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
+const ROLES_RESPONSABLE = ['SOC', 'PRE VENTA', 'ADMINISTRACIÓN', 'LEGAL', 'GERENCIA']
 
 export default function CronogramasPage() {
   const { isAdmin, tienePermiso, usuario } = useAuth()
