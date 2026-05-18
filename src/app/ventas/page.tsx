@@ -10,7 +10,7 @@ import {
   obtenerCitasVentas, crearCitaVentas, actualizarCitaVentas, eliminarCitaVentas,
   obtenerFirmasVentas, crearFirmaVentas, actualizarFirmaVentas, eliminarFirmaVentas,
   obtenerLicitacionesVentas, crearLicitacionVentas, actualizarLicitacionVentas, eliminarLicitacionVentas,
-  registrarLog, hoy
+  registrarLog, hoy, formatearFecha
 } from '@/lib/db'
 import type { Cliente, ClienteVentas, CitaVentas, FirmaVentas, LicitacionVentas, StatusPipeline, SectorCita, ResultadoLicitacion } from '@/types'
 import {
@@ -36,6 +36,7 @@ const RESULTADO_COLORS: Record<string, string> = {
   suspendido: 'bg-slate-700/40 text-slate-300 border-slate-600/40',
 }
 
+// Opciones dinámicas para el filtro de años
 const OPCIONES_ANIOS = (() => {
   const anios = ['2023', '2023-24']
   const currentYear = new Date().getFullYear()
@@ -55,6 +56,15 @@ function exportCSV(headers: string[], filas: any[][], nombre: string) {
   toast.success('Exportado correctamente')
 }
 
+// Helper para extraer y comparar el año de una fecha YYYY-MM-DD
+const checkYear = (fecha: string | undefined, filtro: string) => {
+  if (!filtro) return true
+  if (!fecha) return false
+  const year = fecha.split('-')[0]
+  if (filtro === '2023-24') return year === '2023' || year === '2024'
+  return year === filtro
+}
+
 export default function VentasPage() {
   const { usuario, isAdmin } = useAuth()
   const router = useRouter()
@@ -66,16 +76,18 @@ export default function VentasPage() {
   const [clientes, setClientes] = useState<ClienteVentas[]>([])
   const [busquedaC, setBusquedaC] = useState('')
   const [filtroStatusC, setFiltroStatusC] = useState('')
+  const [filtroAñoC, setFiltroAñoC] = useState('')
   const [expandidoC, setExpandidoC] = useState<string | null>(null)
   const [editandoC, setEditandoC] = useState<string | null>(null)
   const [editDataC, setEditDataC] = useState<Partial<ClienteVentas>>({})
   const [modalNuevoC, setModalNuevoC] = useState(false)
-  const [nuevoC, setNuevoC] = useState<Partial<ClienteVentas>>({ status: 'nuevo', año: new Date().getFullYear().toString(), fechaCotizacion: hoy() })
+  const [nuevoC, setNuevoC] = useState<Partial<ClienteVentas>>({ status: 'nuevo', fechaCotizacion: hoy() })
 
   // ── CITAS ───────────────────────────────────────────────────────────────
   const [citas, setCitas] = useState<CitaVentas[]>([])
   const [busquedaCi, setBusquedaCi] = useState('')
   const [filtroSectorCi, setFiltroSectorCi] = useState('')
+  const [filtroAñoCi, setFiltroAñoCi] = useState('')
   const [expandidoCi, setExpandidoCi] = useState<string | null>(null)
   const [editandoCi, setEditandoCi] = useState<string | null>(null)
   const [editDataCi, setEditDataCi] = useState<Partial<CitaVentas>>({})
@@ -85,6 +97,7 @@ export default function VentasPage() {
   // ── FIRMAS ──────────────────────────────────────────────────────────────
   const [firmas, setFirmas] = useState<FirmaVentas[]>([])
   const [busquedaF, setBusquedaF] = useState('')
+  const [filtroAñoF, setFiltroAñoF] = useState('')
   const [expandidoF, setExpandidoF] = useState<string | null>(null)
   const [editandoF, setEditandoF] = useState<string | null>(null)
   const [editDataF, setEditDataF] = useState<Partial<FirmaVentas>>({})
@@ -94,11 +107,12 @@ export default function VentasPage() {
   // ── LICITACIONES ────────────────────────────────────────────────────────
   const [licitaciones, setLicitaciones] = useState<LicitacionVentas[]>([])
   const [busquedaL, setBusquedaL] = useState('')
+  const [filtroAñoL, setFiltroAñoL] = useState('')
   const [expandidoL, setExpandidoL] = useState<string | null>(null)
   const [editandoL, setEditandoL] = useState<string | null>(null)
   const [editDataL, setEditDataL] = useState<Partial<LicitacionVentas>>({})
   const [modalNuevoL, setModalNuevoL] = useState(false)
-  const [nuevoL, setNuevoL] = useState<Partial<LicitacionVentas>>({ resultado: 'en_proceso', año: new Date().getFullYear().toString(), empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() })
+  const [nuevoL, setNuevoL] = useState<Partial<LicitacionVentas>>({ resultado: 'en_proceso', empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() })
 
   useEffect(() => { initMódulo() }, [])
 
@@ -116,16 +130,16 @@ export default function VentasPage() {
   }
 
   // ── Exportar ────────────────────────────────────────────────────────────
-  const exportarPipeline = () => exportCSV(['Cliente', 'Contacto', 'Correo', 'Proyecto', 'Solución', 'Mayorista', 'Fecha Cotización', 'Status Proyecto', 'Estado', 'Año', 'Plan de Acción'], clientesFiltrados.map(c => [c.nombre, c.contacto, c.correo, c.proyecto, c.solucion, c.mayorista, c.fechaCotizacion, c.statusProyecto, c.status, c.año, c.planAccion]), 'pipeline_ventas')
-  const exportarCitas = () => exportCSV(['Cliente', 'Contacto', 'Correo', 'Cargo', 'Sector', 'Fecha Reunión', 'Horario', 'Solución', 'Status Proyecto', 'Estado Cita', 'Observaciones'], citasFiltradas.map(c => [c.cliente, c.contacto, c.correo, c.cargo, c.sector, c.fechaReunion, c.horario, c.solucion, c.statusProyecto, c.status, c.observaciones]), 'citas_ventas')
-  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Empresa', 'Fecha', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.empresa, f.fecha, f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.observaciones]), 'firmas_ventas')
-  const exportarLicitaciones = () => exportCSV(['Entidad', 'Empresa', 'Proceso', 'Bases Integradas', 'F. Presentación', 'F. Evaluación', 'Buena Pro', 'Consentimiento', 'F. Firma Contrato', 'Resultado', 'Año', 'Observaciones/Detalle'], licitacionesFiltradas.map(l => [l.entidad, l.empresa, l.proceso, l.basesIntegradas, l.fechaPresentacion, l.fechaFinEvaluacion, l.buenaPro, l.consentimiento, l.fechaFirmaContrato, l.resultado, l.año, l.observaciones]), 'licitaciones_ventas')
+  const exportarPipeline = () => exportCSV(['Cliente', 'Contacto', 'Correo', 'Proyecto', 'Solución', 'Mayorista', 'Fecha Cotización', 'Status Proyecto', 'Estado', 'Plan de Acción'], clientesFiltrados.map(c => [c.nombre, c.contacto, c.correo, c.proyecto, c.solucion, c.mayorista, formatearFecha(c.fechaCotizacion), c.statusProyecto, c.status, c.planAccion]), 'pipeline_ventas')
+  const exportarCitas = () => exportCSV(['Cliente', 'Contacto', 'Correo', 'Cargo', 'Sector', 'Fecha Reunión', 'Horario', 'Solución', 'Status Proyecto', 'Estado Cita', 'Observaciones'], citasFiltradas.map(c => [c.cliente, c.contacto, c.correo, c.cargo, c.sector, formatearFecha(c.fechaReunion), c.horario, c.solucion, c.statusProyecto, c.status, c.observaciones]), 'citas_ventas')
+  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Empresa', 'Fecha', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.empresa, formatearFecha(f.fecha), f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.observaciones]), 'firmas_ventas')
+  const exportarLicitaciones = () => exportCSV(['Entidad', 'Empresa', 'Proceso', 'Bases Integradas', 'F. Presentación', 'F. Evaluación', 'Buena Pro', 'Consentimiento', 'F. Firma Contrato', 'Resultado', 'Observaciones/Detalle'], licitacionesFiltradas.map(l => [l.entidad, l.empresa, l.proceso, formatearFecha(l.basesIntegradas), formatearFecha(l.fechaPresentacion), formatearFecha(l.fechaFinEvaluacion), formatearFecha(l.buenaPro), formatearFecha(l.consentimiento), formatearFecha(l.fechaFirmaContrato), l.resultado, l.observaciones]), 'licitaciones_ventas')
 
   // ── Filtros ─────────────────────────────────────────────────────────────
-  const clientesFiltrados = clientes.filter(c => (!busquedaC || c.nombre.toLowerCase().includes(busquedaC.toLowerCase())) && (!filtroStatusC || c.status === filtroStatusC))
-  const citasFiltradas = citas.filter(c => (!busquedaCi || c.cliente.toLowerCase().includes(busquedaCi.toLowerCase())) && (!filtroSectorCi || c.sector === filtroSectorCi))
-  const firmasFiltradas = firmas.filter(f => !busquedaF || f.cliente.toLowerCase().includes(busquedaF.toLowerCase()) || f.codigo.toLowerCase().includes(busquedaF.toLowerCase()))
-  const licitacionesFiltradas = licitaciones.filter(l => !busquedaL || l.entidad.toLowerCase().includes(busquedaL.toLowerCase()))
+  const clientesFiltrados = clientes.filter(c => (!busquedaC || c.nombre.toLowerCase().includes(busquedaC.toLowerCase())) && (!filtroStatusC || c.status === filtroStatusC) && checkYear(c.fechaCotizacion, filtroAñoC))
+  const citasFiltradas = citas.filter(c => (!busquedaCi || c.cliente.toLowerCase().includes(busquedaCi.toLowerCase())) && (!filtroSectorCi || c.sector === filtroSectorCi) && checkYear(c.fechaReunion, filtroAñoCi))
+  const firmasFiltradas = firmas.filter(f => (!busquedaF || f.cliente.toLowerCase().includes(busquedaF.toLowerCase()) || f.codigo.toLowerCase().includes(busquedaF.toLowerCase())) && checkYear(f.fecha, filtroAñoF))
+  const licitacionesFiltradas = licitaciones.filter(l => (!busquedaL || l.entidad.toLowerCase().includes(busquedaL.toLowerCase())) && checkYear(l.fechaPresentacion, filtroAñoL))
 
   // ── Dashboard Superior Lógica ───────────────────────────────────────────
   const evaluarFecha = (fechaStr: string, rango: RangoFiltro): boolean => {
@@ -172,7 +186,7 @@ export default function VentasPage() {
               <div key={c.id} className="bg-dark-800 p-2.5 rounded border border-slate-700 flex justify-between items-center text-xs hover:border-amber-500/50 cursor-pointer" onClick={() => { setTab('citas'); setExpandidoCi(c.id) }}>
                 <div>
                   <p className="font-bold text-white">{c.cliente}</p>
-                  <p className="text-slate-400">{c.solucion || 'Sin solución'} — 📅 {c.fechaReunion} ({c.horario})</p>
+                  <p className="text-slate-400">{c.solucion || 'Sin solución'} — 📅 {formatearFecha(c.fechaReunion)} ({c.horario})</p>
                 </div>
                 <span className="bg-amber-900/40 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-full scale-90">Pendiente</span>
               </div>
@@ -189,7 +203,7 @@ export default function VentasPage() {
               <div key={c.id} className="bg-dark-800 p-2.5 rounded border border-slate-700 flex justify-between items-center text-xs hover:border-green-500/50 cursor-pointer" onClick={() => { setTab('citas'); setExpandidoCi(c.id) }}>
                 <div>
                   <p className="font-bold text-white">{c.cliente}</p>
-                  <p className="text-slate-400">Finalizada el {c.fechaReunion}</p>
+                  <p className="text-slate-400">Finalizada el {formatearFecha(c.fechaReunion)}</p>
                 </div>
                 <span className="bg-green-900/40 text-green-300 border border-green-800 px-2 py-0.5 rounded-full scale-90">Realizado</span>
               </div>
@@ -223,6 +237,10 @@ export default function VentasPage() {
               <option value="realizado">Realizado</option>
               <option value="perdido">Perdido</option>
             </select>
+            <select className="input-field w-auto min-w-32" value={filtroAñoC} onChange={e => setFiltroAñoC(e.target.value)}>
+              <option value="">Todos los años</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
             <div className="flex gap-2 ml-auto">
               <button onClick={exportarPipeline} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>
               {isAdmin && <button onClick={() => setModalNuevoC(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nuevo cliente</button>}
@@ -242,7 +260,7 @@ export default function VentasPage() {
                       <td className="tabla-cell"><p className="text-sm font-medium">{c.nombre}</p><p className="text-xs text-slate-500">{c.contacto}</p></td>
                       <td className="tabla-cell"><p className="text-xs">{c.proyecto}</p><p className="text-xs text-slate-500">{c.solucion}</p></td>
                       <td className="tabla-cell text-xs">{c.mayorista || '—'}</td>
-                      <td className="tabla-cell text-xs">{c.fechaCotizacion || '—'}</td>
+                      <td className="tabla-cell text-xs">{formatearFecha(c.fechaCotizacion) || '—'}</td>
                       <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', STATUS_COLORS[c.status])}>{c.status}</span></td>
                       <td className="tabla-cell" onClick={e => e.stopPropagation()}>
                         {isAdmin && (
@@ -256,13 +274,12 @@ export default function VentasPage() {
                     {expandidoC === c.id && (
                       <tr className="bg-[#0d1526]/80"><td colSpan={7} className="p-4">
                         {editandoC === c.id ? (
-                          <FormClienteVentas data={editDataC} globalClientes={globalClientes} onChange={setEditDataC} onSave={async () => { await actualizarClienteVentas(c.id, editDataC); toast.success('Actualizado'); setEditandoC(null); initMódulo() }} onCancel={() => setEditandoC(null)} router={router} />
+                          <FormClienteVentas data={editDataC} globalClientes={globalClientes} onChange={setEditDataC} onSave={async (val: boolean) => { await actualizarClienteVentas(c.id, editDataC); toast.success('Actualizado'); setEditandoC(null); initMódulo() }} onCancel={() => setEditandoC(null)} router={router} />
                         ) : (
                           <div className="grid grid-cols-3 gap-4 text-xs">
                             <div><p className="text-slate-500">Contacto</p><p>{c.contacto || '—'}</p></div>
                             <div><p className="text-slate-500">Correo</p><p>{c.correo || '—'}</p></div>
-                            <div><p className="text-slate-500">Año</p><p>{c.año}</p></div>
-                            <div className="col-span-3"><p className="text-slate-500">Status del Proyecto</p><p>{c.statusProyecto || '—'}</p></div>
+                            <div><p className="text-slate-500">Status del Proyecto</p><p>{c.statusProyecto || '—'}</p></div>
                             <div className="col-span-3"><p className="text-slate-500">Plan de Acción</p><p>{c.planAccion || '—'}</p></div>
                           </div>
                         )}
@@ -292,6 +309,10 @@ export default function VentasPage() {
               <option value="educacion">Educación</option>
               <option value="otro">Otro</option>
             </select>
+            <select className="input-field w-auto min-w-32" value={filtroAñoCi} onChange={e => setFiltroAñoCi(e.target.value)}>
+              <option value="">Todos los años</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
             <div className="flex gap-2 ml-auto">
               <button onClick={exportarCitas} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>
               {isAdmin && <button onClick={() => setModalNuevoCi(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nueva cita</button>}
@@ -310,7 +331,7 @@ export default function VentasPage() {
                       <td className="tabla-cell text-slate-500">{expandidoCi === c.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
                       <td className="tabla-cell font-medium">{c.cliente}</td>
                       <td className="tabla-cell text-xs">{c.contacto} <span className="text-slate-500">({c.correo})</span></td>
-                      <td className="tabla-cell text-xs font-mono text-cyan-400">{c.fechaReunion} — {c.horario}</td>
+                      <td className="tabla-cell text-xs font-mono text-cyan-400">{formatearFecha(c.fechaReunion)} — {c.horario}</td>
                       <td className="tabla-cell"><span className={clsx("px-2 py-0.5 rounded border text-xs", c.status === 'realizado' ? "bg-green-900/40 text-green-300 border-green-800" : c.status === 'cancelado' ? "bg-red-900/40 text-red-300 border-red-800" : "bg-amber-900/40 text-amber-300 border-amber-800")}>{c.status}</span></td>
                       <td className="tabla-cell" onClick={e => e.stopPropagation()}>
                         {isAdmin && (
@@ -324,7 +345,7 @@ export default function VentasPage() {
                     {expandidoCi === c.id && (
                       <tr className="bg-[#0d1526]/80"><td colSpan={6} className="p-4">
                         {editandoCi === c.id ? (
-                          <FormCitaVentas data={editDataCi} globalClientes={globalClientes} onChange={setEditDataCi} onSave={async () => { await actualizarCitaVentas(c.id, editDataCi); toast.success('Actualizado'); setEditandoCi(null); initMódulo() }} onCancel={() => setEditandoCi(null)} router={router} />
+                          <FormCitaVentas data={editDataCi} globalClientes={globalClientes} onChange={setEditDataCi} onSave={async (val: boolean) => { await actualizarCitaVentas(c.id, editDataCi); toast.success('Actualizado'); setEditandoCi(null); initMódulo() }} onCancel={() => setEditandoCi(null)} router={router} />
                         ) : (
                           <div className="grid grid-cols-3 gap-4 text-xs">
                             <div><p className="text-slate-500">Sector</p><p className="uppercase">{c.sector}</p></div>
@@ -352,6 +373,10 @@ export default function VentasPage() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input className="input-field pl-9" placeholder="Buscar firma..." value={busquedaF} onChange={e => setBusquedaF(e.target.value)} />
             </div>
+            <select className="input-field w-auto min-w-32" value={filtroAñoF} onChange={e => setFiltroAñoF(e.target.value)}>
+              <option value="">Todos los años</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
             <div className="flex gap-2 ml-auto">
               <button onClick={exportarFirmas} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>
               {isAdmin && <button onClick={() => setModalNuevoF(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nueva firma</button>}
@@ -371,7 +396,7 @@ export default function VentasPage() {
                       <td className="tabla-cell text-xs font-mono text-cyan-400">{f.codigo}</td>
                       <td className="tabla-cell font-medium">{f.cliente}</td>
                       <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', f.empresa === 'OKINAWATEC' ? 'badge-okinawatec' : f.empresa === 'TECHSI' ? 'badge-tech' : 'badge-quantic')}>{f.empresa}</span></td>
-                      <td className="tabla-cell text-xs">{f.fecha}</td>
+                      <td className="tabla-cell text-xs">{formatearFecha(f.fecha)}</td>
                       <td className="tabla-cell text-xs text-slate-400 truncate max-w-[150px]">{f.documento}</td>
                       <td className="tabla-cell" onClick={e => e.stopPropagation()}>
                         {isAdmin && (
@@ -385,7 +410,7 @@ export default function VentasPage() {
                     {expandidoF === f.id && (
                       <tr className="bg-[#0d1526]/80"><td colSpan={7} className="p-4">
                         {editandoF === f.id ? (
-                          <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} onSave={async () => { await actualizarFirmaVentas(f.id, processFirma(editDataF)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
+                          <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} onSave={async (val: boolean) => { await actualizarFirmaVentas(f.id, processFirma(editDataF)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
                         ) : (
                           <div className="grid grid-cols-3 gap-4 text-xs">
                             <div><p className="text-slate-500">Autorizado Por</p><p>{f.autorizadoPor || '—'}</p></div>
@@ -413,6 +438,10 @@ export default function VentasPage() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input className="input-field pl-9" placeholder="Buscar entidad..." value={busquedaL} onChange={e => setBusquedaL(e.target.value)} />
             </div>
+            <select className="input-field w-auto min-w-32" value={filtroAñoL} onChange={e => setFiltroAñoL(e.target.value)}>
+              <option value="">Todos los años</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
             <div className="flex gap-2 ml-auto">
               <button onClick={exportarLicitaciones} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>
               {isAdmin && <button onClick={() => setModalNuevoL(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nueva licitación</button>}
@@ -432,7 +461,7 @@ export default function VentasPage() {
                       <td className="tabla-cell font-medium">{l.entidad}</td>
                       <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', l.empresa?.includes('OKI') ? 'badge-okinawatec' : l.empresa?.includes('TECH') ? 'badge-tech' : 'badge-quantic')}>{l.empresa}</span></td>
                       <td className="tabla-cell text-xs truncate max-w-[150px]">{l.proceso}</td>
-                      <td className="tabla-cell text-xs">{l.fechaPresentacion || '—'}</td>
+                      <td className="tabla-cell text-xs">{formatearFecha(l.fechaPresentacion) || '—'}</td>
                       <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', RESULTADO_COLORS[l.resultado])}>{l.resultado.replace('_', ' ')}</span></td>
                       <td className="tabla-cell" onClick={e => e.stopPropagation()}>
                         {isAdmin && (
@@ -446,15 +475,14 @@ export default function VentasPage() {
                     {expandidoL === l.id && (
                       <tr className="bg-[#0d1526]/80"><td colSpan={7} className="p-4">
                         {editandoL === l.id ? (
-                          <FormLicitacionVentas data={editDataL} globalClientes={globalClientes} onChange={setEditDataL} onSave={async () => { await actualizarLicitacionVentas(l.id, editDataL); toast.success('Actualizado'); setEditandoL(null); initMódulo() }} onCancel={() => setEditandoL(null)} router={router} />
+                          <FormLicitacionVentas data={editDataL} globalClientes={globalClientes} onChange={setEditDataL} onSave={async (val: boolean) => { await actualizarLicitacionVentas(l.id, editDataL); toast.success('Actualizado'); setEditandoL(null); initMódulo() }} onCancel={() => setEditandoL(null)} router={router} />
                         ) : (
                           <div className="grid grid-cols-4 gap-4 text-xs">
-                            <div><p className="text-slate-500">Bases Integradas</p><p>{l.basesIntegradas || '—'}</p></div>
-                            <div><p className="text-slate-500">F. Evaluación</p><p>{l.fechaFinEvaluacion || '—'}</p></div>
-                            <div><p className="text-slate-500">Buena Pro</p><p>{l.buenaPro || '—'}</p></div>
-                            <div><p className="text-slate-500">Consentimiento</p><p>{l.consentimiento || '—'}</p></div>
-                            <div><p className="text-slate-500">Firma Contrato</p><p>{l.fechaFirmaContrato || '—'}</p></div>
-                            <div><p className="text-slate-500">Año</p><p>{l.año}</p></div>
+                            <div><p className="text-slate-500">Bases Integradas</p><p>{formatearFecha(l.basesIntegradas) || '—'}</p></div>
+                            <div><p className="text-slate-500">F. Evaluación</p><p>{formatearFecha(l.fechaFinEvaluacion) || '—'}</p></div>
+                            <div><p className="text-slate-500">Buena Pro</p><p>{formatearFecha(l.buenaPro) || '—'}</p></div>
+                            <div><p className="text-slate-500">Consentimiento</p><p>{formatearFecha(l.consentimiento) || '—'}</p></div>
+                            <div><p className="text-slate-500">Firma Contrato</p><p>{formatearFecha(l.fechaFirmaContrato) || '—'}</p></div>
                             <div className="col-span-4"><p className="text-slate-500">Observaciones / Detalle Fechas</p><p>{l.observaciones || '—'}</p></div>
                           </div>
                         )}
@@ -477,7 +505,7 @@ export default function VentasPage() {
               await crearClienteVentas({ ...nuevoC as any, nombre: nuevoC.nombre, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Agregó a pipeline: ${nuevoC.nombre}`)
               toast.success('Cliente agregado')
-              setModalNuevoC(false); setNuevoC({ status: 'nuevo', año: new Date().getFullYear().toString(), fechaCotizacion: hoy() }); initMódulo()
+              setModalNuevoC(false); setNuevoC({ status: 'nuevo', fechaCotizacion: hoy() }); initMódulo()
             }} onCancel={() => setModalNuevoC(false)} />
         </ModalVentas>
       )}
@@ -518,7 +546,7 @@ export default function VentasPage() {
               await crearLicitacionVentas({ ...nuevoL as any, entidad: nuevoL.entidad, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró licitación: ${nuevoL.entidad}`)
               toast.success('Licitación registrada')
-              setModalNuevoL(false); setNuevoL({ resultado: 'en_proceso', año: new Date().getFullYear().toString(), empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() }); initMódulo()
+              setModalNuevoL(false); setNuevoL({ resultado: 'en_proceso', empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() }); initMódulo()
             }} onCancel={() => setModalNuevoL(false)} />
         </ModalVentas>
       )}
@@ -602,7 +630,6 @@ function FormClienteVentas({ data, globalClientes, onChange, onSave, onCancel, r
         <div><label className="label">Mayorista</label><input className="input-field" value={data.mayorista || ''} onChange={e => onChange({ ...data, mayorista: e.target.value })} /></div>
         <div><label className="label">Fecha Cotización</label><input type="date" className="input-field" value={data.fechaCotizacion || ''} onChange={e => onChange({ ...data, fechaCotizacion: e.target.value })} /></div>
         <div><label className="label">Estado</label><select className="input-field" value={data.status || 'nuevo'} onChange={e => onChange({ ...data, status: e.target.value })}><option value="nuevo">Nuevo</option><option value="procesando">Procesando</option><option value="realizado">Realizado</option><option value="perdido">Perdido</option></select></div>
-        <div><label className="label">Año</label><select className="input-field" value={data.año || new Date().getFullYear().toString()} onChange={e => onChange({ ...data, año: e.target.value })}>{OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}</select></div>
         <div className="col-span-2"><label className="label">Status del Proyecto</label><textarea className="input-field resize-none" rows={2} value={data.statusProyecto || ''} onChange={e => onChange({ ...data, statusProyecto: e.target.value })} /></div>
         <div className="col-span-2"><label className="label">Plan de Acción</label><textarea className="input-field resize-none" rows={2} value={data.planAccion || ''} onChange={e => onChange({ ...data, planAccion: e.target.value })} /></div>
       </div>
@@ -683,7 +710,6 @@ function FormLicitacionVentas({ data, globalClientes, onChange, onSave, onCancel
         <div><label className="label">Consentimiento</label><input type="date" className="input-field" value={data.consentimiento || ''} onChange={e => onChange({ ...data, consentimiento: e.target.value })} /></div>
         <div><label className="label">Firma Contrato</label><input type="date" className="input-field" value={data.fechaFirmaContrato || ''} onChange={e => onChange({ ...data, fechaFirmaContrato: e.target.value })} /></div>
         <div><label className="label">Resultado</label><select className="input-field" value={data.resultado || 'en_proceso'} onChange={e => onChange({ ...data, resultado: e.target.value })}><option value="en_proceso">En proceso</option><option value="ganamos">Ganamos</option><option value="perdimos">Perdimos</option><option value="suspendido">Suspendido</option></select></div>
-        <div><label className="label">Año</label><select className="input-field" value={data.año || new Date().getFullYear().toString()} onChange={e => onChange({ ...data, año: e.target.value })}>{OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}</select></div>
         <div className="col-span-2"><label className="label">Observaciones / Detalle Fechas</label><textarea className="input-field resize-none" rows={2} value={data.observaciones || ''} onChange={e => onChange({ ...data, observaciones: e.target.value })} placeholder="Ej: Sin fecha definida para la firma..." /></div>
       </div>
       <div className="flex gap-2"><button onClick={() => onSave(isValid)} className="btn-primary text-xs w-full justify-center"><Check className="w-3.5 h-3.5" /> Guardar</button>{onCancel && <button onClick={onCancel} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /></button>}</div>
