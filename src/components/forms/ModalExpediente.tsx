@@ -15,7 +15,8 @@ interface Props {
 }
 
 const ROLES_NOTIFICACION = [
-  { key: 'ingeniero',      label: 'Ingenieros' },
+  { key: 'soc',            label: 'SOC' },
+  { key: 'preventa',       label: 'Pre Venta' },
   { key: 'administracion', label: 'Administración' },
   { key: 'legal',          label: 'Legal' },
   { key: 'gerente',        label: 'Gerente' },
