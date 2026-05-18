@@ -58,7 +58,7 @@ function parsearNumero(valor: any, indice: number): number {
 }
 
 export default function ModalImportarHitos({ proyecto, onClose, onSuccess }: Props) {
-  const ROLES_RESPONSABLE = ['INGENIERÍA', 'ADMINISTRACIÓN', 'LEGAL']
+  const ROLES_RESPONSABLE = ['SOC', 'PRE VENTA', 'ADMINISTRACIÓN', 'LEGAL', 'GERENCIA']
 
   const [filas, setFilas] = useState<FilaHito[]>([])
   const [archivo, setArchivo] = useState<string>('')
