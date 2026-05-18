@@ -506,7 +506,7 @@ export default function VentasPage() {
               await crearFirmaVentas({ ...firmaProcesada, cliente: nuevoF.cliente, createdAt: new Date().toISOString() } as any)
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró firma para: ${nuevoF.cliente}`)
               toast.success('Firma registrada')
-              setModalNuevoF(false); setNuevoF({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo' }); initMódulo()
+              setModalNuevoF(false); setNuevoF({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy() }); initMódulo()
             }} onCancel={() => setModalNuevoF(false)} />
         </ModalVentas>
       )}
