@@ -478,7 +478,7 @@ export default function VentasPage() {
               await crearClienteVentas({ ...nuevoC as any, nombre: nuevoC.nombre, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Agregó a pipeline: ${nuevoC.nombre}`)
               toast.success('Cliente agregado')
-              setModalNuevoC(false); setNuevoC({ status: 'nuevo', año: '2026' }); initMódulo()
+              setModalNuevoC(false); setNuevoC({ status: 'nuevo', año: new Date().getFullYear().toString(), fechaCotizacion: hoy() }); initMódulo()
             }} onCancel={() => setModalNuevoC(false)} />
         </ModalVentas>
       )}
