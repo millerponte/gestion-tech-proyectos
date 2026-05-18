@@ -10,7 +10,7 @@ import {
   obtenerCitasVentas, crearCitaVentas, actualizarCitaVentas, eliminarCitaVentas,
   obtenerFirmasVentas, crearFirmaVentas, actualizarFirmaVentas, eliminarFirmaVentas,
   obtenerLicitacionesVentas, crearLicitacionVentas, actualizarLicitacionVentas, eliminarLicitacionVentas,
-  registrarLog
+  registrarLog, hoy
 } from '@/lib/db'
 import type { Cliente, ClienteVentas, CitaVentas, FirmaVentas, LicitacionVentas, StatusPipeline, SectorCita, ResultadoLicitacion } from '@/types'
 import {
@@ -18,14 +18,6 @@ import {
   Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Clock, AlertCircle, ArrowRight
 } from 'lucide-react'
 import { isToday, isThisWeek, isThisMonth, isThisYear, parseISO } from 'date-fns'
-import { hoy } from '@/lib/db'
-
-const OPCIONES_ANIOS = (() => {
-  const anios = ['2023', '2023-24']
-  const currentYear = new Date().getFullYear()
-  for (let y = 2025; y <= currentYear + 1; y++) anios.push(y.toString())
-  return anios
-})()
 
 type Tab = 'pipeline' | 'citas' | 'firmas' | 'licitaciones'
 type RangoFiltro = 'hoy' | 'semana' | 'mes' | 'año' | 'todo'
@@ -43,6 +35,13 @@ const RESULTADO_COLORS: Record<string, string> = {
   en_proceso: 'bg-amber-900/40 text-amber-300 border-amber-700/40',
   suspendido: 'bg-slate-700/40 text-slate-300 border-slate-600/40',
 }
+
+const OPCIONES_ANIOS = (() => {
+  const anios = ['2023', '2023-24']
+  const currentYear = new Date().getFullYear()
+  for (let y = 2025; y <= currentYear + 1; y++) anios.push(y.toString())
+  return anios
+})()
 
 function exportCSV(headers: string[], filas: any[][], nombre: string) {
   const csv = [headers, ...filas].map(f => f.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
@@ -218,7 +217,7 @@ export default function VentasPage() {
               <input className="input-field pl-9" placeholder="Buscar cliente..." value={busquedaC} onChange={e => setBusquedaC(e.target.value)} />
             </div>
             <select className="input-field w-auto min-w-32" value={filtroStatusC} onChange={e => setFiltroStatusC(e.target.value)}>
-              <option value="">Todos los status</option>
+              <option value="">Todos los estados</option>
               <option value="nuevo">Nuevo</option>
               <option value="procesando">Procesando</option>
               <option value="realizado">Realizado</option>
@@ -262,7 +261,7 @@ export default function VentasPage() {
                           <div className="grid grid-cols-3 gap-4 text-xs">
                             <div><p className="text-slate-500">Contacto</p><p>{c.contacto || '—'}</p></div>
                             <div><p className="text-slate-500">Correo</p><p>{c.correo || '—'}</p></div>
-                            <<div><p className="text-slate-500">Año</p><p>{c.año}</p></div>
+                            <div><p className="text-slate-500">Año</p><p>{c.año}</p></div>
                             <div className="col-span-3"><p className="text-slate-500">Status del Proyecto</p><p>{c.statusProyecto || '—'}</p></div>
                             <div className="col-span-3"><p className="text-slate-500">Plan de Acción</p><p>{c.planAccion || '—'}</p></div>
                           </div>
@@ -684,7 +683,7 @@ function FormLicitacionVentas({ data, globalClientes, onChange, onSave, onCancel
         <div><label className="label">Consentimiento</label><input type="date" className="input-field" value={data.consentimiento || ''} onChange={e => onChange({ ...data, consentimiento: e.target.value })} /></div>
         <div><label className="label">Firma Contrato</label><input type="date" className="input-field" value={data.fechaFirmaContrato || ''} onChange={e => onChange({ ...data, fechaFirmaContrato: e.target.value })} /></div>
         <div><label className="label">Resultado</label><select className="input-field" value={data.resultado || 'en_proceso'} onChange={e => onChange({ ...data, resultado: e.target.value })}><option value="en_proceso">En proceso</option><option value="ganamos">Ganamos</option><option value="perdimos">Perdimos</option><option value="suspendido">Suspendido</option></select></div>
-        <div><label className="label">Año</label><select className="input-field" value={data.año || '2026'} onChange={e => onChange({ ...data, año: e.target.value })}><option value="2025">2025</option><option value="2026">2026</option></select></div>
+        <div><label className="label">Año</label><select className="input-field" value={data.año || new Date().getFullYear().toString()} onChange={e => onChange({ ...data, año: e.target.value })}>{OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}</select></div>
         <div className="col-span-2"><label className="label">Observaciones / Detalle Fechas</label><textarea className="input-field resize-none" rows={2} value={data.observaciones || ''} onChange={e => onChange({ ...data, observaciones: e.target.value })} placeholder="Ej: Sin fecha definida para la firma..." /></div>
       </div>
       <div className="flex gap-2"><button onClick={() => onSave(isValid)} className="btn-primary text-xs w-full justify-center"><Check className="w-3.5 h-3.5" /> Guardar</button>{onCancel && <button onClick={onCancel} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /></button>}</div>
