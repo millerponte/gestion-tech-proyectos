@@ -233,7 +233,7 @@ export default function VentasPage() {
           <div className="card p-0 overflow-hidden">
             <table className="w-full">
               <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
-                <tr><th className="tabla-header w-6"></th><th className="tabla-header">Cliente</th><th className="tabla-header">Proyecto / Solución</th><th className="tabla-header">Mayorista</th><th className="tabla-header">F. Cotización</th><th className="tabla-header">Status</th><th className="tabla-header"></th></tr>
+                <tr><th className="tabla-header w-6"></th><th className="tabla-header">Cliente</th><th className="tabla-header">Proyecto / Solución</th><th className="tabla-header">Mayorista</th><th className="tabla-header">F. Cotización</th><th className="tabla-header">Estado</th><th className="tabla-header"></th></tr>
               </thead>
               <tbody>
                 {clientesFiltrados.map(c => (
