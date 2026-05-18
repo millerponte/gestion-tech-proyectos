@@ -491,7 +491,7 @@ export default function VentasPage() {
               await crearCitaVentas({ ...nuevoCi as any, cliente: nuevoCi.cliente, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró cita con: ${nuevoCi.cliente}`)
               toast.success('Cita agendada')
-              setModalNuevoCi(false); setNuevoCi({ sector: 'gobierno', status: 'pendiente' }); initMódulo()
+              setModalNuevoCi(false); setNuevoCi({ sector: 'gobierno', status: 'pendiente', fechaReunion: hoy() }); initMódulo()
             }} onCancel={() => setModalNuevoCi(false)} />
         </ModalVentas>
       )}
