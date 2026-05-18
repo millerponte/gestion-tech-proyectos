@@ -45,6 +45,7 @@ const {
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Expediente:</td><td style="color:#4ade80;font-family:monospace;font-size:13px;font-weight:bold;">${expediente}</td></tr>
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Asunto:</td><td style="color:#f0f6ff;font-size:13px;">${asunto}</td></tr>
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Cliente:</td><td style="color:#f0f6ff;font-size:13px;">${cliente}</td></tr>
+            <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Empresa:</td><td style="color:#f0f6ff;font-size:13px;">${empresa}</td></tr>
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Proyecto:</td><td style="color:#f0f6ff;font-size:13px;">${proyecto}</td></tr>
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Responsable:</td><td style="color:#f0f6ff;font-size:13px;">${responsable}</td></tr>
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Fecha:</td><td style="color:#f0f6ff;font-size:13px;">${fecha}</td></tr>
