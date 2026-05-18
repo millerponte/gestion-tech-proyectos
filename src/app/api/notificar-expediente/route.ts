@@ -11,9 +11,9 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(req: NextRequest) {
   try {
-    const {
+const {
       correos, numeroDocumento, asunto, cliente,
-      proyecto, expediente, responsable, fecha, esReenvio
+      proyecto, empresa, expediente, responsable, fecha, esReenvio
     } = await req.json()
 
     if (!correos || correos.length === 0) {
