@@ -90,7 +90,7 @@ export default function VentasPage() {
   const [editandoF, setEditandoF] = useState<string | null>(null)
   const [editDataF, setEditDataF] = useState<Partial<FirmaVentas>>({})
   const [modalNuevoF, setModalNuevoF] = useState(false)
-  const [nuevoF, setNuevoF] = useState<Partial<FirmaVentas>>({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo' })
+  const [nuevoF, setNuevoF] = useState<Partial<FirmaVentas>>({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy() })
 
   // ── LICITACIONES ────────────────────────────────────────────────────────
   const [licitaciones, setLicitaciones] = useState<LicitacionVentas[]>([])
