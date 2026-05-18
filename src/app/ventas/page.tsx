@@ -99,7 +99,7 @@ export default function VentasPage() {
   const [editandoL, setEditandoL] = useState<string | null>(null)
   const [editDataL, setEditDataL] = useState<Partial<LicitacionVentas>>({})
   const [modalNuevoL, setModalNuevoL] = useState(false)
-  const [nuevoL, setNuevoL] = useState<Partial<LicitacionVentas>>({ resultado: 'en_proceso', año: '2026', empresa: 'OKINAWATEC' })
+  const [nuevoL, setNuevoL] = useState<Partial<LicitacionVentas>>({ resultado: 'en_proceso', año: new Date().getFullYear().toString(), empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() })
 
   useEffect(() => { initMódulo() }, [])
 
