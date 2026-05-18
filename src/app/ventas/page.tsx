@@ -519,7 +519,7 @@ export default function VentasPage() {
               await crearLicitacionVentas({ ...nuevoL as any, entidad: nuevoL.entidad, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró licitación: ${nuevoL.entidad}`)
               toast.success('Licitación registrada')
-              setModalNuevoL(false); setNuevoL({ resultado: 'en_proceso', año: '2026', empresa: 'OKINAWATEC' }); initMódulo()
+              setModalNuevoL(false); setNuevoL({ resultado: 'en_proceso', año: new Date().getFullYear().toString(), empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() }); initMódulo()
             }} onCancel={() => setModalNuevoL(false)} />
         </ModalVentas>
       )}
