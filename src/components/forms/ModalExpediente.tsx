@@ -75,6 +75,7 @@ export default function ModalExpediente({ entregable, onClose, onSuccess, esReen
                 asunto: entregable.asunto,
                 cliente: entregable.clienteNombre,
                 proyecto: entregable.proyectoNombre,
+                empresa: entregable.empresa,
                 expediente: expediente.trim() || entregable.expediente,
                 responsable: entregable.responsableNombre,
                 esReenvio,
