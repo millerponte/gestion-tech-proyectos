@@ -18,6 +18,14 @@ import {
   Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Clock, AlertCircle, ArrowRight
 } from 'lucide-react'
 import { isToday, isThisWeek, isThisMonth, isThisYear, parseISO } from 'date-fns'
+import { hoy } from '@/lib/db'
+
+const OPCIONES_ANIOS = (() => {
+  const anios = ['2023', '2023-24']
+  const currentYear = new Date().getFullYear()
+  for (let y = 2025; y <= currentYear + 1; y++) anios.push(y.toString())
+  return anios
+})()
 
 type Tab = 'pipeline' | 'citas' | 'firmas' | 'licitaciones'
 type RangoFiltro = 'hoy' | 'semana' | 'mes' | 'año' | 'todo'
