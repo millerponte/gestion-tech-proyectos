@@ -81,7 +81,7 @@ export default function VentasPage() {
   const [editandoCi, setEditandoCi] = useState<string | null>(null)
   const [editDataCi, setEditDataCi] = useState<Partial<CitaVentas>>({})
   const [modalNuevoCi, setModalNuevoCi] = useState(false)
-  const [nuevoCi, setNuevoCi] = useState<Partial<CitaVentas>>({ sector: 'gobierno', status: 'pendiente' })
+  const [nuevoCi, setNuevoCi] = useState<Partial<CitaVentas>>({ sector: 'gobierno', status: 'pendiente', fechaReunion: hoy() })
 
   // ── FIRMAS ──────────────────────────────────────────────────────────────
   const [firmas, setFirmas] = useState<FirmaVentas[]>([])
