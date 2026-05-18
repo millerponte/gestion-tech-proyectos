@@ -262,7 +262,8 @@ export default function VentasPage() {
                           <div className="grid grid-cols-3 gap-4 text-xs">
                             <div><p className="text-slate-500">Contacto</p><p>{c.contacto || '—'}</p></div>
                             <div><p className="text-slate-500">Correo</p><p>{c.correo || '—'}</p></div>
-                            <div><p className="text-slate-500">Año</p><p>{c.año}</p></div>
+                            <<div><p className="text-slate-500">Año</p><p>{c.año}</p></div>
+                            <div className="col-span-3"><p className="text-slate-500">Status del Proyecto</p><p>{c.statusProyecto || '—'}</p></div>
                             <div className="col-span-3"><p className="text-slate-500">Plan de Acción</p><p>{c.planAccion || '—'}</p></div>
                           </div>
                         )}
