@@ -12,10 +12,10 @@ import {
   obtenerLicitacionesVentas, crearLicitacionVentas, actualizarLicitacionVentas, eliminarLicitacionVentas,
   registrarLog, hoy, formatearFecha
 } from '@/lib/db'
-import type { Cliente, ClienteVentas, CitaVentas, FirmaVentas, LicitacionVentas, StatusPipeline, SectorCita, ResultadoLicitacion } from '@/types'
+import type { Cliente, ClienteVentas, CitaVentas, FirmaVentas, LicitacionVentas, StatusPipeline, SectorCita, ResultadoLicitacion, HistorialNota } from '@/types'
 import {
   TrendingUp, Users, Calendar, FileSignature, Trophy, Plus, Search, Filter, Download,
-  Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Clock, AlertCircle, ArrowRight
+  Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Clock, AlertCircle, ArrowRight, MessageSquare
 } from 'lucide-react'
 import { isToday, isThisWeek, isThisMonth, isThisYear, parseISO } from 'date-fns'
 
@@ -36,7 +36,6 @@ const RESULTADO_COLORS: Record<string, string> = {
   suspendido: 'bg-slate-700/40 text-slate-300 border-slate-600/40',
 }
 
-// Opciones dinámicas para el filtro de años
 const OPCIONES_ANIOS = (() => {
   const anios = ['2023', '2023-24']
   const currentYear = new Date().getFullYear()
@@ -56,7 +55,6 @@ function exportCSV(headers: string[], filas: any[][], nombre: string) {
   toast.success('Exportado correctamente')
 }
 
-// Helper para extraer y comparar el año de una fecha YYYY-MM-DD
 const checkYear = (fecha: string | undefined, filtro: string) => {
   if (!filtro) return true
   if (!fecha) return false
@@ -102,7 +100,7 @@ export default function VentasPage() {
   const [editandoF, setEditandoF] = useState<string | null>(null)
   const [editDataF, setEditDataF] = useState<Partial<FirmaVentas>>({})
   const [modalNuevoF, setModalNuevoF] = useState(false)
-  const [nuevoF, setNuevoF] = useState<Partial<FirmaVentas>>({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy() })
+  const [nuevoF, setNuevoF] = useState<Partial<FirmaVentas>>({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy(), estado: 'pendiente' })
 
   // ── LICITACIONES ────────────────────────────────────────────────────────
   const [licitaciones, setLicitaciones] = useState<LicitacionVentas[]>([])
@@ -129,10 +127,27 @@ export default function VentasPage() {
     setLicitaciones(l)
   }
 
+  // ── Funciones de Guardado Rápido (Historial) ────────────────────────────
+  const agregarHistorialC = async (id: string, historialActual: HistorialNota[], val: string) => {
+    if (!val.trim()) return
+    const nuevoHistorial = [...(historialActual || []), { fecha: formatearFecha(hoy()), nota: val.trim() }]
+    await actualizarClienteVentas(id, { historialStatus: nuevoHistorial })
+    toast.success('Status agregado')
+    initMódulo()
+  }
+
+  const agregarHistorialF = async (id: string, historialActual: HistorialNota[], val: string) => {
+    if (!val.trim()) return
+    const nuevoHistorial = [...(historialActual || []), { fecha: formatearFecha(hoy()), nota: val.trim() }]
+    await actualizarFirmaVentas(id, { historialStatus: nuevoHistorial })
+    toast.success('Status agregado')
+    initMódulo()
+  }
+
   // ── Exportar ────────────────────────────────────────────────────────────
-  const exportarPipeline = () => exportCSV(['Cliente', 'Contacto', 'Correo', 'Proyecto', 'Solución', 'Mayorista', 'Fecha Cotización', 'Status Proyecto', 'Estado', 'Plan de Acción'], clientesFiltrados.map(c => [c.nombre, c.contacto, c.correo, c.proyecto, c.solucion, c.mayorista, formatearFecha(c.fechaCotizacion), c.statusProyecto, c.status, c.planAccion]), 'pipeline_ventas')
+  const exportarPipeline = () => exportCSV(['Cliente', 'Contacto', 'Teléfono', 'Correo', 'Proyecto', 'Solución', 'Mayorista', 'Fecha Cotización', 'Estado', 'Historial Status', 'Año', 'Plan de Acción'], clientesFiltrados.map(c => [c.nombre, c.contacto, c.telefono, c.correo, c.proyecto, c.solucion, c.mayorista, formatearFecha(c.fechaCotizacion), c.status, c.historialStatus?.map(h => `[${h.fecha}] ${h.nota}`).join(' | '), c.año, c.planAccion]), 'pipeline_ventas')
   const exportarCitas = () => exportCSV(['Cliente', 'Contacto', 'Correo', 'Cargo', 'Sector', 'Fecha Reunión', 'Horario', 'Solución', 'Status Proyecto', 'Estado Cita', 'Observaciones'], citasFiltradas.map(c => [c.cliente, c.contacto, c.correo, c.cargo, c.sector, formatearFecha(c.fechaReunion), c.horario, c.solucion, c.statusProyecto, c.status, c.observaciones]), 'citas_ventas')
-  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Empresa', 'Fecha', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.empresa, formatearFecha(f.fecha), f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.observaciones]), 'firmas_ventas')
+  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Teléfono', 'Empresa', 'Fecha', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Estado', 'Historial', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.telefono, f.empresa, formatearFecha(f.fecha), f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.estado, f.historialStatus?.map(h => `[${h.fecha}] ${h.nota}`).join(' | '), f.observaciones]), 'firmas_ventas')
   const exportarLicitaciones = () => exportCSV(['Entidad', 'Empresa', 'Proceso', 'Bases Integradas', 'F. Presentación', 'F. Evaluación', 'Buena Pro', 'Consentimiento', 'F. Firma Contrato', 'Resultado', 'Observaciones/Detalle'], licitacionesFiltradas.map(l => [l.entidad, l.empresa, l.proceso, formatearFecha(l.basesIntegradas), formatearFecha(l.fechaPresentacion), formatearFecha(l.fechaFinEvaluacion), formatearFecha(l.buenaPro), formatearFecha(l.consentimiento), formatearFecha(l.fechaFirmaContrato), l.resultado, l.observaciones]), 'licitaciones_ventas')
 
   // ── Filtros ─────────────────────────────────────────────────────────────
@@ -158,7 +173,6 @@ export default function VentasPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
@@ -175,7 +189,6 @@ export default function VentasPage() {
         </div>
       </div>
 
-      {/* DASHBOARD SUPERIOR: Citas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="card border-amber-500/30 bg-amber-950/10 p-4 space-y-3">
           <h3 className="text-amber-400 font-semibold text-sm flex items-center gap-2">
@@ -213,7 +226,6 @@ export default function VentasPage() {
         </div>
       </div>
 
-      {/* TABS */}
       <div className="flex gap-1 bg-[#0d1526] border border-[#1e3a8a]/50 rounded-xl p-1 w-fit">
         {([['pipeline', 'Pipeline'], ['citas', 'Citas'], ['firmas', 'Firmas'], ['licitaciones', 'Licitaciones']] as const).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} className={clsx('px-4 py-2 rounded-lg text-sm font-medium transition-all', tab === id ? 'bg-blue-600 text-white' : 'text-slate-400')}>
@@ -278,9 +290,37 @@ export default function VentasPage() {
                         ) : (
                           <div className="grid grid-cols-3 gap-4 text-xs">
                             <div><p className="text-slate-500">Contacto</p><p>{c.contacto || '—'}</p></div>
+                            <div><p className="text-slate-500">Teléfono / Celular</p><p className="font-mono text-cyan-400">{c.telefono || '—'}</p></div>
                             <div><p className="text-slate-500">Correo</p><p>{c.correo || '—'}</p></div>
-                            <div><p className="text-slate-500">Status del Proyecto</p><p>{c.statusProyecto || '—'}</p></div>
+                            <div><p className="text-slate-500">Año</p><p>{c.año}</p></div>
+                            
+                            {/* Selector rápido de Estado */}
+                            <div>
+                              <p className="text-slate-500 mb-1">Estado General</p>
+                              <select className="input-field py-1 text-xs max-w-[150px]" value={c.status} onChange={async (e) => { await actualizarClienteVentas(c.id, { status: e.target.value as StatusPipeline }); toast.success('Estado actualizado'); initMódulo() }}>
+                                <option value="nuevo">Nuevo</option><option value="procesando">Procesando</option><option value="realizado">Realizado</option><option value="perdido">Perdido</option>
+                              </select>
+                            </div>
+
                             <div className="col-span-3"><p className="text-slate-500">Plan de Acción</p><p>{c.planAccion || '—'}</p></div>
+                            
+                            {/* Historial interactivo */}
+                            <div className="col-span-3 pt-3 border-t border-slate-700">
+                              <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Status del Proyecto</p>
+                              <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
+                                {c.historialStatus?.map((h, i) => (
+                                  <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700">
+                                    <span className="text-cyan-400 font-mono mr-2">[{h.fecha}]</span>
+                                    <span className="text-slate-300">{h.nota}</span>
+                                  </div>
+                                ))}
+                                {(!c.historialStatus || c.historialStatus.length === 0) && <p className="text-slate-600">No hay status registrado.</p>}
+                              </div>
+                              <div className="flex gap-2">
+                                <input id={`status-pipe-${c.id}`} className="input-field flex-1" placeholder="Escribe un nuevo status del proyecto..." onKeyDown={(e) => { if (e.key === 'Enter') { const input = e.currentTarget; agregarHistorialC(c.id, c.historialStatus || [], input.value); input.value = '' } }} />
+                                <button onClick={() => { const input = document.getElementById(`status-pipe-${c.id}`) as HTMLInputElement; agregarHistorialC(c.id, c.historialStatus || [], input.value); input.value = '' }} className="btn-secondary text-xs">Agregar</button>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </td></tr>
@@ -413,11 +453,40 @@ export default function VentasPage() {
                           <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} onSave={async (val: boolean) => { await actualizarFirmaVentas(f.id, processFirma(editDataF)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
                         ) : (
                           <div className="grid grid-cols-3 gap-4 text-xs">
+                            <div><p className="text-slate-500">Teléfono / Celular</p><p className="font-mono text-cyan-400">{f.telefono || '—'}</p></div>
                             <div><p className="text-slate-500">Autorizado Por</p><p>{f.autorizadoPor || '—'}</p></div>
                             <div><p className="text-slate-500">Firmado Por</p><p>{f.firmadoPor || '—'}</p></div>
                             <div><p className="text-slate-500">Enviado Por</p><p>{f.enviadoPor || '—'}</p></div>
+                            
+                            {/* Selector rápido de Estado para firmas */}
+                            <div>
+                              <p className="text-slate-500 mb-1">Estado de Firma</p>
+                              <select className="input-field py-1 text-xs max-w-[150px]" value={f.estado || 'pendiente'} onChange={async (e) => { await actualizarFirmaVentas(f.id, { estado: e.target.value }); toast.success('Estado actualizado'); initMódulo() }}>
+                                <option value="pendiente">Pendiente</option><option value="realizado">Realizado</option><option value="cancelado">Se canceló</option>
+                              </select>
+                            </div>
+
                             <div className="col-span-3"><p className="text-slate-500">Proyecto</p><p>{f.nombreProyecto || '—'}</p></div>
                             <div className="col-span-3"><p className="text-slate-500">Observaciones</p><p>{f.observaciones || '—'}</p></div>
+
+                            {/* Historial interactivo para Firmas */}
+                            <div className="col-span-3 pt-3 border-t border-slate-700">
+                              <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Status</p>
+                              <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
+                                {f.historialStatus?.map((h, i) => (
+                                  <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700">
+                                    <span className="text-cyan-400 font-mono mr-2">[{h.fecha}]</span>
+                                    <span className="text-slate-300">{h.nota}</span>
+                                  </div>
+                                ))}
+                                {(!f.historialStatus || f.historialStatus.length === 0) && <p className="text-slate-600">No hay status registrado.</p>}
+                              </div>
+                              <div className="flex gap-2">
+                                <input id={`status-firma-${f.id}`} className="input-field flex-1" placeholder="Escribe un nuevo status de la firma..." onKeyDown={(e) => { if (e.key === 'Enter') { const input = e.currentTarget; agregarHistorialF(f.id, f.historialStatus || [], input.value); input.value = '' } }} />
+                                <button onClick={() => { const input = document.getElementById(`status-firma-${f.id}`) as HTMLInputElement; agregarHistorialF(f.id, f.historialStatus || [], input.value); input.value = '' }} className="btn-secondary text-xs">Agregar</button>
+                              </div>
+                            </div>
+
                           </div>
                         )}
                       </td></tr>
@@ -483,6 +552,7 @@ export default function VentasPage() {
                             <div><p className="text-slate-500">Buena Pro</p><p>{formatearFecha(l.buenaPro) || '—'}</p></div>
                             <div><p className="text-slate-500">Consentimiento</p><p>{formatearFecha(l.consentimiento) || '—'}</p></div>
                             <div><p className="text-slate-500">Firma Contrato</p><p>{formatearFecha(l.fechaFirmaContrato) || '—'}</p></div>
+                            <div><p className="text-slate-500">Año</p><p>{l.año}</p></div>
                             <div className="col-span-4"><p className="text-slate-500">Observaciones / Detalle Fechas</p><p>{l.observaciones || '—'}</p></div>
                           </div>
                         )}
@@ -533,7 +603,7 @@ export default function VentasPage() {
               await crearFirmaVentas({ ...firmaProcesada, cliente: nuevoF.cliente, createdAt: new Date().toISOString() } as any)
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró firma para: ${nuevoF.cliente}`)
               toast.success('Firma registrada')
-              setModalNuevoF(false); setNuevoF({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy() }); initMódulo()
+              setModalNuevoF(false); setNuevoF({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy(), estado: 'pendiente' }); initMódulo()
             }} onCancel={() => setModalNuevoF(false)} />
         </ModalVentas>
       )}
@@ -624,13 +694,13 @@ function FormClienteVentas({ data, globalClientes, onChange, onSave, onCancel, r
       <div className="grid grid-cols-2 gap-3">
         <AutocompleteCliente value={data.nombre} globalClientes={globalClientes} onChange={(val, valid) => { onChange({ ...data, nombre: val }); setIsValid(valid) }} router={router} />
         <div><label className="label">Contacto</label><input className="input-field" value={data.contacto || ''} onChange={e => onChange({ ...data, contacto: e.target.value })} /></div>
+        <div><label className="label">Teléfono / Celular</label><input className="input-field" value={data.telefono || ''} onChange={e => onChange({ ...data, telefono: e.target.value })} /></div>
         <div><label className="label">Correo</label><input className="input-field" value={data.correo || ''} onChange={e => onChange({ ...data, correo: e.target.value })} /></div>
         <div className="col-span-2"><label className="label">Proyecto</label><input className="input-field" value={data.proyecto || ''} onChange={e => onChange({ ...data, proyecto: e.target.value })} /></div>
         <div><label className="label">Solución Propuesta</label><input className="input-field" value={data.solucion || ''} onChange={e => onChange({ ...data, solucion: e.target.value })} /></div>
         <div><label className="label">Mayorista</label><input className="input-field" value={data.mayorista || ''} onChange={e => onChange({ ...data, mayorista: e.target.value })} /></div>
         <div><label className="label">Fecha Cotización</label><input type="date" className="input-field" value={data.fechaCotizacion || ''} onChange={e => onChange({ ...data, fechaCotizacion: e.target.value })} /></div>
         <div><label className="label">Estado</label><select className="input-field" value={data.status || 'nuevo'} onChange={e => onChange({ ...data, status: e.target.value })}><option value="nuevo">Nuevo</option><option value="procesando">Procesando</option><option value="realizado">Realizado</option><option value="perdido">Perdido</option></select></div>
-        <div className="col-span-2"><label className="label">Status del Proyecto</label><textarea className="input-field resize-none" rows={2} value={data.statusProyecto || ''} onChange={e => onChange({ ...data, statusProyecto: e.target.value })} /></div>
         <div className="col-span-2"><label className="label">Plan de Acción</label><textarea className="input-field resize-none" rows={2} value={data.planAccion || ''} onChange={e => onChange({ ...data, planAccion: e.target.value })} /></div>
       </div>
       <div className="flex gap-2"><button onClick={() => onSave(isValid)} className="btn-primary text-xs w-full justify-center"><Check className="w-3.5 h-3.5" /> Guardar</button>{onCancel && <button onClick={onCancel} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /></button>}</div>
@@ -667,6 +737,8 @@ function FormFirmaVentas({ data, globalClientes, onChange, onSave, onCancel, rou
     <div className="space-y-3 text-xs">
       <div className="grid grid-cols-2 gap-3">
         <AutocompleteCliente value={data.cliente} globalClientes={globalClientes} onChange={(val, valid) => { onChange({ ...data, cliente: val }); setIsValid(valid) }} router={router} />
+        <div><label className="label">Teléfono / Celular</label><input className="input-field" value={data.telefono || ''} onChange={e => onChange({ ...data, telefono: e.target.value })} /></div>
+        <div><label className="label">Estado</label><select className="input-field" value={data.estado || 'pendiente'} onChange={e => onChange({ ...data, estado: e.target.value })}><option value="pendiente">Pendiente</option><option value="realizado">Realizado</option><option value="cancelado">Se canceló</option></select></div>
         <div><label className="label">Autorizado Por</label><select className="input-field" value={data.autorizadoPor || 'Luis Matienzo'} onChange={e => onChange({ ...data, autorizadoPor: e.target.value })}><option value="Luis Matienzo">Luis Matienzo</option><option value="Karen Hiraoka">Karen Hiraoka</option></select></div>
         <div><label className="label">Firmado Por</label><select className="input-field" value={data.firmadoPor || ''} onChange={e => onChange({ ...data, firmadoPor: e.target.value })}><option value="">Seleccionar...</option>{optsFirmantes.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
         <div><label className="label">Enviado Por</label><select className="input-field" value={data.enviadoPor || ''} onChange={e => onChange({ ...data, enviadoPor: e.target.value })}><option value="">Seleccionar...</option>{optsFirmantes.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
