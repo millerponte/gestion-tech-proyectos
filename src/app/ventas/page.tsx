@@ -15,7 +15,7 @@ import {
 import type { Cliente, ClienteVentas, CitaVentas, FirmaVentas, LicitacionVentas, StatusPipeline, HistorialNota } from '@/types'
 import {
   TrendingUp, Calendar, FileSignature, Trophy, Plus, Search, Download,
-  Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Clock, AlertCircle, ArrowRight, MessageSquare
+  Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Clock, AlertCircle, ArrowRight, MessageSquare, Bell
 } from 'lucide-react'
 import { isToday, isThisWeek, isThisMonth, isThisYear, parseISO } from 'date-fns'
 
@@ -68,6 +68,17 @@ const checkYear = (fecha: string | undefined, filtro: string) => {
   return year === filtro
 }
 
+const getFechaHora = (fecha?: string, hora?: string) => {
+  if (!fecha) return '9999-12-31T23:59:59'
+  const h = hora ? hora : '23:59'
+  return `${fecha}T${h}:00`
+}
+
+const isVencido = (fecha?: string, horario?: string) => {
+  if (!fecha) return false
+  return new Date(getFechaHora(fecha, horario)) < new Date()
+}
+
 export default function VentasPage() {
   const { usuario, isAdmin } = useAuth()
   const router = useRouter()
@@ -95,6 +106,11 @@ export default function VentasPage() {
   const [expandidoL, setExpandidoL] = useState<string | null>(null); const [editandoL, setEditandoL] = useState<string | null>(null); const [editDataL, setEditDataL] = useState<Partial<LicitacionVentas>>({})
   const [modalNuevoL, setModalNuevoL] = useState(false); const [nuevoL, setNuevoL] = useState<Partial<LicitacionVentas>>({ resultado: 'en_proceso', año: new Date().getFullYear().toString(), empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() })
 
+  // Estados Globales Modales de Pendientes
+  const [modalPendiente, setModalPendiente] = useState<{ id: string, tipo: Tab, data: any } | null>(null)
+  const [fechaLimitePendiente, setFechaLimitePendiente] = useState(hoy())
+  const [citaResolver, setCitaResolver] = useState<CitaVentas | null>(null)
+
   useEffect(() => { initMódulo() }, [])
 
   const initMódulo = async () => {
@@ -114,15 +130,40 @@ export default function VentasPage() {
     initMódulo()
   }
 
-  const exportarPipeline = () => exportCSV(['Cliente', 'Contacto', 'Teléfono', 'Correo', 'Proyecto', 'Solución', 'Mayorista', 'Fecha Cotización', 'Estado', 'Historial Status', 'Historial Plan', 'Año'], clientesFiltrados.map(c => [c.nombre, c.contacto, c.telefono, c.correo, c.proyecto, c.solucion, c.mayorista, formatSafe(c.fechaCotizacion), c.status, c.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), c.historialPlan?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), c.año]), 'pipeline_ventas')
-  const exportarCitas = () => exportCSV(['Cliente', 'Empresa', 'Contacto', 'Correo', 'Cargo', 'Sector', 'Fecha Reunión', 'Horario', 'Solución', 'Status Proyecto', 'Estado Cita', 'Observaciones'], citasFiltradas.map(c => [c.cliente, c.empresa, c.contacto, c.correo, c.cargo, c.sector, formatSafe(c.fechaReunion), c.horario, c.solucion, c.statusProyecto, c.status, c.observaciones]), 'citas_ventas')
-  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Teléfono', 'Empresa', 'Fecha', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Estado', 'Historial', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.telefono, f.empresa, formatSafe(f.fecha), f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.estado, f.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), f.observaciones]), 'firmas_ventas')
-  const exportarLicitaciones = () => exportCSV(['Entidad', 'Empresa', 'Proceso', 'Bases Integradas', 'F. Presentación', 'F. Evaluación', 'Buena Pro', 'Consentimiento', 'F. Firma Contrato', 'Resultado', 'Año', 'Observaciones/Detalle'], licitacionesFiltradas.map(l => [l.entidad, l.empresa, l.proceso, formatSafe(l.basesIntegradas), formatSafe(l.fechaPresentacion), formatSafe(l.fechaFinEvaluacion), formatSafe(l.buenaPro), formatSafe(l.consentimiento), formatSafe(l.fechaFirmaContrato), l.resultado, l.año, l.observaciones]), 'licitaciones_ventas')
+  // ── Lógica Central de PENDIENTES ─────────────────────────────────────────
+  const getStatusCita = (c: CitaVentas) => {
+    if (c.status === 'pendiente' && isVencido(c.fechaReunion, c.horario)) return 'vencido'
+    return c.status
+  }
 
-  const clientesFiltrados = clientes.filter(c => (!busquedaC || c.nombre.toLowerCase().includes(busquedaC.toLowerCase())) && (!filtroStatusC || c.status === filtroStatusC) && checkYear(c.fechaCotizacion, filtroAñoC))
-  const citasFiltradas = citas.filter(c => (!busquedaCi || c.cliente.toLowerCase().includes(busquedaCi.toLowerCase())) && (!filtroSectorCi || c.sector === filtroSectorCi) && checkYear(c.fechaReunion, filtroAñoCi))
-  const firmasFiltradas = firmas.filter(f => (!busquedaF || f.cliente.toLowerCase().includes(busquedaF.toLowerCase()) || f.codigo.toLowerCase().includes(busquedaF.toLowerCase())) && checkYear(f.fecha, filtroAñoF))
-  const licitacionesFiltradas = licitaciones.filter(l => (!busquedaL || l.entidad.toLowerCase().includes(busquedaL.toLowerCase())) && checkYear(l.fechaPresentacion, filtroAñoL))
+  const handleTogglePendiente = async (id: string, tipo: Tab, data: any) => {
+    if (data.esPendiente) {
+      // Resolver
+      const nuevoHistorial = [...(data.historialPendientes || []), { fecha: hoy(), nota: `Resuelto: pendiente hasta ${formatSafe(data.pendienteFechaLimite)}` }]
+      const payload = { esPendiente: false, fechaPendienteResuelto: hoy(), historialPendientes: nuevoHistorial }
+      if (tipo === 'pipeline') await actualizarClienteVentas(id, payload)
+      if (tipo === 'firmas') await actualizarFirmaVentas(id, payload)
+      if (tipo === 'licitaciones') await actualizarLicitacionVentas(id, payload)
+      toast.success('Pendiente resuelto y archivado')
+      initMódulo()
+    } else {
+      // Activar
+      setFechaLimitePendiente(hoy())
+      setModalPendiente({ id, tipo, data })
+    }
+  }
+
+  const guardarNuevoPendiente = async () => {
+    if (!modalPendiente) return
+    const { id, tipo } = modalPendiente
+    const payload = { esPendiente: true, pendienteFechaInicio: hoy(), pendienteFechaLimite: fechaLimitePendiente, fechaPendienteResuelto: '' }
+    if (tipo === 'pipeline') await actualizarClienteVentas(id, payload)
+    if (tipo === 'firmas') await actualizarFirmaVentas(id, payload)
+    if (tipo === 'licitaciones') await actualizarLicitacionVentas(id, payload)
+    toast.success('Agregado a tus pendientes')
+    setModalPendiente(null)
+    initMódulo()
+  }
 
   const evaluarFecha = (fechaStr: string, rango: RangoFiltro): boolean => {
     if (!fechaStr || rango === 'todo') return true
@@ -133,8 +174,41 @@ export default function VentasPage() {
     } catch { return false }
     return false
   }
-  const citasPendientes = citas.filter(c => c.status === 'pendiente' && evaluarFecha(c.fechaReunion, rangoDashboard))
-  const citasRealizadas = citas.filter(c => c.status === 'realizado' && evaluarFecha(c.fechaReunion, rangoDashboard))
+
+  // Dashboard Unified Arrays
+  const unificarPendientes = () => {
+    const arr: any[] = []
+    citas.forEach(c => {
+      const st = getStatusCita(c)
+      if (st === 'pendiente' || st === 'vencido') arr.push({ id: c.id, tipo: 'citas', titulo: c.cliente, subtitulo: `Cita: ${c.solucion || 'Reunión'}`, fechaOrden: c.fechaReunion, horario: c.horario, esVencido: st === 'vencido', original: c })
+    })
+    clientes.forEach(p => { if (p.esPendiente) arr.push({ id: p.id, tipo: 'pipeline', titulo: p.nombre, subtitulo: `Pipeline: ${p.proyecto}`, fechaOrden: p.pendienteFechaLimite || '', esVencido: isVencido(p.pendienteFechaLimite), original: p }) })
+    firmas.forEach(f => { if (f.esPendiente) arr.push({ id: f.id, tipo: 'firmas', titulo: f.cliente, subtitulo: `Firma: ${f.documento}`, fechaOrden: f.pendienteFechaLimite || '', esVencido: isVencido(f.pendienteFechaLimite), original: f }) })
+    licitaciones.forEach(l => { if (l.esPendiente) arr.push({ id: l.id, tipo: 'licitaciones', titulo: l.entidad, subtitulo: `Licitación: ${l.proceso}`, fechaOrden: l.pendienteFechaLimite || '', esVencido: isVencido(l.pendienteFechaLimite), original: l }) })
+    return arr.filter(x => evaluarFecha(x.fechaOrden, rangoDashboard)).sort((a, b) => getFechaHora(a.fechaOrden, a.horario).localeCompare(getFechaHora(b.fechaOrden, b.horario)))
+  }
+
+  const unificarRealizados = () => {
+    const arr: any[] = []
+    citas.forEach(c => { if (c.status === 'realizado') arr.push({ id: c.id, tipo: 'citas', titulo: c.cliente, subtitulo: 'Cita completada', fechaOrden: c.fechaReunion, original: c }) })
+    clientes.forEach(p => { if (p.fechaPendienteResuelto) arr.push({ id: p.id, tipo: 'pipeline', titulo: p.nombre, subtitulo: 'Pendiente resuelto', fechaOrden: p.fechaPendienteResuelto, original: p }) })
+    firmas.forEach(f => { if (f.fechaPendienteResuelto) arr.push({ id: f.id, tipo: 'firmas', titulo: f.cliente, subtitulo: 'Pendiente resuelto', fechaOrden: f.fechaPendienteResuelto, original: f }) })
+    licitaciones.forEach(l => { if (l.fechaPendienteResuelto) arr.push({ id: l.id, tipo: 'licitaciones', titulo: l.entidad, subtitulo: 'Pendiente resuelto', fechaOrden: l.fechaPendienteResuelto, original: l }) })
+    return arr.filter(x => evaluarFecha(x.fechaOrden, rangoDashboard)).sort((a, b) => getFechaHora(b.fechaOrden, b.horario).localeCompare(getFechaHora(a.fechaOrden, a.horario)))
+  }
+
+  const listaPendientes = unificarPendientes()
+  const listaRealizadas = unificarRealizados()
+
+  const exportarPipeline = () => exportCSV(['Cliente', 'Contacto', 'Teléfono', 'Correo', 'Proyecto', 'Solución', 'Mayorista', 'Fecha Cotización', 'Estado', 'Historial Status', 'Historial Plan', 'Año'], clientesFiltrados.map(c => [c.nombre, c.contacto, c.telefono, c.correo, c.proyecto, c.solucion, c.mayorista, formatSafe(c.fechaCotizacion), c.status, c.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), c.historialPlan?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), c.año]), 'pipeline_ventas')
+  const exportarCitas = () => exportCSV(['Cliente', 'Empresa', 'Contacto', 'Correo', 'Cargo', 'Sector', 'Fecha Reunión', 'Horario', 'Solución', 'Status Proyecto', 'Estado Cita', 'Observaciones'], citasFiltradas.map(c => [c.cliente, c.empresa, c.contacto, c.correo, c.cargo, c.sector, formatSafe(c.fechaReunion), c.horario, c.solucion, c.statusProyecto, getStatusCita(c), c.observaciones]), 'citas_ventas')
+  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Teléfono', 'Empresa', 'Fecha', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Estado', 'Historial', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.telefono, f.empresa, formatSafe(f.fecha), f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.estado, f.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), f.observaciones]), 'firmas_ventas')
+  const exportarLicitaciones = () => exportCSV(['Entidad', 'Empresa', 'Proceso', 'Bases Integradas', 'F. Presentación', 'F. Evaluación', 'Buena Pro', 'Consentimiento', 'F. Firma Contrato', 'Resultado', 'Año', 'Observaciones/Detalle'], licitacionesFiltradas.map(l => [l.entidad, l.empresa, l.proceso, formatSafe(l.basesIntegradas), formatSafe(l.fechaPresentacion), formatSafe(l.fechaFinEvaluacion), formatSafe(l.buenaPro), formatSafe(l.consentimiento), formatSafe(l.fechaFirmaContrato), l.resultado, l.año, l.observaciones]), 'licitaciones_ventas')
+
+  const clientesFiltrados = clientes.filter(c => (!busquedaC || c.nombre.toLowerCase().includes(busquedaC.toLowerCase())) && (!filtroStatusC || c.status === filtroStatusC) && checkYear(c.fechaCotizacion, filtroAñoC))
+  const citasFiltradas = citas.filter(c => (!busquedaCi || c.cliente.toLowerCase().includes(busquedaCi.toLowerCase())) && (!filtroSectorCi || c.sector === filtroSectorCi) && checkYear(c.fechaReunion, filtroAñoCi))
+  const firmasFiltradas = firmas.filter(f => (!busquedaF || f.cliente.toLowerCase().includes(busquedaF.toLowerCase()) || f.codigo.toLowerCase().includes(busquedaF.toLowerCase())) && checkYear(f.fecha, filtroAñoF))
+  const licitacionesFiltradas = licitaciones.filter(l => (!busquedaL || l.entidad.toLowerCase().includes(busquedaL.toLowerCase())) && checkYear(l.fechaPresentacion, filtroAñoL))
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -151,28 +225,39 @@ export default function VentasPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* BLOQUE PENDIENTES */}
         <div className="card border-amber-500/30 bg-amber-950/10 p-4 space-y-3">
-          <h3 className="text-amber-400 font-semibold text-sm flex items-center gap-2"><Clock className="w-4 h-4" /> Citas Pendientes ({citasPendientes.length})</h3>
+          <h3 className="text-amber-400 font-semibold text-sm flex items-center gap-2"><Clock className="w-4 h-4" /> Pendientes ({listaPendientes.length})</h3>
           <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-            {citasPendientes.map(c => (
-              <div key={c.id} className="bg-dark-800 p-2.5 rounded border border-slate-700 flex justify-between items-center text-xs hover:border-amber-500/50 cursor-pointer" onClick={() => { setTab('citas'); setExpandidoCi(c.id) }}>
-                <div><p className="font-bold text-white">{c.cliente}</p><p className="text-slate-400">{c.solucion || 'Sin solución'} — 📅 {formatSafe(c.fechaReunion)} ({c.horario})</p></div>
-                <span className="bg-amber-900/40 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-full scale-90">Pendiente</span>
+            {listaPendientes.map(p => (
+              <div key={p.id} className="bg-dark-800 p-2.5 rounded border border-slate-700 flex justify-between items-center text-xs hover:border-amber-500/50 cursor-pointer" onClick={() => {
+                if (p.tipo === 'citas') setCitaResolver(p.original)
+                else { setTab(p.tipo); if (p.tipo === 'pipeline') { setExpandidoC(p.id); setEditandoC(p.id); setEditDataC(p.original) } else if (p.tipo === 'firmas') { setExpandidoF(p.id); setEditandoF(p.id); setEditDataF(p.original) } else if (p.tipo === 'licitaciones') { setExpandidoL(p.id); setEditandoL(p.id); setEditDataL(p.original) } }
+              }}>
+                <div>
+                  <p className={clsx("font-bold", p.esVencido ? "text-red-400" : "text-white")}>{p.titulo}</p>
+                  <p className="text-slate-400">{p.subtitulo} — 📅 {formatSafe(p.fechaOrden)} {p.horario ? `(${p.horario})` : ''}</p>
+                </div>
+                <span className={clsx("px-2 py-0.5 rounded-full scale-90 border", p.esVencido ? "bg-red-900/40 text-red-300 border-red-800" : "bg-amber-900/40 text-amber-300 border-amber-800")}>{p.esVencido ? 'Vencido' : 'Pendiente'}</span>
               </div>
             ))}
-            {citasPendientes.length === 0 && <p className="text-slate-500 text-xs">No hay pendientes.</p>}
+            {listaPendientes.length === 0 && <p className="text-slate-500 text-xs">No hay pendientes.</p>}
           </div>
         </div>
+
+        {/* BLOQUE REALIZADOS */}
         <div className="card border-green-500/30 bg-green-950/10 p-4 space-y-3">
-          <h3 className="text-green-400 font-semibold text-sm flex items-center gap-2"><Check className="w-4 h-4" /> Gestiones Realizadas ({citasRealizadas.length})</h3>
+          <h3 className="text-green-400 font-semibold text-sm flex items-center gap-2"><Check className="w-4 h-4" /> Gestiones Realizadas ({listaRealizadas.length})</h3>
           <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-            {citasRealizadas.map(c => (
-              <div key={c.id} className="bg-dark-800 p-2.5 rounded border border-slate-700 flex justify-between items-center text-xs hover:border-green-500/50 cursor-pointer" onClick={() => { setTab('citas'); setExpandidoCi(c.id) }}>
-                <div><p className="font-bold text-white">{c.cliente}</p><p className="text-slate-400">Finalizada el {formatSafe(c.fechaReunion)}</p></div>
+            {listaRealizadas.map(p => (
+              <div key={p.id} className="bg-dark-800 p-2.5 rounded border border-slate-700 flex justify-between items-center text-xs hover:border-green-500/50 cursor-pointer" onClick={() => {
+                setTab(p.tipo); if (p.tipo === 'citas') setExpandidoCi(p.id); else if (p.tipo === 'pipeline') setExpandidoC(p.id); else if (p.tipo === 'firmas') setExpandidoF(p.id); else if (p.tipo === 'licitaciones') setExpandidoL(p.id)
+              }}>
+                <div><p className="font-bold text-white">{p.titulo}</p><p className="text-slate-400">{p.subtitulo} el {formatSafe(p.fechaOrden)}</p></div>
                 <span className="bg-green-900/40 text-green-300 border border-green-800 px-2 py-0.5 rounded-full scale-90">Realizado</span>
               </div>
             ))}
-            {citasRealizadas.length === 0 && <p className="text-slate-500 text-xs">No hay realizados.</p>}
+            {listaRealizadas.length === 0 && <p className="text-slate-500 text-xs">No hay realizados.</p>}
           </div>
         </div>
       </div>
@@ -183,6 +268,7 @@ export default function VentasPage() {
         ))}
       </div>
 
+      {/* ── PIPELINE ─────────────────────────────────────────────────────── */}
       {tab === 'pipeline' && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3 items-center">
@@ -194,13 +280,16 @@ export default function VentasPage() {
           <div className="card p-0 overflow-hidden">
             <table className="w-full">
               <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
-                <tr><th className="tabla-header w-6"></th><th className="tabla-header">Cliente</th><th className="tabla-header">Proyecto / Solución</th><th className="tabla-header">F. Cotización</th><th className="tabla-header">Estado</th><th className="tabla-header"></th></tr>
+                <tr><th className="tabla-header w-6"></th><th className="tabla-header w-8 text-center" title="Marcar como pendiente">🔔</th><th className="tabla-header">Cliente</th><th className="tabla-header">Proyecto / Solución</th><th className="tabla-header">F. Cotización</th><th className="tabla-header">Estado</th><th className="tabla-header"></th></tr>
               </thead>
               <tbody>
                 {clientesFiltrados.map(c => (
                   <>
                     <tr key={c.id} className="tabla-row" onClick={() => setExpandidoC(expandidoC === c.id ? null : c.id)}>
                       <td className="tabla-cell text-slate-500">{expandidoC === c.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
+                      <td className="tabla-cell text-center" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => handleTogglePendiente(c.id, 'pipeline', c)} className="hover:scale-110 transition-transform"><Bell className={clsx("w-4 h-4", c.esPendiente ? "text-amber-400 fill-amber-400/20" : "text-slate-600")} /></button>
+                      </td>
                       <td className="tabla-cell"><p className="text-sm font-medium">{c.nombre}</p><p className="text-xs text-slate-500">{c.contacto}</p></td>
                       <td className="tabla-cell"><p className="text-xs">{c.proyecto}</p><p className="text-xs text-slate-500">{c.solucion}</p></td>
                       <td className="tabla-cell text-xs">{formatSafe(c.fechaCotizacion)}</td>
@@ -215,7 +304,7 @@ export default function VentasPage() {
                       </td>
                     </tr>
                     {expandidoC === c.id && (
-                      <tr className="bg-[#0d1526]/80"><td colSpan={6} className="p-4">
+                      <tr className="bg-[#0d1526]/80"><td colSpan={7} className="p-4">
                         {editandoC === c.id ? (
                           <FormClienteVentas data={editDataC} globalClientes={globalClientes} onChange={setEditDataC} onSave={async (val: boolean) => { await actualizarClienteVentas(c.id, editDataC); toast.success('Actualizado'); setEditandoC(null); initMódulo() }} onCancel={() => setEditandoC(null)} router={router} />
                         ) : (
@@ -236,7 +325,6 @@ export default function VentasPage() {
                               <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Status del Proyecto</p>
                               <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
                                 {c.historialStatus?.map((h, i) => <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700"><span className="text-cyan-400 font-mono mr-2">[{formatSafe(h.fecha)}]</span><span className="text-slate-300">{h.nota}</span></div>)}
-                                {(!c.historialStatus || c.historialStatus.length === 0) && <p className="text-slate-600">No hay status registrado.</p>}
                               </div>
                               <div className="flex gap-2">
                                 <input id={`st-pipe-${c.id}`} className="input-field flex-1" placeholder="Nuevo status..." onKeyDown={(e) => { if (e.key === 'Enter') { agregarHistorialGlobal(c.id, 'historialStatus', c.historialStatus || [], e.currentTarget.value); e.currentTarget.value = '' } }} />
@@ -248,13 +336,22 @@ export default function VentasPage() {
                               <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Plan de Acción</p>
                               <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
                                 {c.historialPlan?.map((h, i) => <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700"><span className="text-green-400 font-mono mr-2">[{formatSafe(h.fecha)}]</span><span className="text-slate-300">{h.nota}</span></div>)}
-                                {(!c.historialPlan || c.historialPlan.length === 0) && <p className="text-slate-600">No hay plan de acción registrado.</p>}
                               </div>
                               <div className="flex gap-2">
                                 <input id={`pl-pipe-${c.id}`} className="input-field flex-1" placeholder="Nuevo plan de acción..." onKeyDown={(e) => { if (e.key === 'Enter') { agregarHistorialGlobal(c.id, 'historialPlan', c.historialPlan || [], e.currentTarget.value); e.currentTarget.value = '' } }} />
                                 <button onClick={() => { const inp = document.getElementById(`pl-pipe-${c.id}`) as HTMLInputElement; agregarHistorialGlobal(c.id, 'historialPlan', c.historialPlan || [], inp.value); inp.value = '' }} className="btn-secondary text-xs">Agregar</button>
                               </div>
                             </div>
+
+                            {/* Mostrar historial de pendientes para pipeline */}
+                            {c.historialPendientes && c.historialPendientes.length > 0 && (
+                              <div className="col-span-3 pt-3 border-t border-slate-700">
+                                <p className="text-slate-500 mb-2">Historial de Pendientes Resueltos</p>
+                                <div className="space-y-1">
+                                  {c.historialPendientes.map((h, i) => <p key={i} className="text-slate-400">[{formatSafe(h.fecha)}] {h.nota}</p>)}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </td></tr>
@@ -282,14 +379,16 @@ export default function VentasPage() {
                 <tr><th className="tabla-header w-6"></th><th className="tabla-header">Cliente</th><th className="tabla-header">Contacto</th><th className="tabla-header">Fecha / Horario</th><th className="tabla-header">Estado Cita</th><th className="tabla-header"></th></tr>
               </thead>
               <tbody>
-                {citasFiltradas.map(c => (
+                {citasFiltradas.map(c => {
+                  const cStatus = getStatusCita(c)
+                  return (
                   <>
                     <tr key={c.id} className="tabla-row" onClick={() => setExpandidoCi(expandidoCi === c.id ? null : c.id)}>
                       <td className="tabla-cell text-slate-500">{expandidoCi === c.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
                       <td className="tabla-cell font-medium">{c.cliente} <span className="text-xs text-slate-500 block">{c.empresa}</span></td>
                       <td className="tabla-cell text-xs">{c.contacto} <span className="text-slate-500">({c.correo})</span></td>
                       <td className="tabla-cell text-xs font-mono text-cyan-400">{formatSafe(c.fechaReunion)} — {c.horario}</td>
-                      <td className="tabla-cell"><span className={clsx("px-2 py-0.5 rounded border text-xs", c.status === 'realizado' ? "bg-green-900/40 text-green-300 border-green-800" : c.status === 'cancelado' ? "bg-red-900/40 text-red-300 border-red-800" : "bg-amber-900/40 text-amber-300 border-amber-800")}>{c.status}</span></td>
+                      <td className="tabla-cell"><span className={clsx("px-2 py-0.5 rounded border text-xs", cStatus === 'realizado' ? "bg-green-900/40 text-green-300 border-green-800" : cStatus === 'cancelado' || cStatus === 'vencido' ? "bg-red-900/40 text-red-300 border-red-800" : "bg-amber-900/40 text-amber-300 border-amber-800")}>{cStatus}</span></td>
                       <td className="tabla-cell" onClick={e => e.stopPropagation()}>
                         {isAdmin && (
                           <div className="flex gap-2">
@@ -315,7 +414,7 @@ export default function VentasPage() {
                       </td></tr>
                     )}
                   </>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
@@ -334,13 +433,16 @@ export default function VentasPage() {
           <div className="card p-0 overflow-hidden">
             <table className="w-full">
               <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
-                <tr><th className="tabla-header w-6"></th><th className="tabla-header">Código</th><th className="tabla-header">Cliente</th><th className="tabla-header">Empresa</th><th className="tabla-header">Fecha</th><th className="tabla-header">Documento(s)</th><th className="tabla-header"></th></tr>
+                <tr><th className="tabla-header w-6"></th><th className="tabla-header w-8 text-center" title="Marcar como pendiente">🔔</th><th className="tabla-header">Código</th><th className="tabla-header">Cliente</th><th className="tabla-header">Empresa</th><th className="tabla-header">Fecha</th><th className="tabla-header">Documento(s)</th><th className="tabla-header"></th></tr>
               </thead>
               <tbody>
                 {firmasFiltradas.map(f => (
                   <>
                     <tr key={f.id} className="tabla-row" onClick={() => setExpandidoF(expandidoF === f.id ? null : f.id)}>
                       <td className="tabla-cell text-slate-500">{expandidoF === f.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
+                      <td className="tabla-cell text-center" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => handleTogglePendiente(f.id, 'firmas', f)} className="hover:scale-110 transition-transform"><Bell className={clsx("w-4 h-4", f.esPendiente ? "text-amber-400 fill-amber-400/20" : "text-slate-600")} /></button>
+                      </td>
                       <td className="tabla-cell text-xs font-mono text-cyan-400">{f.codigo}</td>
                       <td className="tabla-cell font-medium">{f.cliente}</td>
                       <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', f.empresa === 'OKINAWATEC' ? 'badge-okinawatec' : f.empresa === 'TECHSI' ? 'badge-tech' : 'badge-quantic')}>{f.empresa}</span></td>
@@ -356,7 +458,7 @@ export default function VentasPage() {
                       </td>
                     </tr>
                     {expandidoF === f.id && (
-                      <tr className="bg-[#0d1526]/80"><td colSpan={7} className="p-4">
+                      <tr className="bg-[#0d1526]/80"><td colSpan={8} className="p-4">
                         {editandoF === f.id ? (
                           <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} onSave={async (val: boolean) => { await actualizarFirmaVentas(f.id, processFirma(editDataF)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
                         ) : (
@@ -378,13 +480,20 @@ export default function VentasPage() {
                               <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Status</p>
                               <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
                                 {f.historialStatus?.map((h, i) => <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700"><span className="text-cyan-400 font-mono mr-2">[{formatSafe(h.fecha)}]</span><span className="text-slate-300">{h.nota}</span></div>)}
-                                {(!f.historialStatus || f.historialStatus.length === 0) && <p className="text-slate-600">No hay status registrado.</p>}
                               </div>
                               <div className="flex gap-2">
                                 <input id={`st-firma-${f.id}`} className="input-field flex-1" placeholder="Nuevo status de firma..." onKeyDown={(e) => { if (e.key === 'Enter') { agregarHistorialGlobal(f.id, 'historialStatus', f.historialStatus || [], e.currentTarget.value, true); e.currentTarget.value = '' } }} />
                                 <button onClick={() => { const inp = document.getElementById(`st-firma-${f.id}`) as HTMLInputElement; agregarHistorialGlobal(f.id, 'historialStatus', f.historialStatus || [], inp.value, true); inp.value = '' }} className="btn-secondary text-xs">Agregar</button>
                               </div>
                             </div>
+                            {f.historialPendientes && f.historialPendientes.length > 0 && (
+                              <div className="col-span-3 pt-3 border-t border-slate-700">
+                                <p className="text-slate-500 mb-2">Historial de Pendientes Resueltos</p>
+                                <div className="space-y-1">
+                                  {f.historialPendientes.map((h, i) => <p key={i} className="text-slate-400">[{formatSafe(h.fecha)}] {h.nota}</p>)}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </td></tr>
@@ -409,13 +518,16 @@ export default function VentasPage() {
           <div className="card p-0 overflow-hidden">
             <table className="w-full">
               <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
-                <tr><th className="tabla-header w-6"></th><th className="tabla-header">Entidad</th><th className="tabla-header">Empresa</th><th className="tabla-header">Proceso</th><th className="tabla-header">F. Presentación</th><th className="tabla-header">Resultado</th><th className="tabla-header"></th></tr>
+                <tr><th className="tabla-header w-6"></th><th className="tabla-header w-8 text-center" title="Marcar como pendiente">🔔</th><th className="tabla-header">Entidad</th><th className="tabla-header">Empresa</th><th className="tabla-header">Proceso</th><th className="tabla-header">F. Presentación</th><th className="tabla-header">Resultado</th><th className="tabla-header"></th></tr>
               </thead>
               <tbody>
                 {licitacionesFiltradas.map(l => (
                   <>
                     <tr key={l.id} className="tabla-row" onClick={() => setExpandidoL(expandidoL === l.id ? null : l.id)}>
                       <td className="tabla-cell text-slate-500">{expandidoL === l.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
+                      <td className="tabla-cell text-center" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => handleTogglePendiente(l.id, 'licitaciones', l)} className="hover:scale-110 transition-transform"><Bell className={clsx("w-4 h-4", l.esPendiente ? "text-amber-400 fill-amber-400/20" : "text-slate-600")} /></button>
+                      </td>
                       <td className="tabla-cell font-medium">{l.entidad}</td>
                       <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', l.empresa?.includes('OKI') ? 'badge-okinawatec' : l.empresa?.includes('TECH') ? 'badge-tech' : 'badge-quantic')}>{l.empresa}</span></td>
                       <td className="tabla-cell text-xs truncate max-w-[150px]">{l.proceso}</td>
@@ -431,7 +543,7 @@ export default function VentasPage() {
                       </td>
                     </tr>
                     {expandidoL === l.id && (
-                      <tr className="bg-[#0d1526]/80"><td colSpan={7} className="p-4">
+                      <tr className="bg-[#0d1526]/80"><td colSpan={8} className="p-4">
                         {editandoL === l.id ? (
                           <FormLicitacionVentas data={editDataL} globalClientes={globalClientes} onChange={setEditDataL} onSave={async (val: boolean) => { await actualizarLicitacionVentas(l.id, editDataL); toast.success('Actualizado'); setEditandoL(null); initMódulo() }} onCancel={() => setEditandoL(null)} router={router} />
                         ) : (
@@ -443,6 +555,14 @@ export default function VentasPage() {
                             <div><p className="text-slate-500">Firma Contrato</p><p>{formatSafe(l.fechaFirmaContrato)}</p></div>
                             <div><p className="text-slate-500">Año</p><p>{l.año}</p></div>
                             <div className="col-span-4"><p className="text-slate-500">Observaciones / Detalle Fechas</p><p>{l.observaciones || '—'}</p></div>
+                            {l.historialPendientes && l.historialPendientes.length > 0 && (
+                              <div className="col-span-4 pt-3 border-t border-slate-700">
+                                <p className="text-slate-500 mb-2">Historial de Pendientes Resueltos</p>
+                                <div className="space-y-1">
+                                  {l.historialPendientes.map((h, i) => <p key={i} className="text-slate-400">[{formatSafe(h.fecha)}] {h.nota}</p>)}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </td></tr>
@@ -464,17 +584,17 @@ export default function VentasPage() {
               await crearClienteVentas({ ...nuevoC as any, nombre: nuevoC.nombre, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Agregó a pipeline: ${nuevoC.nombre}`)
               toast.success('Cliente agregado')
-              setModalNuevoC(false); setNuevoC({ status: 'nuevo', fechaCotizacion: hoy() }); initMódulo()
+              setModalNuevoC(false); setNuevoC({ status: 'nuevo', año: new Date().getFullYear().toString(), fechaCotizacion: hoy() }); initMódulo()
             }} onCancel={() => setModalNuevoC(false)} />
         </ModalVentas>
       )}
 
       {modalNuevoCi && (
         <ModalVentas title="Agendar Nueva Cita" onClose={() => setModalNuevoCi(false)}>
-          <FormCitaVentas data={nuevoCi} globalClientes={globalClientes} onChange={setNuevoCi} router={router}
+          <FormCitaVentas data={nuevoCi} globalClientes={globalClientes} onChange={setNuevoCi} router={router} isCreating={true}
             onSave={async (clienteValidado: boolean) => {
               if (!clienteValidado) { toast.error('Selecciona un cliente válido'); return }
-              await crearCitaVentas({ ...nuevoCi as any, cliente: nuevoCi.cliente, createdAt: new Date().toISOString() })
+              await crearCitaVentas({ ...nuevoCi as any, cliente: nuevoCi.cliente, status: 'pendiente', createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró cita con: ${nuevoCi.cliente}`)
               toast.success('Cita agendada')
               setModalNuevoCi(false); setNuevoCi({ sector: 'gobierno', status: 'pendiente', fechaReunion: hoy(), empresa: 'OKINAWATEC' }); initMódulo()
@@ -505,14 +625,49 @@ export default function VentasPage() {
               await crearLicitacionVentas({ ...nuevoL as any, entidad: nuevoL.entidad, createdAt: new Date().toISOString() })
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró licitación: ${nuevoL.entidad}`)
               toast.success('Licitación registrada')
-              setModalNuevoL(false); setNuevoL({ resultado: 'en_proceso', empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() }); initMódulo()
+              setModalNuevoL(false); setNuevoL({ resultado: 'en_proceso', año: new Date().getFullYear().toString(), empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() }); initMódulo()
             }} onCancel={() => setModalNuevoL(false)} />
+        </ModalVentas>
+      )}
+
+      {/* MODAL CREAR PENDIENTE */}
+      {modalPendiente && (
+        <ModalVentas title="Asignar Pendiente" onClose={() => setModalPendiente(null)}>
+          <div className="space-y-4 text-xs">
+            <p className="text-slate-300">Crearás un pendiente para este registro. Ingresa la fecha límite:</p>
+            <div>
+              <label className="label">Fecha límite / máxima</label>
+              <input type="date" className="input-field" value={fechaLimitePendiente} onChange={e => setFechaLimitePendiente(e.target.value)} />
+            </div>
+            <button onClick={guardarNuevoPendiente} className="btn-primary w-full justify-center">Guardar Pendiente</button>
+          </div>
+        </ModalVentas>
+      )}
+
+      {/* MODAL RESOLVER CITA */}
+      {citaResolver && (
+        <ModalVentas title="Resolución de Cita" onClose={() => setCitaResolver(null)}>
+          <div className="space-y-4 text-sm">
+            <p className="text-slate-300 text-center mb-2">¿Cómo finalizó la cita con <strong>{citaResolver.cliente}</strong>?</p>
+            <div className="flex flex-col gap-2">
+              <button onClick={async () => { await actualizarCitaVentas(citaResolver.id, { status: 'realizado' }); toast.success('Cita realizada'); initMódulo(); setCitaResolver(null) }} className="w-full bg-green-600/20 border border-green-500/50 text-green-400 py-2.5 rounded-lg hover:bg-green-600/40 transition-colors">
+                Sí (Realizado)
+              </button>
+              <button onClick={async () => { await actualizarCitaVentas(citaResolver.id, { status: 'cancelado' }); toast.success('Cita cancelada'); initMódulo(); setCitaResolver(null) }} className="w-full bg-red-600/20 border border-red-500/50 text-red-400 py-2.5 rounded-lg hover:bg-red-600/40 transition-colors">
+                No (Cancelada)
+              </button>
+              <button onClick={() => { const id = citaResolver.id; setCitaResolver(null); setTab('citas'); setExpandidoCi(id); setEditandoCi(id); setEditDataCi(citaResolver) }} className="w-full bg-blue-600/20 border border-blue-500/50 text-blue-400 py-2.5 rounded-lg hover:bg-blue-600/40 transition-colors">
+                Reprogramar / Editar
+              </button>
+            </div>
+          </div>
         </ModalVentas>
       )}
     </div>
   )
 }
 
+// ── Helpers para procesar firmas antes de guardar ─────────────────────────
 const PREFIJOS_DOCUMENTO: Record<string, string> = { 'ANEXOS': 'ANX', 'FILE': 'FLE', 'ADENDA': 'ADD', 'CARTA': 'CAR', 'APELACIÓN': 'APE', 'CARTAFIANZA': 'CARFZ', 'FORMATO': 'FMT' }
 function processFirma(data: Partial<FirmaVentas> | any): Partial<FirmaVentas> {
   const tipos: string[] = data.tiposSeleccionados || []
@@ -524,15 +679,17 @@ function processFirma(data: Partial<FirmaVentas> | any): Partial<FirmaVentas> {
   return { ...data, documento, codigo }
 }
 
+// ── Modales / Formularios Internos ────────────────────────────────────────
+
 function ModalVentas({ title, children, onClose }: { title: string, children: React.ReactNode, onClose: () => void }) {
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box max-w-lg">
-        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+    <div className="modal-overlay z-50" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box max-w-lg shadow-2xl border border-slate-600">
+        <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-[#0d1526]">
           <h2 className="font-semibold text-white text-sm">{title}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="p-4 bg-[#111d35]">{children}</div>
       </div>
     </div>
   )
@@ -556,7 +713,7 @@ function AutocompleteCliente({ value, globalClientes, onChange, router, label = 
   return (
     <div className="relative col-span-2">
       <label className="label">{label}</label>
-      <input className={clsx("input-field", valid ? "border-green-500/50" : query.trim() ? "border-amber-500/50" : "")} value={query} onChange={e => handleInput(e.target.value)} placeholder="Ej: SUNARP" />
+      <input className={clsx("input-field", valid ? "border-green-500/50 focus:border-green-500" : query.trim() ? "border-amber-500/50 focus:border-amber-500" : "")} value={query} onChange={e => handleInput(e.target.value)} placeholder="Ej: SUNARP" />
       {sugs.length > 0 && (
         <div className="absolute left-0 right-0 bg-dark-800 border border-slate-700 rounded-md p-1 mt-1 max-h-32 overflow-y-auto z-50 shadow-xl">
           {sugs.map(s => <button key={s.id} type="button" onClick={() => handleInput(s.nombre)} className="w-full text-left p-1.5 hover:bg-blue-600 rounded text-white text-xs">{s.nombre}</button>)}
@@ -564,7 +721,7 @@ function AutocompleteCliente({ value, globalClientes, onChange, router, label = 
       )}
       {!valid && query.trim() && (
         <div className="p-2 bg-amber-900/20 border border-amber-500/40 rounded mt-1 text-amber-400 text-xs flex flex-col gap-1">
-          <span className="flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5"/> Cliente no encontrado en el directorio oficial.</span>
+          <span className="flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5"/> Cliente no encontrado en el directorio.</span>
           <button type="button" onClick={() => router.push('/clientes')} className="text-blue-400 underline font-semibold flex items-center gap-1 self-start">Ir a registrar cliente <ArrowRight className="w-3 h-3"/></button>
         </div>
       )}
@@ -590,28 +747,26 @@ function FormClienteVentas({ data, globalClientes, onChange, onSave, onCancel, r
         <div><label className="label">Fecha Cotización</label><input type="date" className="input-field" value={data.fechaCotizacion || ''} onChange={e => onChange({ ...data, fechaCotizacion: e.target.value })} /></div>
         <div><label className="label">Estado</label><select className="input-field" value={data.status || 'nuevo'} onChange={e => onChange({ ...data, status: e.target.value })}><option value="nuevo">Nuevo</option><option value="procesando">Procesando</option><option value="realizado">Realizado</option><option value="perdido">Perdido</option></select></div>
         
-        {/* Historial Status Editable */}
         <div className="col-span-2 pt-2 border-t border-slate-700">
-          <label className="label text-cyan-400">Historial de Status del Proyecto</label>
+          <label className="label text-cyan-400">Editar Historial de Status del Proyecto</label>
           {data.historialStatus?.map((h: any, i: number) => (
             <div key={i} className="flex gap-2 mb-1.5">
               <input type="date" className="input-field w-32" value={h.fecha} onChange={e => handleHist('historialStatus', i, 'fecha', e.target.value)} />
               <input className="input-field flex-1" value={h.nota} onChange={e => handleHist('historialStatus', i, 'nota', e.target.value)} />
             </div>
           ))}
-          <button type="button" onClick={() => onChange({...data, historialStatus: [...(data.historialStatus||[]), {fecha: hoy(), nota: ''}]})} className="text-blue-400 text-xs">+ Agregar Status</button>
+          <button type="button" onClick={() => onChange({...data, historialStatus: [...(data.historialStatus||[]), {fecha: hoy(), nota: ''}]})} className="text-blue-400 text-xs">+ Agregar Status desde Modal</button>
         </div>
 
-        {/* Historial Plan Editable */}
         <div className="col-span-2 pt-2 border-t border-slate-700">
-          <label className="label text-green-400">Historial de Plan de Acción</label>
+          <label className="label text-green-400">Editar Historial de Plan de Acción</label>
           {data.historialPlan?.map((h: any, i: number) => (
             <div key={i} className="flex gap-2 mb-1.5">
               <input type="date" className="input-field w-32" value={h.fecha} onChange={e => handleHist('historialPlan', i, 'fecha', e.target.value)} />
               <input className="input-field flex-1" value={h.nota} onChange={e => handleHist('historialPlan', i, 'nota', e.target.value)} />
             </div>
           ))}
-          <button type="button" onClick={() => onChange({...data, historialPlan: [...(data.historialPlan||[]), {fecha: hoy(), nota: ''}]})} className="text-blue-400 text-xs">+ Agregar Plan de Acción</button>
+          <button type="button" onClick={() => onChange({...data, historialPlan: [...(data.historialPlan||[]), {fecha: hoy(), nota: ''}]})} className="text-blue-400 text-xs">+ Agregar Plan de Acción desde Modal</button>
         </div>
       </div>
       <div className="flex gap-2 pt-3"><button onClick={() => onSave(isValid)} className="btn-primary text-xs w-full justify-center"><Check className="w-3.5 h-3.5" /> Guardar Todos Los Cambios</button>{onCancel && <button onClick={onCancel} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /></button>}</div>
@@ -619,7 +774,7 @@ function FormClienteVentas({ data, globalClientes, onChange, onSave, onCancel, r
   )
 }
 
-function FormCitaVentas({ data, globalClientes, onChange, onSave, onCancel, router }: any) {
+function FormCitaVentas({ data, globalClientes, onChange, onSave, onCancel, router, isCreating }: any) {
   const [isValid, setIsValid] = useState(globalClientes.some((c: any) => c.nombre === data.cliente))
   return (
     <div className="space-y-3 text-xs">
@@ -632,9 +787,14 @@ function FormCitaVentas({ data, globalClientes, onChange, onSave, onCancel, rout
         <div><label className="label">Correo</label><input className="input-field" value={data.correo || ''} onChange={e => onChange({ ...data, correo: e.target.value })} /></div>
         <div><label className="label">Cargo</label><input className="input-field" value={data.cargo || ''} onChange={e => onChange({ ...data, cargo: e.target.value })} /></div>
         <div><label className="label">Sector</label><select className="input-field" value={data.sector || 'gobierno'} onChange={e => onChange({ ...data, sector: e.target.value })}><option value="gobierno">Gobierno</option><option value="privado">Privado</option><option value="financiero">Financiero</option><option value="educacion">Educación</option><option value="otro">Otro</option></select></div>
-        <div><label className="label">Solución Propuesta</label><input className="input-field" value={data.solucion || ''} onChange={e => onChange({ ...data, solucion: e.target.value })} /></div>
+        <div className="col-span-2"><label className="label">Solución Propuesta</label><input className="input-field" value={data.solucion || ''} onChange={e => onChange({ ...data, solucion: e.target.value })} /></div>
         <div><label className="label">Status del Proyecto</label><input className="input-field" value={data.statusProyecto || ''} onChange={e => onChange({ ...data, statusProyecto: e.target.value })} /></div>
-        <div><label className="label">Estado de Cita</label><select className="input-field" value={data.status || 'pendiente'} onChange={e => onChange({ ...data, status: e.target.value })}><option value="pendiente">Pendiente</option><option value="realizado">Realizado</option><option value="cancelado">Se canceló</option></select></div>
+        
+        {/* Solo mostrar la opción de estado si se está editando, no al crear */}
+        {!isCreating && (
+          <div><label className="label">Estado de Cita</label><select className="input-field" value={data.status || 'pendiente'} onChange={e => onChange({ ...data, status: e.target.value })}><option value="pendiente">Pendiente</option><option value="realizado">Realizado</option><option value="cancelado">Se canceló</option></select></div>
+        )}
+        
         <div className="col-span-2"><label className="label">Observaciones</label><textarea className="input-field resize-none" rows={2} value={data.observaciones || ''} onChange={e => onChange({ ...data, observaciones: e.target.value })} /></div>
       </div>
       <div className="flex gap-2"><button onClick={() => onSave(isValid)} className="btn-primary text-xs w-full justify-center"><Check className="w-3.5 h-3.5" /> Guardar</button>{onCancel && <button onClick={onCancel} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /></button>}</div>
@@ -653,13 +813,12 @@ function FormFirmaVentas({ data, globalClientes, onChange, onSave, onCancel, rou
       <div className="grid grid-cols-2 gap-3">
         <AutocompleteCliente value={data.cliente} globalClientes={globalClientes} onChange={(val, valid) => { onChange({ ...data, cliente: val }); setIsValid(valid) }} router={router} />
         <div><label className="label">Teléfono / Celular</label><input className="input-field" value={data.telefono || ''} onChange={e => onChange({ ...data, telefono: e.target.value })} /></div>
-        <div><label className="label">Estado</label><select className="input-field" value={data.estado || 'pendiente'} onChange={e => onChange({ ...data, estado: e.target.value })}><option value="pendiente">Pendiente</option><option value="realizado">Realizado</option><option value="cancelado">Se canceló</option></select></div>
+        <div><label className="label">Estado de Firma</label><select className="input-field" value={data.estado || 'pendiente'} onChange={e => onChange({ ...data, estado: e.target.value })}><option value="pendiente">Pendiente</option><option value="realizado">Realizado</option><option value="cancelado">Se canceló</option></select></div>
         <div><label className="label">Autorizado Por</label><select className="input-field" value={data.autorizadoPor || 'Luis Matienzo'} onChange={e => onChange({ ...data, autorizadoPor: e.target.value })}><option value="Luis Matienzo">Luis Matienzo</option><option value="Karen Hiraoka">Karen Hiraoka</option></select></div>
         <div><label className="label">Firmado Por</label><select className="input-field" value={data.firmadoPor || ''} onChange={e => onChange({ ...data, firmadoPor: e.target.value })}><option value="">Seleccionar...</option>{optsFirmantes.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
         <div><label className="label">Enviado Por</label><select className="input-field" value={data.enviadoPor || ''} onChange={e => onChange({ ...data, enviadoPor: e.target.value })}><option value="">Seleccionar...</option>{optsFirmantes.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
         <div><label className="label">Empresa</label><select className="input-field" value={data.empresa || 'OKINAWATEC'} onChange={e => onChange({ ...data, empresa: e.target.value })}><option value="OKINAWATEC">OKINAWATEC</option><option value="TECHSI">TECHSI</option><option value="QUANTIC">QUANTIC</option></select></div>
         <div><label className="label">Fecha</label><input type="date" className="input-field" value={data.fecha || ''} onChange={e => onChange({ ...data, fecha: e.target.value })} /></div>
-        
         <div className="col-span-2">
           <label className="label">Tipo de Documento</label>
           <div className="grid grid-cols-3 gap-2 p-2 bg-dark-800 border border-slate-700 rounded-lg">
@@ -679,14 +838,14 @@ function FormFirmaVentas({ data, globalClientes, onChange, onSave, onCancel, rou
         <div className="col-span-2"><label className="label">Observaciones</label><textarea className="input-field resize-none" rows={2} value={data.observaciones || ''} onChange={e => onChange({ ...data, observaciones: e.target.value })} /></div>
 
         <div className="col-span-2 pt-2 border-t border-slate-700">
-          <label className="label text-cyan-400">Historial de Status</label>
+          <label className="label text-cyan-400">Editar Historial de Status</label>
           {data.historialStatus?.map((h: any, i: number) => (
             <div key={i} className="flex gap-2 mb-1.5">
               <input type="date" className="input-field w-32" value={h.fecha} onChange={e => handleHist(i, 'fecha', e.target.value)} />
               <input className="input-field flex-1" value={h.nota} onChange={e => handleHist(i, 'nota', e.target.value)} />
             </div>
           ))}
-          <button type="button" onClick={() => onChange({...data, historialStatus: [...(data.historialStatus||[]), {fecha: hoy(), nota: ''}]})} className="text-blue-400 text-xs">+ Agregar Status</button>
+          <button type="button" onClick={() => onChange({...data, historialStatus: [...(data.historialStatus||[]), {fecha: hoy(), nota: ''}]})} className="text-blue-400 text-xs">+ Agregar Status desde Modal</button>
         </div>
       </div>
       <div className="flex gap-2 pt-3"><button onClick={() => onSave(isValid)} className="btn-primary text-xs w-full justify-center"><Check className="w-3.5 h-3.5" /> Guardar Todos Los Cambios</button>{onCancel && <button onClick={onCancel} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /></button>}</div>
