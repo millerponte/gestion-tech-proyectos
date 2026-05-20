@@ -120,6 +120,20 @@ export type SectorCita = 'privado' | 'gobierno' | 'financiero' | 'educacion' | '
 export type TipoFirma = 'FM' | 'FD'
 export type ResultadoLicitacion = 'ganamos' | 'perdimos' | 'en_proceso' | 'suspendido'
 
+export interface PendienteVenta {
+  id: string;
+  nombre: string;
+  especificaciones: string;
+  plazo: string;
+  fechaInicio: string;
+  fechaLimite: string;
+  seccionVinculada: 'pipeline' | 'citas' | 'firmas' | 'licitaciones' | 'ninguna';
+  registroVinculadoId?: string;
+  registroVinculadoNombre?: string;
+  estado: 'pendiente' | 'realizado';
+  createdAt: string;
+}
+
 export interface HistorialNota {
   fecha: string;
   nota: string;
