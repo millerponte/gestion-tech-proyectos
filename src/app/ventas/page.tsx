@@ -768,11 +768,15 @@ function AutocompleteCliente({ value, globalClientes, onChange, router, label = 
 
 function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, citas, firmas, licitaciones }: any) {
   const [anioFiltro, setAnioFiltro] = useState(new Date().getFullYear().toString())
+  const [query, setQuery] = useState(data.registroVinculadoNombre || '')
+  const [sugs, setSugs] = useState<any[]>([])
 
+  // Se extraen las opciones dinámicamente según la sección y se corrige el filtro del año
   const optsVinculo = () => {
     const checkY = (fecha?: string) => {
       if (!fecha) return false
-      const y = fecha.split('-')[0]
+      let y = fecha.split('-')[0]
+      if (fecha.includes('/')) y = fecha.split('/')[2] // Por si la fecha viene en DD/MM/YYYY
       if (anioFiltro === 'todos') return true
       if (anioFiltro === '2023-24') return y === '2023' || y === '2024'
       return y === anioFiltro
@@ -785,6 +789,20 @@ function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, citas,
     return []
   }
 
+  const handleInput = (val: string) => {
+    setQuery(val)
+    onChange({ ...data, registroVinculadoId: '', registroVinculadoNombre: val })
+    if (!val.trim()) { setSugs([]); return }
+    const opciones = optsVinculo()
+    setSugs(opciones.filter((o:any) => o.name.toLowerCase().includes(val.toLowerCase())))
+  }
+
+  const selectOpcion = (id: string, name: string) => {
+    setQuery(name)
+    setSugs([])
+    onChange({ ...data, registroVinculadoId: id, registroVinculadoNombre: name })
+  }
+
   return (
     <div className="space-y-3 text-xs">
       <div><label className="label">Nombre del pendiente *</label><input className="input-field" value={data.nombre || ''} onChange={e => onChange({ ...data, nombre: e.target.value })} placeholder="Ej: Solicitar documentos faltantes" /></div>
@@ -792,7 +810,7 @@ function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, citas,
       <div className="grid grid-cols-2 gap-3">
         <div><label className="label">Plazo (Días, meses...)</label><input className="input-field" value={data.plazo || ''} onChange={e => onChange({ ...data, plazo: e.target.value })} /></div>
         <div><label className="label">Vincular a Sección</label>
-          <select className="input-field" value={data.seccionVinculada || 'ninguna'} onChange={e => onChange({ ...data, seccionVinculada: e.target.value, registroVinculadoId: '', registroVinculadoNombre: '' })}>
+          <select className="input-field" value={data.seccionVinculada || 'ninguna'} onChange={e => { onChange({ ...data, seccionVinculada: e.target.value, registroVinculadoId: '', registroVinculadoNombre: '' }); setQuery(''); setSugs([]) }}>
             <option value="ninguna">No vincular (Independiente)</option>
             <option value="pipeline">Pipeline</option>
             <option value="citas">Citas</option>
@@ -807,20 +825,22 @@ function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, citas,
         <div className="pt-2 grid grid-cols-3 gap-3">
           <div className="col-span-1">
             <label className="label text-cyan-400">Año del registro</label>
-            <select className="input-field border-cyan-500/50" value={anioFiltro} onChange={e => { setAnioFiltro(e.target.value); onChange({ ...data, registroVinculadoId: '', registroVinculadoNombre: '' }) }}>
+            <select className="input-field border-cyan-500/50" value={anioFiltro} onChange={e => { setAnioFiltro(e.target.value); onChange({ ...data, registroVinculadoId: '', registroVinculadoNombre: '' }); setQuery(''); setSugs([]) }}>
               <option value="todos">Todos</option>
               {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
           </div>
-          <div className="col-span-2">
-            <label className="label text-cyan-400">Seleccionar registro *</label>
-            <select className="input-field border-cyan-500/50" value={data.registroVinculadoId || ''} onChange={e => {
-              const id = e.target.value; const name = optsVinculo().find((o:any) => o.id === id)?.name || ''
-              onChange({ ...data, registroVinculadoId: id, registroVinculadoNombre: name })
-            }}>
-              <option value="">Selecciona una opción...</option>
-              {optsVinculo().map((o:any) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </select>
+          <div className="col-span-2 relative">
+            <label className="label text-cyan-400">Buscar y seleccionar registro *</label>
+            <input className={clsx("input-field border-cyan-500/50", data.registroVinculadoId ? "border-green-500/50" : "")} value={query} onChange={e => handleInput(e.target.value)} placeholder="Escribe para buscar..." />
+            {sugs.length > 0 && (
+              <div className="absolute left-0 right-0 bg-dark-800 border border-slate-700 rounded-md p-1 mt-1 max-h-32 overflow-y-auto z-50 shadow-xl">
+                {sugs.map((s:any) => <button key={s.id} type="button" onClick={() => selectOpcion(s.id, s.name)} className="w-full text-left p-1.5 hover:bg-blue-600 rounded text-white text-xs">{s.name}</button>)}
+              </div>
+            )}
+            {!data.registroVinculadoId && query.trim() && sugs.length === 0 && (
+                <p className="text-amber-400 text-[10px] mt-1">No se encontraron registros vinculables con ese nombre en el año {anioFiltro}.</p>
+            )}
           </div>
         </div>
       )}
