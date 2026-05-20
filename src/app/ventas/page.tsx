@@ -62,7 +62,7 @@ const formatSafe = (fecha?: string) => {
 }
 
 const checkYear = (fecha: string | undefined, filtro: string) => {
-  if (!filtro) return true
+  if (!filtro || filtro === 'todos') return true
   if (!fecha) return false
   const year = fecha.split('-')[0]
   if (filtro === '2023-24') return year === '2023' || year === '2024'
@@ -87,6 +87,8 @@ export default function VentasPage() {
   const [globalClientes, setGlobalClientes] = useState<Cliente[]>([])
   const [rangoDashboard, setRangoDashboard] = useState<RangoFiltro>('mes')
 
+  const currentYearStr = new Date().getFullYear().toString()
+
   // ── ESTADOS DE COLECCIONES ──────────────────────────────────────────────
   const [pendientesManuales, setPendientesManuales] = useState<PendienteVenta[]>([])
   const [clientes, setClientes] = useState<ClienteVentas[]>([])
@@ -95,21 +97,21 @@ export default function VentasPage() {
   const [licitaciones, setLicitaciones] = useState<LicitacionVentas[]>([])
 
   // ── ESTADOS DE BUSQUEDA Y FILTROS ───────────────────────────────────────
-  const [busquedaC, setBusquedaC] = useState(''); const [filtroStatusC, setFiltroStatusC] = useState(''); const [filtroAñoC, setFiltroAñoC] = useState('')
+  const [busquedaC, setBusquedaC] = useState(''); const [filtroStatusC, setFiltroStatusC] = useState(''); const [filtroAñoC, setFiltroAñoC] = useState(currentYearStr)
   const [expandidoC, setExpandidoC] = useState<string | null>(null); const [editandoC, setEditandoC] = useState<string | null>(null); const [editDataC, setEditDataC] = useState<Partial<ClienteVentas>>({})
-  const [modalNuevoC, setModalNuevoC] = useState(false); const [nuevoC, setNuevoC] = useState<Partial<ClienteVentas>>({ status: 'nuevo', año: new Date().getFullYear().toString(), fechaCotizacion: hoy() })
+  const [modalNuevoC, setModalNuevoC] = useState(false); const [nuevoC, setNuevoC] = useState<Partial<ClienteVentas>>({ status: 'nuevo', año: currentYearStr, fechaCotizacion: hoy() })
 
-  const [busquedaCi, setBusquedaCi] = useState(''); const [filtroSectorCi, setFiltroSectorCi] = useState(''); const [filtroAñoCi, setFiltroAñoCi] = useState('')
+  const [busquedaCi, setBusquedaCi] = useState(''); const [filtroSectorCi, setFiltroSectorCi] = useState(''); const [filtroAñoCi, setFiltroAñoCi] = useState(currentYearStr)
   const [expandidoCi, setExpandidoCi] = useState<string | null>(null); const [editandoCi, setEditandoCi] = useState<string | null>(null); const [editDataCi, setEditDataCi] = useState<Partial<CitaVentas>>({})
   const [modalNuevoCi, setModalNuevoCi] = useState(false); const [nuevoCi, setNuevoCi] = useState<Partial<CitaVentas>>({ sector: 'gobierno', status: 'pendiente', fechaReunion: hoy(), empresa: 'OKINAWATEC' })
 
-  const [busquedaF, setBusquedaF] = useState(''); const [filtroAñoF, setFiltroAñoF] = useState('')
+  const [busquedaF, setBusquedaF] = useState(''); const [filtroAñoF, setFiltroAñoF] = useState(currentYearStr)
   const [expandidoF, setExpandidoF] = useState<string | null>(null); const [editandoF, setEditandoF] = useState<string | null>(null); const [editDataF, setEditDataF] = useState<Partial<FirmaVentas>>({})
   const [modalNuevoF, setModalNuevoF] = useState(false); const [nuevoF, setNuevoF] = useState<Partial<FirmaVentas>>({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy(), estado: 'pendiente' })
 
-  const [busquedaL, setBusquedaL] = useState(''); const [filtroAñoL, setFiltroAñoL] = useState('')
+  const [busquedaL, setBusquedaL] = useState(''); const [filtroAñoL, setFiltroAñoL] = useState(currentYearStr)
   const [expandidoL, setExpandidoL] = useState<string | null>(null); const [editandoL, setEditandoL] = useState<string | null>(null); const [editDataL, setEditDataL] = useState<Partial<LicitacionVentas>>({})
-  const [modalNuevoL, setModalNuevoL] = useState(false); const [nuevoL, setNuevoL] = useState<Partial<LicitacionVentas>>({ resultado: 'en_proceso', año: new Date().getFullYear().toString(), empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() })
+  const [modalNuevoL, setModalNuevoL] = useState(false); const [nuevoL, setNuevoL] = useState<Partial<LicitacionVentas>>({ resultado: 'en_proceso', año: currentYearStr, empresa: 'OKINAWATEC', basesIntegradas: hoy(), fechaPresentacion: hoy() })
 
   // Modales de Pendientes Globales
   const [modalNuevoPendiente, setModalNuevoPendiente] = useState(false)
@@ -161,7 +163,7 @@ export default function VentasPage() {
     citas.forEach(c => {
       const st = getStatusCita(c)
       if (st === 'pendiente' || st === 'vencido') {
-        arr.push({ id: c.id, tipoDoc: 'cita', titulo: c.cliente, subtitulo: `Cita: ${c.solucion || 'Reunión'}`, fechaOrden: c.fechaReunion, horario: c.horario, esVencido: st === 'vencido', original: c })
+        arr.push({ id: c.id, tipoDoc: 'cita', titulo: c.cliente, subtitulo: `Cita Programada: ${c.solucion || 'Reunión'}`, fechaOrden: c.fechaReunion, horario: c.horario, esVencido: st === 'vencido', original: c, isCitaMain: true })
       }
     })
 
@@ -245,9 +247,9 @@ export default function VentasPage() {
         {/* PENDIENTES */}
         <div className="card border-amber-500/30 bg-amber-950/10 p-4 flex flex-col h-64">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-amber-400 font-semibold text-sm flex items-center gap-2"><Clock className="w-4 h-4" /> Pendientes Generales ({listaPendientes.length})</h3>
+            <h3 className="text-amber-400 font-semibold text-sm flex items-center gap-2"><Clock className="w-4 h-4" /> Pendientes ({listaPendientes.length})</h3>
             <button onClick={() => setModalNuevoPendiente(true)} className="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all shadow-lg shadow-amber-900/20">
-              <Plus className="w-3.5 h-3.5" /> Agregar Pendiente
+              <Plus className="w-3.5 h-3.5" /> Nuevo Pendiente
             </button>
           </div>
           <div className="space-y-2 overflow-y-auto pr-1 flex-1">
@@ -299,7 +301,10 @@ export default function VentasPage() {
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-48"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input className="input-field pl-9" placeholder="Buscar cliente..." value={busquedaC} onChange={e => setBusquedaC(e.target.value)} /></div>
             <select className="input-field w-auto min-w-32" value={filtroStatusC} onChange={e => setFiltroStatusC(e.target.value)}><option value="">Todos los estados</option><option value="nuevo">Nuevo</option><option value="procesando">Procesando</option><option value="realizado">Realizado</option><option value="perdido">Perdido</option></select>
-            <select className="input-field w-auto min-w-32" value={filtroAñoC} onChange={e => setFiltroAñoC(e.target.value)}><option value="">Todos los años</option>{OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select className="input-field w-auto min-w-32" value={filtroAñoC} onChange={e => setFiltroAñoC(e.target.value)}>
+              <option value="todos">Todos los años</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
             <div className="flex gap-2 ml-auto"><button onClick={exportarPipeline} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>{isAdmin && <button onClick={() => setModalNuevoC(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nuevo cliente</button>}</div>
           </div>
           <div className="card p-0 overflow-hidden">
@@ -382,7 +387,10 @@ export default function VentasPage() {
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-48"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input className="input-field pl-9" placeholder="Buscar cita..." value={busquedaCi} onChange={e => setBusquedaCi(e.target.value)} /></div>
             <select className="input-field w-auto min-w-36" value={filtroSectorCi} onChange={e => setFiltroSectorCi(e.target.value)}><option value="">Todos los sectores</option><option value="gobierno">Gobierno</option><option value="privado">Privado</option><option value="financiero">Financiero</option><option value="educacion">Educación</option><option value="otro">Otro</option></select>
-            <select className="input-field w-auto min-w-32" value={filtroAñoCi} onChange={e => setFiltroAñoCi(e.target.value)}><option value="">Todos los años</option>{OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select className="input-field w-auto min-w-32" value={filtroAñoCi} onChange={e => setFiltroAñoCi(e.target.value)}>
+              <option value="todos">Todos los años</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
             <div className="flex gap-2 ml-auto"><button onClick={exportarCitas} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>{isAdmin && <button onClick={() => setModalNuevoCi(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nueva cita</button>}</div>
           </div>
           <div className="card p-0 overflow-hidden">
@@ -438,7 +446,10 @@ export default function VentasPage() {
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-48"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input className="input-field pl-9" placeholder="Buscar firma..." value={busquedaF} onChange={e => setBusquedaF(e.target.value)} /></div>
-            <select className="input-field w-auto min-w-32" value={filtroAñoF} onChange={e => setFiltroAñoF(e.target.value)}><option value="">Todos los años</option>{OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select className="input-field w-auto min-w-32" value={filtroAñoF} onChange={e => setFiltroAñoF(e.target.value)}>
+              <option value="todos">Todos los años</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
             <div className="flex gap-2 ml-auto"><button onClick={exportarFirmas} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>{isAdmin && <button onClick={() => setModalNuevoF(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nueva firma</button>}</div>
           </div>
 
@@ -512,7 +523,10 @@ export default function VentasPage() {
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-48"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input className="input-field pl-9" placeholder="Buscar entidad..." value={busquedaL} onChange={e => setBusquedaL(e.target.value)} /></div>
-            <select className="input-field w-auto min-w-32" value={filtroAñoL} onChange={e => setFiltroAñoL(e.target.value)}><option value="">Todos los años</option>{OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select className="input-field w-auto min-w-32" value={filtroAñoL} onChange={e => setFiltroAñoL(e.target.value)}>
+              <option value="todos">Todos los años</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
             <div className="flex gap-2 ml-auto"><button onClick={exportarLicitaciones} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>{isAdmin && <button onClick={() => setModalNuevoL(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nueva licitación</button>}</div>
           </div>
 
@@ -753,11 +767,21 @@ function AutocompleteCliente({ value, globalClientes, onChange, router, label = 
 }
 
 function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, citas, firmas, licitaciones }: any) {
+  const [anioFiltro, setAnioFiltro] = useState(new Date().getFullYear().toString())
+
   const optsVinculo = () => {
-    if (data.seccionVinculada === 'pipeline') return clientes.map((x:any) => ({ id: x.id, name: x.nombre }))
-    if (data.seccionVinculada === 'citas') return citas.map((x:any) => ({ id: x.id, name: x.cliente }))
-    if (data.seccionVinculada === 'firmas') return firmas.map((x:any) => ({ id: x.id, name: x.cliente }))
-    if (data.seccionVinculada === 'licitaciones') return licitaciones.map((x:any) => ({ id: x.id, name: x.entidad }))
+    const checkY = (fecha?: string) => {
+      if (!fecha) return false
+      const y = fecha.split('-')[0]
+      if (anioFiltro === 'todos') return true
+      if (anioFiltro === '2023-24') return y === '2023' || y === '2024'
+      return y === anioFiltro
+    }
+
+    if (data.seccionVinculada === 'pipeline') return clientes.filter((x:any) => anioFiltro === 'todos' || x.año === anioFiltro).map((x:any) => ({ id: x.id, name: `${x.nombre} — ${x.proyecto || 'Sin proyecto'}` }))
+    if (data.seccionVinculada === 'citas') return citas.filter((x:any) => checkY(x.fechaReunion)).map((x:any) => ({ id: x.id, name: `${x.cliente} — ${formatSafe(x.fechaReunion)}` }))
+    if (data.seccionVinculada === 'firmas') return firmas.filter((x:any) => checkY(x.fecha)).map((x:any) => ({ id: x.id, name: `${x.codigo} — ${x.cliente}` }))
+    if (data.seccionVinculada === 'licitaciones') return licitaciones.filter((x:any) => anioFiltro === 'todos' || x.año === anioFiltro).map((x:any) => ({ id: x.id, name: `${x.entidad} — ${x.proceso}` }))
     return []
   }
 
@@ -777,18 +801,27 @@ function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, citas,
           </select>
         </div>
         <div><label className="label">Fecha Inicio</label><input type="date" className="input-field" value={data.fechaInicio || ''} onChange={e => onChange({ ...data, fechaInicio: e.target.value })} /></div>
-        <div><label className="label">Fecha Límite *</label><input type="date" className="input-field border-amber-500/50" value={data.fechaLimite || ''} onChange={e => onChange({ ...data, fechaLimite: e.target.value })} /></div>
+        <div><label className="label">Fecha Límite *</label><input type="date" className="input-field border-amber-500/50 focus:border-amber-400" value={data.fechaLimite || ''} onChange={e => onChange({ ...data, fechaLimite: e.target.value })} /></div>
       </div>
       {data.seccionVinculada !== 'ninguna' && (
-        <div className="pt-2">
-          <label className="label text-cyan-400">Seleccionar el registro vinculado *</label>
-          <select className="input-field border-cyan-500/50" value={data.registroVinculadoId || ''} onChange={e => {
-            const id = e.target.value; const name = optsVinculo().find((o:any) => o.id === id)?.name || ''
-            onChange({ ...data, registroVinculadoId: id, registroVinculadoNombre: name })
-          }}>
-            <option value="">Selecciona una opción...</option>
-            {optsVinculo().map((o:any) => <option key={o.id} value={o.id}>{o.name}</option>)}
-          </select>
+        <div className="pt-2 grid grid-cols-3 gap-3">
+          <div className="col-span-1">
+            <label className="label text-cyan-400">Año del registro</label>
+            <select className="input-field border-cyan-500/50" value={anioFiltro} onChange={e => { setAnioFiltro(e.target.value); onChange({ ...data, registroVinculadoId: '', registroVinculadoNombre: '' }) }}>
+              <option value="todos">Todos</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label className="label text-cyan-400">Seleccionar registro *</label>
+            <select className="input-field border-cyan-500/50" value={data.registroVinculadoId || ''} onChange={e => {
+              const id = e.target.value; const name = optsVinculo().find((o:any) => o.id === id)?.name || ''
+              onChange({ ...data, registroVinculadoId: id, registroVinculadoNombre: name })
+            }}>
+              <option value="">Selecciona una opción...</option>
+              {optsVinculo().map((o:any) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+          </div>
         </div>
       )}
       <div className="flex gap-2 pt-3"><button onClick={onSave} className="btn-primary text-xs w-full justify-center"><Check className="w-3.5 h-3.5" /> Guardar Pendiente</button>{onCancel && <button onClick={onCancel} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /></button>}</div>
