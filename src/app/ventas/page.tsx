@@ -229,7 +229,6 @@ export default function VentasPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2"><TrendingUp className="w-6 h-6 text-emerald-400" /> Inteligencia Comercial & Ventas</h1>
@@ -247,9 +246,9 @@ export default function VentasPage() {
         {/* PENDIENTES */}
         <div className="card border-amber-500/30 bg-amber-950/10 p-4 flex flex-col h-64">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-amber-400 font-semibold text-sm flex items-center gap-2"><Clock className="w-4 h-4" /> Pendientes ({listaPendientes.length})</h3>
+            <h3 className="text-amber-400 font-semibold text-sm flex items-center gap-2"><Clock className="w-4 h-4" /> Pendientes Generales ({listaPendientes.length})</h3>
             <button onClick={() => setModalNuevoPendiente(true)} className="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all shadow-lg shadow-amber-900/20">
-              <Plus className="w-3.5 h-3.5" /> Nuevo Pendiente
+              <Plus className="w-3.5 h-3.5" /> Agregar Pendiente
             </button>
           </div>
           <div className="space-y-2 overflow-y-auto pr-1 flex-1">
@@ -314,70 +313,66 @@ export default function VentasPage() {
               </thead>
               <tbody>
                 {clientesFiltrados.map(c => (
-                  <>
-                    <tr key={c.id} className="tabla-row" onClick={() => setExpandidoC(expandidoC === c.id ? null : c.id)}>
-                      <td className="tabla-cell text-slate-500">{expandidoC === c.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
-                      <td className="tabla-cell"><p className="text-sm font-medium">{c.nombre}</p><p className="text-xs text-slate-500">{c.contacto}</p></td>
-                      <td className="tabla-cell"><p className="text-xs">{c.proyecto}</p><p className="text-xs text-slate-500">{c.solucion}</p></td>
-                      <td className="tabla-cell text-xs">{formatSafe(c.fechaCotizacion)}</td>
-                      <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', STATUS_COLORS[c.status])}>{c.status}</span></td>
-                      <td className="tabla-cell" onClick={e => e.stopPropagation()}>
-                        {isAdmin && (
-                          <div className="flex gap-2">
-                            <button onClick={() => { setExpandidoC(c.id); setEditandoC(c.id); setEditDataC({ ...c }) }} className="text-slate-500 hover:text-blue-400"><Pencil className="w-3.5 h-3.5" /></button>
-                            <button onClick={async () => { if (confirm('¿Eliminar?')) { await eliminarClienteVentas(c.id); initMódulo() } }} className="text-slate-500 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                    {expandidoC === c.id && (
-                      <tr className="bg-[#0d1526]/80"><td colSpan={6} className="p-4">
-                        {editandoC === c.id ? (
-                          <FormClienteVentas data={editDataC} globalClientes={globalClientes} onChange={setEditDataC} onSave={async (val: boolean) => { await actualizarClienteVentas(c.id, editDataC); toast.success('Actualizado'); setEditandoC(null); initMódulo() }} onCancel={() => setEditandoC(null)} router={router} />
-                        ) : (
-                          <div className="grid grid-cols-3 gap-4 text-xs">
-                            <div><p className="text-slate-500">Contacto</p><p>{c.contacto || '—'}</p></div>
-                            <div><p className="text-slate-500">Teléfono / Celular</p><p className="font-mono text-cyan-400">{c.telefono || '—'}</p></div>
-                            <div><p className="text-slate-500">Correo</p><p>{c.correo || '—'}</p></div>
-                            <div><p className="text-slate-500">Mayorista</p><p>{c.mayorista || '—'}</p></div>
-                            <div><p className="text-slate-500">Año</p><p>{c.año}</p></div>
-                            <div>
-                              <p className="text-slate-500 mb-1">Estado General</p>
-                              <select className="input-field py-1 text-xs max-w-[150px]" value={c.status} onChange={async (e) => { await actualizarClienteVentas(c.id, { status: e.target.value as StatusPipeline }); toast.success('Estado actualizado'); initMódulo() }}>
-                                <option value="nuevo">Nuevo</option><option value="procesando">Procesando</option><option value="realizado">Realizado</option><option value="perdido">Perdido</option>
-                              </select>
-                            </div>
-
-                            <div className="col-span-3 pt-3 border-t border-slate-700">
-                              <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Status del Proyecto</p>
-                              <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
-                                {c.historialStatus?.map((h, i) => <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700"><span className="text-cyan-400 font-mono mr-2">[{formatSafe(h.fecha)}]</span><span className="text-slate-300">{h.nota}</span></div>)}
-                              </div>
-                              <div className="flex gap-2">
-                                <input id={`st-pipe-${c.id}`} className="input-field flex-1" placeholder="Nuevo status..." onKeyDown={(e) => { if (e.key === 'Enter') { agregarHistorialGlobal(c.id, 'historialStatus', c.historialStatus || [], e.currentTarget.value); e.currentTarget.value = '' } }} />
-                                <button onClick={() => { const inp = document.getElementById(`st-pipe-${c.id}`) as HTMLInputElement; agregarHistorialGlobal(c.id, 'historialStatus', c.historialStatus || [], inp.value); inp.value = '' }} className="btn-secondary text-xs">Agregar</button>
-                              </div>
-                            </div>
-
-                            <div className="col-span-3 pt-3 border-t border-slate-700">
-                              <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Plan de Acción</p>
-                              <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
-                                {c.historialPlan?.map((h, i) => <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700"><span className="text-green-400 font-mono mr-2">[{formatSafe(h.fecha)}]</span><span className="text-slate-300">{h.nota}</span></div>)}
-                              </div>
-                              <div className="flex gap-2">
-                                <input id={`pl-pipe-${c.id}`} className="input-field flex-1" placeholder="Nuevo plan de acción..." onKeyDown={(e) => { if (e.key === 'Enter') { agregarHistorialGlobal(c.id, 'historialPlan', c.historialPlan || [], e.currentTarget.value); e.currentTarget.value = '' } }} />
-                                <button onClick={() => { const inp = document.getElementById(`pl-pipe-${c.id}`) as HTMLInputElement; agregarHistorialGlobal(c.id, 'historialPlan', c.historialPlan || [], inp.value); inp.value = '' }} className="btn-secondary text-xs">Agregar</button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </td></tr>
-                    )}
-                  </>
+                  <tr key={c.id} className="tabla-row" onClick={() => setExpandidoC(expandidoC === c.id ? null : c.id)}>
+                    <td className="tabla-cell text-slate-500">{expandidoC === c.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
+                    <td className="tabla-cell"><p className="text-sm font-medium">{c.nombre}</p><p className="text-xs text-slate-500">{c.contacto}</p></td>
+                    <td className="tabla-cell"><p className="text-xs">{c.proyecto}</p><p className="text-xs text-slate-500">{c.solucion}</p></td>
+                    <td className="tabla-cell text-xs">{formatSafe(c.fechaCotizacion)}</td>
+                    <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', STATUS_COLORS[c.status])}>{c.status}</span></td>
+                    <td className="tabla-cell" onClick={e => e.stopPropagation()}>
+                      {isAdmin && (
+                        <div className="flex gap-2">
+                          <button onClick={() => { setExpandidoC(c.id); setEditandoC(c.id); setEditDataC({ ...c }) }} className="text-slate-500 hover:text-blue-400"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button onClick={async () => { if (confirm('¿Eliminar?')) { await eliminarClienteVentas(c.id); initMódulo() } }} className="text-slate-500 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {clientesFiltrados.map(c => expandidoC === c.id && (
+            <div key={`${c.id}-exp`} className="card mt-2 bg-[#0d1526]/80 p-4">
+              {editandoC === c.id ? (
+                <FormClienteVentas data={editDataC} globalClientes={globalClientes} onChange={setEditDataC} onSave={async (val: boolean) => { await actualizarClienteVentas(c.id, editDataC); toast.success('Actualizado'); setEditandoC(null); initMódulo() }} onCancel={() => setEditandoC(null)} router={router} />
+              ) : (
+                <div className="grid grid-cols-3 gap-4 text-xs">
+                  <div><p className="text-slate-500">Contacto</p><p>{c.contacto || '—'}</p></div>
+                  <div><p className="text-slate-500">Teléfono / Celular</p><p className="font-mono text-cyan-400">{c.telefono || '—'}</p></div>
+                  <div><p className="text-slate-500">Correo</p><p>{c.correo || '—'}</p></div>
+                  <div><p className="text-slate-500">Mayorista</p><p>{c.mayorista || '—'}</p></div>
+                  <div><p className="text-slate-500">Año</p><p>{c.año}</p></div>
+                  <div>
+                    <p className="text-slate-500 mb-1">Estado General</p>
+                    <select className="input-field py-1 text-xs max-w-[150px]" value={c.status} onChange={async (e) => { await actualizarClienteVentas(c.id, { status: e.target.value as StatusPipeline }); toast.success('Estado actualizado'); initMódulo() }}>
+                      <option value="nuevo">Nuevo</option><option value="procesando">Procesando</option><option value="realizado">Realizado</option><option value="perdido">Perdido</option>
+                    </select>
+                  </div>
+                  <div className="col-span-3 pt-3 border-t border-slate-700">
+                    <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Status del Proyecto</p>
+                    <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
+                      {c.historialStatus?.map((h, i) => <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700"><span className="text-cyan-400 font-mono mr-2">[{formatSafe(h.fecha)}]</span><span className="text-slate-300">{h.nota}</span></div>)}
+                    </div>
+                    <div className="flex gap-2">
+                      <input id={`st-pipe-${c.id}`} className="input-field flex-1" placeholder="Nuevo status..." onKeyDown={(e) => { if (e.key === 'Enter') { agregarHistorialGlobal(c.id, 'historialStatus', c.historialStatus || [], e.currentTarget.value); e.currentTarget.value = '' } }} />
+                      <button onClick={() => { const inp = document.getElementById(`st-pipe-${c.id}`) as HTMLInputElement; agregarHistorialGlobal(c.id, 'historialStatus', c.historialStatus || [], inp.value); inp.value = '' }} className="btn-secondary text-xs">Agregar</button>
+                    </div>
+                  </div>
+                  <div className="col-span-3 pt-3 border-t border-slate-700">
+                    <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Plan de Acción</p>
+                    <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
+                      {c.historialPlan?.map((h, i) => <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700"><span className="text-green-400 font-mono mr-2">[{formatSafe(h.fecha)}]</span><span className="text-slate-300">{h.nota}</span></div>)}
+                    </div>
+                    <div className="flex gap-2">
+                      <input id={`pl-pipe-${c.id}`} className="input-field flex-1" placeholder="Nuevo plan de acción..." onKeyDown={(e) => { if (e.key === 'Enter') { agregarHistorialGlobal(c.id, 'historialPlan', c.historialPlan || [], e.currentTarget.value); e.currentTarget.value = '' } }} />
+                      <button onClick={() => { const inp = document.getElementById(`pl-pipe-${c.id}`) as HTMLInputElement; agregarHistorialGlobal(c.id, 'historialPlan', c.historialPlan || [], inp.value); inp.value = '' }} className="btn-secondary text-xs">Agregar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -402,7 +397,6 @@ export default function VentasPage() {
                 {citasFiltradas.map(c => {
                   const cStatus = getStatusCita(c)
                   return (
-                  <>
                     <tr key={c.id} className="tabla-row" onClick={() => setExpandidoCi(expandidoCi === c.id ? null : c.id)}>
                       <td className="tabla-cell text-slate-500">{expandidoCi === c.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
                       <td className="tabla-cell font-medium">{c.cliente} <span className="text-xs text-slate-500 block">{c.empresa}</span></td>
@@ -418,26 +412,26 @@ export default function VentasPage() {
                         )}
                       </td>
                     </tr>
-                    {expandidoCi === c.id && (
-                      <tr className="bg-[#0d1526]/80"><td colSpan={6} className="p-4">
-                        {editandoCi === c.id ? (
-                          <FormCitaVentas data={editDataCi} globalClientes={globalClientes} onChange={setEditDataCi} isCreating={false} onSave={async (val: boolean) => { await actualizarCitaVentas(c.id, editDataCi); toast.success('Actualizado'); setEditandoCi(null); initMódulo() }} onCancel={() => setEditandoCi(null)} router={router} />
-                        ) : (
-                          <div className="grid grid-cols-3 gap-4 text-xs">
-                            <div><p className="text-slate-500">Sector</p><p className="uppercase">{c.sector}</p></div>
-                            <div><p className="text-slate-500">Cargo</p><p>{c.cargo || '—'}</p></div>
-                            <div><p className="text-slate-500">Solución Propuesta</p><p>{c.solucion || '—'}</p></div>
-                            <div><p className="text-slate-500">Status Proyecto</p><p>{c.statusProyecto || '—'}</p></div>
-                            <div className="col-span-2"><p className="text-slate-500">Observaciones</p><p>{c.observaciones || '—'}</p></div>
-                          </div>
-                        )}
-                      </td></tr>
-                    )}
-                  </>
-                )})}
+                  )
+                })}
               </tbody>
             </table>
           </div>
+          {citasFiltradas.map(c => expandidoCi === c.id && (
+            <div key={`${c.id}-exp`} className="card mt-2 bg-[#0d1526]/80 p-4">
+              {editandoCi === c.id ? (
+                <FormCitaVentas data={editDataCi} globalClientes={globalClientes} onChange={setEditDataCi} isCreating={false} onSave={async (val: boolean) => { await actualizarCitaVentas(c.id, editDataCi); toast.success('Actualizado'); setEditandoCi(null); initMódulo() }} onCancel={() => setEditandoCi(null)} router={router} />
+              ) : (
+                <div className="grid grid-cols-3 gap-4 text-xs">
+                  <div><p className="text-slate-500">Sector</p><p className="uppercase">{c.sector}</p></div>
+                  <div><p className="text-slate-500">Cargo</p><p>{c.cargo || '—'}</p></div>
+                  <div><p className="text-slate-500">Solución Propuesta</p><p>{c.solucion || '—'}</p></div>
+                  <div><p className="text-slate-500">Status Proyecto</p><p>{c.statusProyecto || '—'}</p></div>
+                  <div className="col-span-2"><p className="text-slate-500">Observaciones</p><p>{c.observaciones || '—'}</p></div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -452,7 +446,6 @@ export default function VentasPage() {
             </select>
             <div className="flex gap-2 ml-auto"><button onClick={exportarFirmas} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>{isAdmin && <button onClick={() => setModalNuevoF(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nueva firma</button>}</div>
           </div>
-
           <div className="card p-0 overflow-hidden">
             <table className="w-full">
               <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
@@ -460,61 +453,58 @@ export default function VentasPage() {
               </thead>
               <tbody>
                 {firmasFiltradas.map(f => (
-                  <>
-                    <tr key={f.id} className="tabla-row" onClick={() => setExpandidoF(expandidoF === f.id ? null : f.id)}>
-                      <td className="tabla-cell text-slate-500">{expandidoF === f.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
-                      <td className="tabla-cell text-xs font-mono text-cyan-400">{f.codigo}</td>
-                      <td className="tabla-cell font-medium">{f.cliente}</td>
-                      <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', f.empresa === 'OKINAWATEC' ? 'badge-okinawatec' : f.empresa === 'TECHSI' ? 'badge-tech' : 'badge-quantic')}>{f.empresa}</span></td>
-                      <td className="tabla-cell text-xs">{formatSafe(f.fecha)}</td>
-                      <td className="tabla-cell text-xs text-slate-400 truncate max-w-[150px]">{f.documento}</td>
-                      <td className="tabla-cell" onClick={e => e.stopPropagation()}>
-                        {isAdmin && (
-                          <div className="flex gap-2">
-                            <button onClick={() => { setExpandidoF(f.id); setEditandoF(f.id); setEditDataF({ ...f, tiposSeleccionados: f.documento?.split(' + ') || [] } as any) }} className="text-slate-500 hover:text-blue-400"><Pencil className="w-3.5 h-3.5" /></button>
-                            <button onClick={async () => { if (confirm('¿Eliminar?')) { await eliminarFirmaVentas(f.id); initMódulo() } }} className="text-slate-500 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                    {expandidoF === f.id && (
-                      <tr className="bg-[#0d1526]/80"><td colSpan={7} className="p-4">
-                        {editandoF === f.id ? (
-                          <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} onSave={async (val: boolean) => { await actualizarFirmaVentas(f.id, processFirma(editDataF)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
-                        ) : (
-                          <div className="grid grid-cols-3 gap-4 text-xs">
-                            <div><p className="text-slate-500">Teléfono / Celular</p><p className="font-mono text-cyan-400">{f.telefono || '—'}</p></div>
-                            <div><p className="text-slate-500">Autorizado Por</p><p>{f.autorizadoPor || '—'}</p></div>
-                            <div><p className="text-slate-500">Firmado Por</p><p>{f.firmadoPor || '—'}</p></div>
-                            <div><p className="text-slate-500">Enviado Por</p><p>{f.enviadoPor || '—'}</p></div>
-                            <div>
-                              <p className="text-slate-500 mb-1">Estado de Firma</p>
-                              <select className="input-field py-1 text-xs max-w-[150px]" value={f.estado || 'pendiente'} onChange={async (e) => { await actualizarFirmaVentas(f.id, { estado: e.target.value }); toast.success('Estado actualizado'); initMódulo() }}>
-                                <option value="pendiente">Pendiente</option><option value="realizado">Realizado</option><option value="cancelado">Se canceló</option>
-                              </select>
-                            </div>
-                            <div className="col-span-3"><p className="text-slate-500">Proyecto</p><p>{f.nombreProyecto || '—'}</p></div>
-                            <div className="col-span-3"><p className="text-slate-500">Observaciones</p><p>{f.observaciones || '—'}</p></div>
-
-                            <div className="col-span-3 pt-3 border-t border-slate-700">
-                              <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Status</p>
-                              <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
-                                {f.historialStatus?.map((h, i) => <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700"><span className="text-cyan-400 font-mono mr-2">[{formatSafe(h.fecha)}]</span><span className="text-slate-300">{h.nota}</span></div>)}
-                              </div>
-                              <div className="flex gap-2">
-                                <input id={`st-firma-${f.id}`} className="input-field flex-1" placeholder="Nuevo status de firma..." onKeyDown={(e) => { if (e.key === 'Enter') { agregarHistorialGlobal(f.id, 'historialStatus', f.historialStatus || [], e.currentTarget.value, true); e.currentTarget.value = '' } }} />
-                                <button onClick={() => { const inp = document.getElementById(`st-firma-${f.id}`) as HTMLInputElement; agregarHistorialGlobal(f.id, 'historialStatus', f.historialStatus || [], inp.value, true); inp.value = '' }} className="btn-secondary text-xs">Agregar</button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </td></tr>
-                    )}
-                  </>
+                  <tr key={f.id} className="tabla-row" onClick={() => setExpandidoF(expandidoF === f.id ? null : f.id)}>
+                    <td className="tabla-cell text-slate-500">{expandidoF === f.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
+                    <td className="tabla-cell text-xs font-mono text-cyan-400">{f.codigo}</td>
+                    <td className="tabla-cell font-medium">{f.cliente}</td>
+                    <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', f.empresa === 'OKINAWATEC' ? 'badge-okinawatec' : f.empresa === 'TECHSI' ? 'badge-tech' : 'badge-quantic')}>{f.empresa}</span></td>
+                    <td className="tabla-cell text-xs">{formatSafe(f.fecha)}</td>
+                    <td className="tabla-cell text-xs text-slate-400 truncate max-w-[150px]">{f.documento}</td>
+                    <td className="tabla-cell" onClick={e => e.stopPropagation()}>
+                      {isAdmin && (
+                        <div className="flex gap-2">
+                          <button onClick={() => { setExpandidoF(f.id); setEditandoF(f.id); setEditDataF({ ...f, tiposSeleccionados: f.documento?.split(' + ') || [] } as any) }} className="text-slate-500 hover:text-blue-400"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button onClick={async () => { if (confirm('¿Eliminar?')) { await eliminarFirmaVentas(f.id); initMódulo() } }} className="text-slate-500 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {firmasFiltradas.map(f => expandidoF === f.id && (
+            <div key={`${f.id}-exp`} className="card mt-2 bg-[#0d1526]/80 p-4">
+              {editandoF === f.id ? (
+                <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} onSave={async (val: boolean) => { await actualizarFirmaVentas(f.id, processFirma(editDataF)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
+              ) : (
+                <div className="grid grid-cols-3 gap-4 text-xs">
+                  <div><p className="text-slate-500">Teléfono / Celular</p><p className="font-mono text-cyan-400">{f.telefono || '—'}</p></div>
+                  <div><p className="text-slate-500">Autorizado Por</p><p>{f.autorizadoPor || '—'}</p></div>
+                  <div><p className="text-slate-500">Firmado Por</p><p>{f.firmadoPor || '—'}</p></div>
+                  <div><p className="text-slate-500">Enviado Por</p><p>{f.enviadoPor || '—'}</p></div>
+                  <div>
+                    <p className="text-slate-500 mb-1">Estado de Firma</p>
+                    <select className="input-field py-1 text-xs max-w-[150px]" value={f.estado || 'pendiente'} onChange={async (e) => { await actualizarFirmaVentas(f.id, { estado: e.target.value }); toast.success('Estado actualizado'); initMódulo() }}>
+                      <option value="pendiente">Pendiente</option><option value="realizado">Realizado</option><option value="cancelado">Se canceló</option>
+                    </select>
+                  </div>
+                  <div className="col-span-3"><p className="text-slate-500">Proyecto</p><p>{f.nombreProyecto || '—'}</p></div>
+                  <div className="col-span-3"><p className="text-slate-500">Observaciones</p><p>{f.observaciones || '—'}</p></div>
+                  <div className="col-span-3 pt-3 border-t border-slate-700">
+                    <p className="text-slate-500 mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5"/> Historial de Status</p>
+                    <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
+                      {f.historialStatus?.map((h, i) => <div key={i} className="bg-dark-800 p-2 rounded border border-slate-700"><span className="text-cyan-400 font-mono mr-2">[{formatSafe(h.fecha)}]</span><span className="text-slate-300">{h.nota}</span></div>)}
+                    </div>
+                    <div className="flex gap-2">
+                      <input id={`st-firma-${f.id}`} className="input-field flex-1" placeholder="Nuevo status de firma..." onKeyDown={(e) => { if (e.key === 'Enter') { agregarHistorialGlobal(f.id, 'historialStatus', f.historialStatus || [], e.currentTarget.value, true); e.currentTarget.value = '' } }} />
+                      <button onClick={() => { const inp = document.getElementById(`st-firma-${f.id}`) as HTMLInputElement; agregarHistorialGlobal(f.id, 'historialStatus', f.historialStatus || [], inp.value, true); inp.value = '' }} className="btn-secondary text-xs">Agregar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -529,7 +519,6 @@ export default function VentasPage() {
             </select>
             <div className="flex gap-2 ml-auto"><button onClick={exportarLicitaciones} className="btn-secondary text-xs"><Download className="w-4 h-4" /> Exportar</button>{isAdmin && <button onClick={() => setModalNuevoL(true)} className="btn-primary text-xs"><Plus className="w-4 h-4" /> Nueva licitación</button>}</div>
           </div>
-
           <div className="card p-0 overflow-hidden">
             <table className="w-full">
               <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
@@ -537,45 +526,43 @@ export default function VentasPage() {
               </thead>
               <tbody>
                 {licitacionesFiltradas.map(l => (
-                  <>
-                    <tr key={l.id} className="tabla-row" onClick={() => setExpandidoL(expandidoL === l.id ? null : l.id)}>
-                      <td className="tabla-cell text-slate-500">{expandidoL === l.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
-                      <td className="tabla-cell font-medium">{l.entidad}</td>
-                      <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', l.empresa?.includes('OKI') ? 'badge-okinawatec' : l.empresa?.includes('TECH') ? 'badge-tech' : 'badge-quantic')}>{l.empresa}</span></td>
-                      <td className="tabla-cell text-xs truncate max-w-[150px]">{l.proceso}</td>
-                      <td className="tabla-cell text-xs">{formatSafe(l.fechaPresentacion)}</td>
-                      <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', RESULTADO_COLORS[l.resultado])}>{l.resultado.replace('_', ' ')}</span></td>
-                      <td className="tabla-cell" onClick={e => e.stopPropagation()}>
-                        {isAdmin && (
-                          <div className="flex gap-2">
-                            <button onClick={() => { setExpandidoL(l.id); setEditandoL(l.id); setEditDataL({ ...l }) }} className="text-slate-500 hover:text-blue-400"><Pencil className="w-3.5 h-3.5" /></button>
-                            <button onClick={async () => { if (confirm('¿Eliminar?')) { await eliminarLicitacionVentas(l.id); initMódulo() } }} className="text-slate-500 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                    {expandidoL === l.id && (
-                      <tr className="bg-[#0d1526]/80"><td colSpan={7} className="p-4">
-                        {editandoL === l.id ? (
-                          <FormLicitacionVentas data={editDataL} globalClientes={globalClientes} onChange={setEditDataL} onSave={async (val: boolean) => { await actualizarLicitacionVentas(l.id, editDataL); toast.success('Actualizado'); setEditandoL(null); initMódulo() }} onCancel={() => setEditandoL(null)} router={router} />
-                        ) : (
-                          <div className="grid grid-cols-4 gap-4 text-xs">
-                            <div><p className="text-slate-500">Bases Integradas</p><p>{formatSafe(l.basesIntegradas)}</p></div>
-                            <div><p className="text-slate-500">F. Evaluación</p><p>{formatSafe(l.fechaFinEvaluacion)}</p></div>
-                            <div><p className="text-slate-500">Buena Pro</p><p>{formatSafe(l.buenaPro)}</p></div>
-                            <div><p className="text-slate-500">Consentimiento</p><p>{formatSafe(l.consentimiento)}</p></div>
-                            <div><p className="text-slate-500">Firma Contrato</p><p>{formatSafe(l.fechaFirmaContrato)}</p></div>
-                            <div><p className="text-slate-500">Año</p><p>{l.año}</p></div>
-                            <div className="col-span-4"><p className="text-slate-500">Observaciones / Detalle Fechas</p><p>{l.observaciones || '—'}</p></div>
-                          </div>
-                        )}
-                      </td></tr>
-                    )}
-                  </>
+                  <tr key={l.id} className="tabla-row" onClick={() => setExpandidoL(expandidoL === l.id ? null : l.id)}>
+                    <td className="tabla-cell text-slate-500">{expandidoL === l.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</td>
+                    <td className="tabla-cell font-medium">{l.entidad}</td>
+                    <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', l.empresa?.includes('OKI') ? 'badge-okinawatec' : l.empresa?.includes('TECH') ? 'badge-tech' : 'badge-quantic')}>{l.empresa}</span></td>
+                    <td className="tabla-cell text-xs truncate max-w-[150px]">{l.proceso}</td>
+                    <td className="tabla-cell text-xs">{formatSafe(l.fechaPresentacion)}</td>
+                    <td className="tabla-cell"><span className={clsx('text-xs px-2 py-0.5 rounded-full border', RESULTADO_COLORS[l.resultado])}>{l.resultado.replace('_', ' ')}</span></td>
+                    <td className="tabla-cell" onClick={e => e.stopPropagation()}>
+                      {isAdmin && (
+                        <div className="flex gap-2">
+                          <button onClick={() => { setExpandidoL(l.id); setEditandoL(l.id); setEditDataL({ ...l }) }} className="text-slate-500 hover:text-blue-400"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button onClick={async () => { if (confirm('¿Eliminar?')) { await eliminarLicitacionVentas(l.id); initMódulo() } }} className="text-slate-500 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {licitacionesFiltradas.map(l => expandidoL === l.id && (
+            <div key={`${l.id}-exp`} className="card mt-2 bg-[#0d1526]/80 p-4">
+              {editandoL === l.id ? (
+                <FormLicitacionVentas data={editDataL} globalClientes={globalClientes} onChange={setEditDataL} onSave={async (val: boolean) => { await actualizarLicitacionVentas(l.id, editDataL); toast.success('Actualizado'); setEditandoL(null); initMódulo() }} onCancel={() => setEditandoL(null)} router={router} />
+              ) : (
+                <div className="grid grid-cols-4 gap-4 text-xs">
+                  <div><p className="text-slate-500">Bases Integradas</p><p>{formatSafe(l.basesIntegradas)}</p></div>
+                  <div><p className="text-slate-500">F. Evaluación</p><p>{formatSafe(l.fechaFinEvaluacion)}</p></div>
+                  <div><p className="text-slate-500">Buena Pro</p><p>{formatSafe(l.buenaPro)}</p></div>
+                  <div><p className="text-slate-500">Consentimiento</p><p>{formatSafe(l.consentimiento)}</p></div>
+                  <div><p className="text-slate-500">Firma Contrato</p><p>{formatSafe(l.fechaFirmaContrato)}</p></div>
+                  <div><p className="text-slate-500">Año</p><p>{l.año}</p></div>
+                  <div className="col-span-4"><p className="text-slate-500">Observaciones / Detalle Fechas</p><p>{l.observaciones || '—'}</p></div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -840,66 +827,6 @@ function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, firmas
             )}
             {!data.registroVinculadoId && query.trim() && sugs.length === 0 && (
               <p className="text-amber-400 text-[10px] mt-1">No se encontraron registros vinculables con ese nombre en el año {anioFiltro}.</p>
-            )}
-          </div>
-        </div>
-      )}
-      <div className="flex gap-2 pt-3"><button onClick={onSave} className="btn-primary text-xs w-full justify-center"><Check className="w-3.5 h-3.5" /> Guardar Pendiente</button>{onCancel && <button onClick={onCancel} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /></button>}</div>
-    </div>
-  )
-}
-
-  const handleInput = (val: string) => {
-    setQuery(val)
-    onChange({ ...data, registroVinculadoId: '', registroVinculadoNombre: val })
-    if (!val.trim()) { setSugs([]); return }
-    const opciones = optsVinculo()
-    setSugs(opciones.filter((o:any) => o.name.toLowerCase().includes(val.toLowerCase())))
-  }
-
-  const selectOpcion = (id: string, name: string) => {
-    setQuery(name)
-    setSugs([])
-    onChange({ ...data, registroVinculadoId: id, registroVinculadoNombre: name })
-  }
-
-  return (
-    <div className="space-y-3 text-xs">
-      <div><label className="label">Nombre del pendiente *</label><input className="input-field" value={data.nombre || ''} onChange={e => onChange({ ...data, nombre: e.target.value })} placeholder="Ej: Solicitar documentos faltantes" /></div>
-      <div><label className="label">Especificaciones / Detalles</label><textarea className="input-field resize-none" rows={3} value={data.especificaciones || ''} onChange={e => onChange({ ...data, especificaciones: e.target.value })} /></div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className="label">Plazo (Días, meses...)</label><input className="input-field" value={data.plazo || ''} onChange={e => onChange({ ...data, plazo: e.target.value })} /></div>
-        <div><label className="label">Vincular a Sección</label>
-          <select className="input-field" value={data.seccionVinculada || 'ninguna'} onChange={e => { onChange({ ...data, seccionVinculada: e.target.value, registroVinculadoId: '', registroVinculadoNombre: '' }); setQuery(''); setSugs([]) }}>
-            <option value="ninguna">No vincular (Independiente)</option>
-            <option value="pipeline">Pipeline</option>
-            <option value="citas">Citas</option>
-            <option value="firmas">Firmas</option>
-            <option value="licitaciones">Licitaciones</option>
-          </select>
-        </div>
-        <div><label className="label">Fecha Inicio</label><input type="date" className="input-field" value={data.fechaInicio || ''} onChange={e => onChange({ ...data, fechaInicio: e.target.value })} /></div>
-        <div><label className="label">Fecha Límite *</label><input type="date" className="input-field border-amber-500/50 focus:border-amber-400" value={data.fechaLimite || ''} onChange={e => onChange({ ...data, fechaLimite: e.target.value })} /></div>
-      </div>
-      {data.seccionVinculada !== 'ninguna' && (
-        <div className="pt-2 grid grid-cols-3 gap-3">
-          <div className="col-span-1">
-            <label className="label text-cyan-400">Año del registro</label>
-            <select className="input-field border-cyan-500/50" value={anioFiltro} onChange={e => { setAnioFiltro(e.target.value); onChange({ ...data, registroVinculadoId: '', registroVinculadoNombre: '' }); setQuery(''); setSugs([]) }}>
-              <option value="todos">Todos</option>
-              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </div>
-          <div className="col-span-2 relative">
-            <label className="label text-cyan-400">Buscar y seleccionar registro *</label>
-            <input className={clsx("input-field border-cyan-500/50", data.registroVinculadoId ? "border-green-500/50" : "")} value={query} onChange={e => handleInput(e.target.value)} placeholder="Escribe para buscar..." />
-            {sugs.length > 0 && (
-              <div className="absolute left-0 right-0 bg-dark-800 border border-slate-700 rounded-md p-1 mt-1 max-h-32 overflow-y-auto z-50 shadow-xl">
-                {sugs.map((s:any) => <button key={s.id} type="button" onClick={() => selectOpcion(s.id, s.name)} className="w-full text-left p-1.5 hover:bg-blue-600 rounded text-white text-xs">{s.name}</button>)}
-              </div>
-            )}
-            {!data.registroVinculadoId && query.trim() && sugs.length === 0 && (
-                <p className="text-amber-400 text-[10px] mt-1">No se encontraron registros vinculables con ese nombre en el año {anioFiltro}.</p>
             )}
           </div>
         </div>
