@@ -233,6 +233,10 @@ export async function obtenerLicitacionesVentas(): Promise<LicitacionVentas[]> {
 export async function crearLicitacionVentas(data: Omit<LicitacionVentas, 'id'>): Promise<string> { const ref = await addDoc(collection(db, 'ventas_licitaciones'), data); return ref.id }
 export async function actualizarLicitacionVentas(id: string, data: Partial<LicitacionVentas>) { await updateDoc(doc(db, 'ventas_licitaciones', id), data) }
 export async function eliminarLicitacionVentas(id: string) { await deleteDoc(doc(db, 'ventas_licitaciones', id)) }
+export async function obtenerPendientesVentas(): Promise<import('@/types').PendienteVenta[]> { const snap = await getDocs(query(collection(db, 'ventas_pendientes'), orderBy('createdAt', 'desc'))); return snap.docs.map(d => ({ id: d.id, ...d.data() } as import('@/types').PendienteVenta)) }
+export async function crearPendienteVenta(data: Omit<import('@/types').PendienteVenta, 'id'>): Promise<string> { const ref = await addDoc(collection(db, 'ventas_pendientes'), data); return ref.id }
+export async function actualizarPendienteVenta(id: string, data: Partial<import('@/types').PendienteVenta>) { await updateDoc(doc(db, 'ventas_pendientes', id), data) }
+export async function eliminarPendienteVenta(id: string) { await deleteDoc(doc(db, 'ventas_pendientes', id)) }
 // ─── SISTEMA DE AUDITORÍA Y CONSOLA ──────────────────────────────────────────
 
 export async function registrarLog(usuarioUid: string, usuarioNombre: string, modulo: string, accion: string) {
