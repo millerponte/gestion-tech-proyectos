@@ -107,7 +107,7 @@ export default function VentasPage() {
 
   const [busquedaF, setBusquedaF] = useState(''); const [filtroAñoF, setFiltroAñoF] = useState(currentYearStr)
   const [expandidoF, setExpandidoF] = useState<string | null>(null); const [editandoF, setEditandoF] = useState<string | null>(null); const [editDataF, setEditDataF] = useState<Partial<FirmaVentas>>({})
-  const [modalNuevoF, setModalNuevoF] = useState(false); const [nuevoF, setNuevoF] = useState<Partial<FirmaVentas>>({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy(), tipoFirma: 'FM (Firma Manual)', medioEntrega: 'Presencial' })
+  const [modalNuevoF, setModalNuevoF] = useState(false); const [nuevoF, setNuevoF] = useState<Partial<FirmaVentas>>({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy(), tipoFirma: 'FM (Firma Manual)', medioEntrega: 'Presencial', estado: 'pendiente' })
 
   const [busquedaL, setBusquedaL] = useState(''); const [filtroAñoL, setFiltroAñoL] = useState(currentYearStr)
   const [expandidoL, setExpandidoL] = useState<string | null>(null); const [editandoL, setEditandoL] = useState<string | null>(null); const [editDataL, setEditDataL] = useState<Partial<LicitacionVentas>>({})
@@ -219,7 +219,7 @@ export default function VentasPage() {
 
   const exportarPipeline = () => exportCSV(['Cliente', 'Contacto', 'Teléfono', 'Correo', 'Proyecto', 'Solución', 'Mayorista', 'Fecha Cotización', 'Estado', 'Historial Status', 'Historial Plan', 'Año'], clientesFiltrados.map(c => [c.nombre, c.contacto, c.telefono, c.correo, c.proyecto, c.solucion, c.mayorista, formatSafe(c.fechaCotizacion), c.status, c.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), c.historialPlan?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), c.año]), 'pipeline_ventas')
   const exportarCitas = () => exportCSV(['Cliente', 'Empresa', 'Contacto', 'Correo', 'Cargo', 'Sector', 'Fecha Reunión', 'Horario', 'Solución', 'Status Proyecto', 'Estado Cita', 'Observaciones'], citasFiltradas.map(c => [c.cliente, c.empresa, c.contacto, c.correo, c.cargo, c.sector, formatSafe(c.fechaReunion), c.horario, c.solucion, c.statusProyecto, getStatusCita(c), c.observaciones]), 'citas_ventas')
-  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Empresa', 'Fecha', 'Tipo de Firma', 'Medio de Entrega', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Historial', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.empresa, formatSafe(f.fecha), f.tipoFirma, f.medioEntrega, f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), f.observaciones]), 'firmas_ventas')
+  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Empresa', 'Fecha', 'Tipo de Firma', 'Medio de Entrega', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Estado', 'Historial', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.empresa, formatSafe(f.fecha), f.tipoFirma, f.medioEntrega, f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.estado, f.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), f.observaciones]), 'firmas_ventas')
   const exportarLicitaciones = () => exportCSV(['Entidad', 'Empresa', 'Proceso', 'Bases Integradas', 'F. Presentación', 'F. Evaluación', 'Buena Pro', 'Consentimiento', 'F. Firma Contrato', 'Resultado', 'Año', 'Observaciones/Detalle'], licitacionesFiltradas.map(l => [l.entidad, l.empresa, l.proceso, formatSafe(l.basesIntegradas), formatSafe(l.fechaPresentacion), formatSafe(l.fechaFinEvaluacion), formatSafe(l.buenaPro), formatSafe(l.consentimiento), formatSafe(l.fechaFirmaContrato), l.resultado, l.año, l.observaciones]), 'licitaciones_ventas')
 
   const clientesFiltrados = clientes.filter(c => (!busquedaC || c.nombre.toLowerCase().includes(busquedaC.toLowerCase())) && (!filtroStatusC || c.status === filtroStatusC) && checkYear(c.fechaCotizacion, filtroAñoC))
@@ -485,7 +485,7 @@ export default function VentasPage() {
                       <tr className="bg-[#0d1526]/80">
                         <td colSpan={7} className="p-4">
                           {editandoF === f.id ? (
-                            <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} onSave={async (val: boolean) => { await actualizarFirmaVentas(f.id, processFirma(editDataF)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
+                            <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} onSave={async (val: boolean) => { await actualizarFirmaVentas(f.id, processFirma(editDataF, firmas)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
                           ) : (
                             <div className="grid grid-cols-3 gap-4 text-xs">
                               <div><p className="text-slate-500">Tipo de Firma</p><p>{f.tipoFirma || '—'}</p></div>
@@ -614,7 +614,7 @@ export default function VentasPage() {
           <FormFirmaVentas data={nuevoF} globalClientes={globalClientes} onChange={setNuevoF} router={router}
             onSave={async (clienteValidado: boolean) => {
               if (!clienteValidado) { toast.error('Selecciona un cliente válido'); return }
-              const firmaProcesada = processFirma(nuevoF)
+              const firmaProcesada = processFirma(nuevoF, firmas)
               if (!firmaProcesada.documento) { toast.error('Elige al menos un tipo de documento'); return }
               await crearFirmaVentas({ ...firmaProcesada, cliente: nuevoF.cliente, createdAt: new Date().toISOString() } as any)
               if (usuario) await registrarLog(usuario.uid, usuario.nombre, 'Ventas', `Registró firma para: ${nuevoF.cliente}`)
@@ -708,14 +708,28 @@ export default function VentasPage() {
 }
 
 // ── Helpers para procesar firmas antes de guardar ─────────────────────────
-const PREFIJOS_DOCUMENTO: Record<string, string> = { 'ANEXOS': 'ANX', 'FILE': 'FLE', 'ADENDA': 'ADD', 'CARTA': 'CAR', 'APELACIÓN': 'APE', 'CARTAFIANZA': 'CARFZ', 'FORMATO': 'FMT' }
-function processFirma(data: Partial<FirmaVentas> | any): Partial<FirmaVentas> {
+const PREFIJOS_DOCUMENTO: Record<string, string> = { 'ANEXOS': 'ANEX', 'FILE': 'FILE', 'ADENDA': 'ADD', 'CARTA': 'CAR', 'APELACIÓN': 'APE', 'CARTAFIANZA': 'CARFZ', 'FORMATO': 'FMT' }
+
+function processFirma(data: Partial<FirmaVentas> | any, firmasExistentes: FirmaVentas[]): Partial<FirmaVentas> {
   const tipos: string[] = data.tiposSeleccionados || []
   const documento = tipos.join(' + ')
   let codigo = data.codigo || ''
-  if (tipos.length > 0 && !codigo.includes('-')) {
-    codigo = `${PREFIJOS_DOCUMENTO[tipos[0]] || 'DOC'}-${codigo}`
+  
+  if (!codigo && tipos.length > 0) {
+    const prefijo = PREFIJOS_DOCUMENTO[tipos[0]] || 'DOC'
+    let maxNum = 0
+    firmasExistentes.forEach(f => {
+      if (f.codigo && f.codigo.includes(prefijo)) {
+        const parts = f.codigo.split('-')
+        if (parts.length > 1) {
+          const num = parseInt(parts[1].trim(), 10)
+          if (!isNaN(num) && num > maxNum) maxNum = num
+        }
+      }
+    })
+    codigo = `${prefijo}-${String(maxNum + 1).padStart(3, '0')}`
   }
+  
   return { ...data, documento, codigo }
 }
 
@@ -982,7 +996,7 @@ function FormFirmaVentas({ data, globalClientes, onChange, onSave, onCancel, rou
             })}
           </div>
         </div>
-        <div><label className="label">Código Secuencial</label><input className="input-field" placeholder="Ej: 001" value={data.codigo?.split('-').pop() || data.codigo || ''} onChange={e => onChange({ ...data, codigo: e.target.value })} /></div>
+        <div><label className="label">Código Secuencial</label><input className="input-field bg-dark-800 text-slate-500 cursor-not-allowed" disabled value={data.codigo || 'Se generará al guardar'} /></div>
         <div className="col-span-2"><label className="label">Nombre del Proyecto</label><input className="input-field" value={data.nombreProyecto || ''} onChange={e => onChange({ ...data, nombreProyecto: e.target.value })} /></div>
         <div className="col-span-2"><label className="label">Observaciones</label><textarea className="input-field resize-none" rows={2} value={data.observaciones || ''} onChange={e => onChange({ ...data, observaciones: e.target.value })} /></div>
 
