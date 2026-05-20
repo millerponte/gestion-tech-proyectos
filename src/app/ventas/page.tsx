@@ -766,28 +766,88 @@ function AutocompleteCliente({ value, globalClientes, onChange, router, label = 
   )
 }
 
-function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, citas, firmas, licitaciones }: any) {
+function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, firmas, licitaciones }: any) {
   const [anioFiltro, setAnioFiltro] = useState(new Date().getFullYear().toString())
   const [query, setQuery] = useState(data.registroVinculadoNombre || '')
   const [sugs, setSugs] = useState<any[]>([])
 
-  // Se extraen las opciones dinámicamente según la sección y se corrige el filtro del año
-  const optsVinculo = () => {
-    const checkY = (fecha?: string) => {
-      if (!fecha) return false
-      let y = fecha.split('-')[0]
-      if (fecha.includes('/')) y = fecha.split('/')[2] // Por si la fecha viene en DD/MM/YYYY
-      if (anioFiltro === 'todos') return true
-      if (anioFiltro === '2023-24') return y === '2023' || y === '2024'
-      return y === anioFiltro
+  const checkY = (fecha?: string) => {
+    if (!fecha) return false
+    let y = fecha.split('-')[0]
+    if (fecha.includes('/')) {
+      const parts = fecha.split('/')
+      y = parts[2]
     }
+    if (anioFiltro === 'todos') return true
+    if (anioFiltro === '2023-24') return y === '2023' || y === '2024'
+    return y === anioFiltro
+  }
 
-    if (data.seccionVinculada === 'pipeline') return clientes.filter((x:any) => anioFiltro === 'todos' || x.año === anioFiltro).map((x:any) => ({ id: x.id, name: `${x.nombre} — ${x.proyecto || 'Sin proyecto'}` }))
-    if (data.seccionVinculada === 'citas') return citas.filter((x:any) => checkY(x.fechaReunion)).map((x:any) => ({ id: x.id, name: `${x.cliente} — ${formatSafe(x.fechaReunion)}` }))
-    if (data.seccionVinculada === 'firmas') return firmas.filter((x:any) => checkY(x.fecha)).map((x:any) => ({ id: x.id, name: `${x.codigo} — ${x.cliente}` }))
-    if (data.seccionVinculada === 'licitaciones') return licitaciones.filter((x:any) => anioFiltro === 'todos' || x.año === anioFiltro).map((x:any) => ({ id: x.id, name: `${x.entidad} — ${x.proceso}` }))
+  const optsVinculo = () => {
+    if (data.seccionVinculada === 'pipeline') return clientes.filter((x: any) => checkY(x.fechaCotizacion)).map((x: any) => ({ id: x.id, name: `${x.nombre} — ${x.proyecto || 'Sin proyecto'}` }))
+    if (data.seccionVinculada === 'firmas') return firmas.filter((x: any) => checkY(x.fecha)).map((x: any) => ({ id: x.id, name: `${x.codigo} — ${x.cliente}` }))
+    if (data.seccionVinculada === 'licitaciones') return licitaciones.filter((x: any) => checkY(x.fechaPresentacion)).map((x: any) => ({ id: x.id, name: `${x.entidad} — ${x.proceso}` }))
     return []
   }
+
+  const handleInput = (val: string) => {
+    setQuery(val)
+    onChange({ ...data, registroVinculadoId: '', registroVinculadoNombre: val })
+    if (!val.trim()) { setSugs([]); return }
+    const opciones = optsVinculo()
+    setSugs(opciones.filter((o: any) => o.name.toLowerCase().includes(val.toLowerCase())))
+  }
+
+  const selectOpcion = (id: string, name: string) => {
+    setQuery(name)
+    setSugs([])
+    onChange({ ...data, registroVinculadoId: id, registroVinculadoNombre: name })
+  }
+
+  return (
+    <div className="space-y-3 text-xs">
+      <div><label className="label">Nombre del pendiente *</label><input className="input-field" value={data.nombre || ''} onChange={e => onChange({ ...data, nombre: e.target.value })} placeholder="Ej: Solicitar documentos faltantes" /></div>
+      <div><label className="label">Especificaciones / Detalles</label><textarea className="input-field resize-none" rows={3} value={data.especificaciones || ''} onChange={e => onChange({ ...data, especificaciones: e.target.value })} /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className="label">Plazo (Días, meses...)</label><input className="input-field" value={data.plazo || ''} onChange={e => onChange({ ...data, plazo: e.target.value })} /></div>
+        <div><label className="label">Vincular a Sección</label>
+          <select className="input-field" value={data.seccionVinculada || 'ninguna'} onChange={e => { onChange({ ...data, seccionVinculada: e.target.value, registroVinculadoId: '', registroVinculadoNombre: '' }); setQuery(''); setSugs([]) }}>
+            <option value="ninguna">No vincular (Independiente)</option>
+            <option value="pipeline">Pipeline</option>
+            <option value="firmas">Firmas</option>
+            <option value="licitaciones">Licitaciones</option>
+          </select>
+        </div>
+        <div><label className="label">Fecha Inicio</label><input type="date" className="input-field" value={data.fechaInicio || ''} onChange={e => onChange({ ...data, fechaInicio: e.target.value })} /></div>
+        <div><label className="label">Fecha Límite *</label><input type="date" className="input-field border-amber-500/50 focus:border-amber-400" value={data.fechaLimite || ''} onChange={e => onChange({ ...data, fechaLimite: e.target.value })} /></div>
+      </div>
+      {data.seccionVinculada !== 'ninguna' && (
+        <div className="pt-2 grid grid-cols-3 gap-3">
+          <div className="col-span-1">
+            <label className="label text-cyan-400">Año del registro</label>
+            <select className="input-field border-cyan-500/50" value={anioFiltro} onChange={e => { setAnioFiltro(e.target.value); onChange({ ...data, registroVinculadoId: '', registroVinculadoNombre: '' }); setQuery(''); setSugs([]) }}>
+              <option value="todos">Todos</option>
+              {OPCIONES_ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div className="col-span-2 relative">
+            <label className="label text-cyan-400">Buscar y seleccionar registro *</label>
+            <input className={clsx("input-field border-cyan-500/50", data.registroVinculadoId ? "border-green-500/50" : "")} value={query} onChange={e => handleInput(e.target.value)} placeholder="Escribe para buscar..." />
+            {sugs.length > 0 && (
+              <div className="absolute left-0 right-0 bg-dark-800 border border-slate-700 rounded-md p-1 mt-1 max-h-32 overflow-y-auto z-50 shadow-xl">
+                {sugs.map((s: any) => <button key={s.id} type="button" onClick={() => selectOpcion(s.id, s.name)} className="w-full text-left p-1.5 hover:bg-blue-600 rounded text-white text-xs">{s.name}</button>)}
+              </div>
+            )}
+            {!data.registroVinculadoId && query.trim() && sugs.length === 0 && (
+              <p className="text-amber-400 text-[10px] mt-1">No se encontraron registros vinculables con ese nombre en el año {anioFiltro}.</p>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="flex gap-2 pt-3"><button onClick={onSave} className="btn-primary text-xs w-full justify-center"><Check className="w-3.5 h-3.5" /> Guardar Pendiente</button>{onCancel && <button onClick={onCancel} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /></button>}</div>
+    </div>
+  )
+}
 
   const handleInput = (val: string) => {
     setQuery(val)
