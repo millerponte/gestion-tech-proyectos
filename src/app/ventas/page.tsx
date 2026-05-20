@@ -107,7 +107,7 @@ export default function VentasPage() {
 
   const [busquedaF, setBusquedaF] = useState(''); const [filtroAñoF, setFiltroAñoF] = useState(currentYearStr)
   const [expandidoF, setExpandidoF] = useState<string | null>(null); const [editandoF, setEditandoF] = useState<string | null>(null); const [editDataF, setEditDataF] = useState<Partial<FirmaVentas>>({})
-  const [modalNuevoF, setModalNuevoF] = useState(false); const [nuevoF, setNuevoF] = useState<Partial<FirmaVentas>>({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy(), tipoFirma: 'FM (Firma Manual)', medioEntrega: 'Presencial', estado: 'pendiente' })
+  const [modalNuevoF, setModalNuevoF] = useState(false); const [nuevoF, setNuevoF] = useState<Partial<FirmaVentas>>({ empresa: 'OKINAWATEC', autorizadoPor: 'Luis Matienzo', fecha: hoy(), tipoFirma: 'FM (Firma Manual)', medioEntrega: 'Presencial' })
 
   const [busquedaL, setBusquedaL] = useState(''); const [filtroAñoL, setFiltroAñoL] = useState(currentYearStr)
   const [expandidoL, setExpandidoL] = useState<string | null>(null); const [editandoL, setEditandoL] = useState<string | null>(null); const [editDataL, setEditDataL] = useState<Partial<LicitacionVentas>>({})
@@ -219,7 +219,7 @@ export default function VentasPage() {
 
   const exportarPipeline = () => exportCSV(['Cliente', 'Contacto', 'Teléfono', 'Correo', 'Proyecto', 'Solución', 'Mayorista', 'Fecha Cotización', 'Estado', 'Historial Status', 'Historial Plan', 'Año'], clientesFiltrados.map(c => [c.nombre, c.contacto, c.telefono, c.correo, c.proyecto, c.solucion, c.mayorista, formatSafe(c.fechaCotizacion), c.status, c.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), c.historialPlan?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), c.año]), 'pipeline_ventas')
   const exportarCitas = () => exportCSV(['Cliente', 'Empresa', 'Contacto', 'Correo', 'Cargo', 'Sector', 'Fecha Reunión', 'Horario', 'Solución', 'Status Proyecto', 'Estado Cita', 'Observaciones'], citasFiltradas.map(c => [c.cliente, c.empresa, c.contacto, c.correo, c.cargo, c.sector, formatSafe(c.fechaReunion), c.horario, c.solucion, c.statusProyecto, getStatusCita(c), c.observaciones]), 'citas_ventas')
-  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Empresa', 'Fecha', 'Tipo de Firma', 'Medio de Entrega', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Estado', 'Historial', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.empresa, formatSafe(f.fecha), f.tipoFirma, f.medioEntrega, f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.estado, f.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), f.observaciones]), 'firmas_ventas')
+  const exportarFirmas = () => exportCSV(['Código', 'Cliente', 'Empresa', 'Fecha', 'Tipo de Firma', 'Medio de Entrega', 'Autorizado Por', 'Firmado Por', 'Enviado Por', 'Documento(s)', 'Proyecto', 'Historial', 'Observaciones'], firmasFiltradas.map(f => [f.codigo, f.cliente, f.empresa, formatSafe(f.fecha), f.tipoFirma, f.medioEntrega, f.autorizadoPor, f.firmadoPor, f.enviadoPor, f.documento, f.nombreProyecto, f.historialStatus?.map(h => `[${formatSafe(h.fecha)}] ${h.nota}`).join(' | '), f.observaciones]), 'firmas_ventas')
   const exportarLicitaciones = () => exportCSV(['Entidad', 'Empresa', 'Proceso', 'Bases Integradas', 'F. Presentación', 'F. Evaluación', 'Buena Pro', 'Consentimiento', 'F. Firma Contrato', 'Resultado', 'Año', 'Observaciones/Detalle'], licitacionesFiltradas.map(l => [l.entidad, l.empresa, l.proceso, formatSafe(l.basesIntegradas), formatSafe(l.fechaPresentacion), formatSafe(l.fechaFinEvaluacion), formatSafe(l.buenaPro), formatSafe(l.consentimiento), formatSafe(l.fechaFirmaContrato), l.resultado, l.año, l.observaciones]), 'licitaciones_ventas')
 
   const clientesFiltrados = clientes.filter(c => (!busquedaC || c.nombre.toLowerCase().includes(busquedaC.toLowerCase())) && (!filtroStatusC || c.status === filtroStatusC) && checkYear(c.fechaCotizacion, filtroAñoC))
@@ -485,7 +485,7 @@ export default function VentasPage() {
                       <tr className="bg-[#0d1526]/80">
                         <td colSpan={7} className="p-4">
                           {editandoF === f.id ? (
-                            <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} onSave={async (val: boolean) => { await actualizarFirmaVentas(f.id, processFirma(editDataF, firmas)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
+                            <FormFirmaVentas data={editDataF} globalClientes={globalClientes} onChange={setEditDataF} firmasExistentes={firmas} onSave={async (val: boolean) => { await actualizarFirmaVentas(f.id, processFirma(editDataF, firmas)); toast.success('Actualizado'); setEditandoF(null); initMódulo() }} onCancel={() => setEditandoF(null)} router={router} />
                           ) : (
                             <div className="grid grid-cols-3 gap-4 text-xs">
                               <div><p className="text-slate-500">Tipo de Firma</p><p>{f.tipoFirma || '—'}</p></div>
@@ -611,7 +611,7 @@ export default function VentasPage() {
 
       {modalNuevoF && (
         <ModalVentas title="Registrar Firma" onClose={() => setModalNuevoF(false)}>
-          <FormFirmaVentas data={nuevoF} globalClientes={globalClientes} onChange={setNuevoF} router={router}
+          <FormFirmaVentas data={nuevoF} globalClientes={globalClientes} onChange={setNuevoF} router={router} firmasExistentes={firmas}
             onSave={async (clienteValidado: boolean) => {
               if (!clienteValidado) { toast.error('Selecciona un cliente válido'); return }
               const firmaProcesada = processFirma(nuevoF, firmas)
@@ -643,7 +643,7 @@ export default function VentasPage() {
           <FormPendienteVenta 
             data={nuevoPendiente} 
             onChange={setNuevoPendiente} 
-            clientes={clientes} firmas={firmas} licitaciones={licitaciones}
+            clientes={clientes} citas={citas} firmas={firmas} licitaciones={licitaciones}
             onSave={async () => {
               if (!nuevoPendiente.nombre?.trim()) { toast.error("Ingresa el nombre"); return }
               await crearPendienteVenta({ ...nuevoPendiente as any, estado: 'pendiente', createdAt: new Date().toISOString() })
@@ -663,7 +663,7 @@ export default function VentasPage() {
           <FormPendienteVenta 
             data={editPendiente} 
             onChange={setEditPendiente} 
-            clientes={clientes} firmas={firmas} licitaciones={licitaciones}
+            clientes={clientes} citas={citas} firmas={firmas} licitaciones={licitaciones}
             onSave={async () => {
               await actualizarPendienteVenta(editPendiente.id!, editPendiente)
               toast.success("Pendiente actualizado")
@@ -708,28 +708,12 @@ export default function VentasPage() {
 }
 
 // ── Helpers para procesar firmas antes de guardar ─────────────────────────
-const PREFIJOS_DOCUMENTO: Record<string, string> = { 'ANEXOS': 'ANEX', 'FILE': 'FILE', 'ADENDA': 'ADD', 'CARTA': 'CAR', 'APELACIÓN': 'APE', 'CARTAFIANZA': 'CARFZ', 'FORMATO': 'FMT' }
+const PREFIJOS_DOCUMENTO: Record<string, string> = { 'ANEXOS': 'ANX', 'FILE': 'FLE', 'ADENDA': 'ADD', 'CARTA': 'CAR', 'APELACIÓN': 'APE', 'CARTAFIANZA': 'CARFZ', 'FORMATO': 'FMT' }
 
 function processFirma(data: Partial<FirmaVentas> | any, firmasExistentes: FirmaVentas[]): Partial<FirmaVentas> {
   const tipos: string[] = data.tiposSeleccionados || []
   const documento = tipos.join(' + ')
   let codigo = data.codigo || ''
-  
-  if (!codigo && tipos.length > 0) {
-    const prefijo = PREFIJOS_DOCUMENTO[tipos[0]] || 'DOC'
-    let maxNum = 0
-    firmasExistentes.forEach(f => {
-      if (f.codigo && f.codigo.includes(prefijo)) {
-        const parts = f.codigo.split('-')
-        if (parts.length > 1) {
-          const num = parseInt(parts[1].trim(), 10)
-          if (!isNaN(num) && num > maxNum) maxNum = num
-        }
-      }
-    })
-    codigo = `${prefijo}-${String(maxNum + 1).padStart(3, '0')}`
-  }
-  
   return { ...data, documento, codigo }
 }
 
@@ -807,7 +791,7 @@ function AutocompleteCliente({ value, globalClientes, onChange, router, label = 
   )
 }
 
-function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, firmas, licitaciones }: any) {
+function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, citas, firmas, licitaciones }: any) {
   const [anioFiltro, setAnioFiltro] = useState(new Date().getFullYear().toString())
   const [query, setQuery] = useState(data.registroVinculadoNombre || '')
   const [sugs, setSugs] = useState<any[]>([])
@@ -826,6 +810,7 @@ function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, firmas
 
   const optsVinculo = () => {
     if (data.seccionVinculada === 'pipeline') return clientes.filter((x: any) => checkY(x.fechaCotizacion)).map((x: any) => ({ id: x.id, name: `${x.nombre} — ${x.proyecto || 'Sin proyecto'}` }))
+    if (data.seccionVinculada === 'citas') return citas.filter((x: any) => checkY(x.fechaReunion)).map((x: any) => ({ id: x.id, name: `${x.cliente} — ${formatSafe(x.fechaReunion)}` }))
     if (data.seccionVinculada === 'firmas') return firmas.filter((x: any) => checkY(x.fecha)).map((x: any) => ({ id: x.id, name: `${x.codigo} — ${x.cliente}` }))
     if (data.seccionVinculada === 'licitaciones') return licitaciones.filter((x: any) => checkY(x.fechaPresentacion)).map((x: any) => ({ id: x.id, name: `${x.entidad} — ${x.proceso}` }))
     return []
@@ -855,6 +840,7 @@ function FormPendienteVenta({ data, onChange, onSave, onCancel, clientes, firmas
           <select className="input-field" value={data.seccionVinculada || 'ninguna'} onChange={e => { onChange({ ...data, seccionVinculada: e.target.value, registroVinculadoId: '', registroVinculadoNombre: '' }); setQuery(''); setSugs([]) }}>
             <option value="ninguna">No vincular (Independiente)</option>
             <option value="pipeline">Pipeline</option>
+            <option value="citas">Citas</option>
             <option value="firmas">Firmas</option>
             <option value="licitaciones">Licitaciones</option>
           </select>
@@ -962,12 +948,29 @@ function FormCitaVentas({ data, globalClientes, onChange, onSave, onCancel, rout
   )
 }
 
-function FormFirmaVentas({ data, globalClientes, onChange, onSave, onCancel, router }: any) {
+function FormFirmaVentas({ data, globalClientes, onChange, onSave, onCancel, router, firmasExistentes }: any) {
   const [isValid, setIsValid] = useState(globalClientes.some((c: any) => c.nombre === data.cliente))
   const optsFirmantes = ['Treyci Benavides', 'Yuriko garcia', 'Jose Luis', 'Jean Gutiérrez', 'Christian Gutiérrez', 'Miller ponte', 'Erick Espinoza']
   const handleHist = (i: number, prop: 'fecha' | 'nota', v: string) => {
     const arr = [...(data.historialStatus || [])]; arr[i] = { ...arr[i], [prop]: v }; onChange({ ...data, historialStatus: arr })
   }
+
+  const calcularSiguienteCodigo = (tipos: string[]) => {
+    if (tipos.length === 0) return ''
+    const prefijo = PREFIJOS_DOCUMENTO[tipos[0]] || 'DOC'
+    let maxNum = 0
+    firmasExistentes.forEach((f: any) => {
+      if (f.codigo && f.codigo.startsWith(prefijo + '-')) {
+        const parts = f.codigo.split('-')
+        if (parts.length > 1) {
+          const num = parseInt(parts[1].trim(), 10)
+          if (!isNaN(num) && num > maxNum) maxNum = num
+        }
+      }
+    })
+    return `${prefijo}-${String(maxNum + 1).padStart(3, '0')}`
+  }
+
   return (
     <div className="space-y-3 text-xs">
       <div className="grid grid-cols-2 gap-3">
@@ -990,13 +993,25 @@ function FormFirmaVentas({ data, globalClientes, onChange, onSave, onCancel, rou
               const exists = tSel.includes(t)
               return (
                 <label key={t} className="flex items-center gap-1.5 text-slate-300 text-[11px] cursor-pointer">
-                  <input type="checkbox" checked={exists} onChange={() => onChange({ ...data, tiposSeleccionados: exists ? tSel.filter(x => x !== t) : [...tSel, t] })} /> {t}
+                  <input type="checkbox" checked={exists} onChange={() => {
+                    const nextTipos = exists ? tSel.filter((x: string) => x !== t) : [...tSel, t];
+                    let nextCode = data.codigo || '';
+                    if (nextTipos.length > 0) {
+                      const nuevoPrefijo = PREFIJOS_DOCUMENTO[nextTipos[0]] || 'DOC';
+                      if (!nextCode || !nextCode.startsWith(nuevoPrefijo + '-')) {
+                         nextCode = calcularSiguienteCodigo(nextTipos);
+                      }
+                    } else {
+                      nextCode = '';
+                    }
+                    onChange({ ...data, tiposSeleccionados: nextTipos, codigo: nextCode });
+                  }} /> {t}
                 </label>
               )
             })}
           </div>
         </div>
-        <div><label className="label">Código Secuencial</label><input className="input-field bg-dark-800 text-slate-500 cursor-not-allowed" disabled value={data.codigo || 'Se generará al guardar'} /></div>
+        <div><label className="label">Código Secuencial</label><input className="input-field" placeholder="Ej: ANX-001" value={data.codigo || ''} onChange={e => onChange({ ...data, codigo: e.target.value })} /></div>
         <div className="col-span-2"><label className="label">Nombre del Proyecto</label><input className="input-field" value={data.nombreProyecto || ''} onChange={e => onChange({ ...data, nombreProyecto: e.target.value })} /></div>
         <div className="col-span-2"><label className="label">Observaciones</label><textarea className="input-field resize-none" rows={2} value={data.observaciones || ''} onChange={e => onChange({ ...data, observaciones: e.target.value })} /></div>
 
