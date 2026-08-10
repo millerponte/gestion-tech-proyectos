@@ -33,10 +33,18 @@ export default function EntregablesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Estados de filtros
   const [busqueda, setBusqueda] = useState('')
   const [filtroEmpresa, setFiltroEmpresa] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
+
+  // Estados de paginación
+  const [paginaActual, setPaginaActual] = useState(1)
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(50)
+
+  // Modales y edición
   const [modalNuevo, setModalNuevo] = useState(false)
   const [entregableExpediente, setEntregableExpediente] = useState<Entregable | null>(null)
   const [entregableReenvio, setEntregableReenvio] = useState<Entregable | null>(null)
@@ -69,6 +77,11 @@ export default function EntregablesPage() {
     })
   }, [])
 
+  // Resetear paginación si se cambia la búsqueda o filtros
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [busqueda, filtroEmpresa, filtroTipo, filtroEstado, registrosPorPagina])
+
   const filtrados = entregables.filter(e => {
     const q = busqueda.toLowerCase()
     const coincideBusqueda = !q ||
@@ -82,8 +95,15 @@ export default function EntregablesPage() {
       (!filtroEstado || e.estado === filtroEstado)
   })
 
+  // Lógica de Paginación
+  const indexOfLastItem = paginaActual * registrosPorPagina
+  const indexOfFirstItem = indexOfLastItem - registrosPorPagina
+  const entregablesPaginados = filtrados.slice(indexOfFirstItem, indexOfLastItem)
+  const totalPaginas = Math.ceil(filtrados.length / registrosPorPagina)
+
   const exportarExcel = () => {
     const headers = ['N° Documento', 'N° Cargo', 'Empresa', 'Tipo', 'Cliente', 'Proyecto', 'Fecha', 'Asunto', 'Responsable', 'Estado', 'Expediente']
+    // Usa todos los filtrados, no solo los de la página actual
     const filas = filtrados.map(e => [
       e.numeroDocumento, e.numeroCargo, e.empresa, e.tipo,
       e.clienteNombre, e.proyectoNombre, formatearFecha(e.fecha),
@@ -177,8 +197,8 @@ export default function EntregablesPage() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="card p-4 flex flex-wrap gap-3">
+      {/* Filtros y Opciones de Paginación */}
+      <div className="card p-4 flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-48">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input className="input-field pl-9" placeholder="Buscar por asunto, cliente, N° documento..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
@@ -203,6 +223,16 @@ export default function EntregablesPage() {
             <Filter className="w-3 h-3" /> Limpiar
           </button>
         )}
+        <div className="flex items-center gap-2 ml-auto border-l border-slate-700 pl-3">
+          <label className="text-xs text-slate-400">Mostrar:</label>
+          <select className="input-field w-auto text-xs py-1" value={registrosPorPagina} onChange={e => setRegistrosPorPagina(Number(e.target.value))}>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={200}>200</option>
+            <option value={300}>300</option>
+            <option value={1000000}>Todos</option>
+          </select>
+        </div>
       </div>
 
       {/* Tabla */}
@@ -224,7 +254,7 @@ export default function EntregablesPage() {
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[400px]">
             <table className="w-full">
               <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
                 <tr>
@@ -240,7 +270,8 @@ export default function EntregablesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtrados.map(e => (
+                {/* ── Mapear desde entregablesPaginados en lugar de filtrados ── */}
+                {entregablesPaginados.map(e => (
                   <Fragment key={e.id}>
                     {/* Fila principal */}
                     <tr
@@ -505,6 +536,34 @@ export default function EntregablesPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Footer de Paginación */}
+          {totalPaginas > 1 && (
+            <div className="p-4 border-t border-slate-700 bg-[#0d1526] flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filtrados.length)} de {filtrados.length} registros
+              </span>
+              <div className="flex gap-2">
+                <button 
+                  disabled={paginaActual === 1} 
+                  onClick={() => setPaginaActual(p => p - 1)} 
+                  className="btn-secondary text-xs px-3 py-1 disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <span className="text-xs text-slate-300 flex items-center px-2">
+                  Página {paginaActual} de {totalPaginas}
+                </span>
+                <button 
+                  disabled={paginaActual === totalPaginas} 
+                  onClick={() => setPaginaActual(p => p + 1)} 
+                  className="btn-secondary text-xs px-3 py-1 disabled:opacity-50"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
