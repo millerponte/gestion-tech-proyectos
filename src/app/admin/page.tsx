@@ -39,7 +39,7 @@ const PERMISOS_POR_ROL: Record<string, PermisoUsuario> = {
 }
 
 export default function AdminPage() {
-  const { isAdmin, loading: authLoading, usuario: usuarioActual, recargarUsuario } = useAuth()
+  const { isAdmin, loading: authLoading, usuario: usuarioActual } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('usuarios')
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -51,6 +51,12 @@ export default function AdminPage() {
   const [editandoPermisos, setEditandoPermisos] = useState<string | null>(null)
   const [permisosTemp, setPermisosTemp] = useState<PermisoUsuario | null>(null)
 
+  // ── ESTADOS PARA LA CONSOLA ──
+  const [fechaInicioLog, setFechaInicioLog] = useState('')
+  const [fechaFinLog, setFechaFinLog] = useState('')
+  const [paginaActual, setPaginaActual] = useState(1)
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(50)
+
   useEffect(() => {
     if (!authLoading && !isAdmin) router.replace('/dashboard')
   }, [isAdmin, authLoading, router])
@@ -60,6 +66,11 @@ export default function AdminPage() {
       cargarDatos()
     }
   }, [isAdmin, tab])
+
+  // Resetear página al cambiar filtros
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [fechaInicioLog, fechaFinLog, registrosPorPagina])
 
   const cargarDatos = async () => {
     const u = await obtenerTodosUsuarios()
@@ -78,6 +89,20 @@ export default function AdminPage() {
     setAuditoriaDeshabilitada(nuevoEstado)
     toast.success(nuevoEstado ? 'Registro de acciones pausado' : 'Registro de acciones activo')
   }
+
+  // ── LÓGICA DE FILTRADO Y PAGINACIÓN PARA LOGS ──
+  const logsFiltrados = logs.filter(l => {
+    if (!fechaInicioLog && !fechaFinLog) return true
+    const fechaLog = new Date(l.fechaHora).toISOString().split('T')[0]
+    if (fechaInicioLog && fechaLog < fechaInicioLog) return false
+    if (fechaFinLog && fechaLog > fechaFinLog) return false
+    return true
+  })
+
+  const indexOfLastLog = paginaActual * registrosPorPagina
+  const indexOfFirstLog = indexOfLastLog - registrosPorPagina
+  const logsPaginados = logsFiltrados.slice(indexOfFirstLog, indexOfLastLog)
+  const totalPaginas = Math.ceil(logsFiltrados.length / registrosPorPagina)
 
   if (authLoading) return <div className="text-center p-10 text-white">Cargando Módulo...</div>
 
@@ -130,7 +155,6 @@ export default function AdminPage() {
                     <p className="text-xs text-slate-500">{u.correo}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    {/* Selector de Roles Actualizado */}
                     <select
                       className="input-field w-auto text-xs py-1"
                       value={u.rol}
@@ -206,14 +230,43 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB CONSOLA DE AUDITORÍA (REEMPLAZA A PROYECTOS) */}
+      {/* TAB CONSOLA DE AUDITORÍA */}
       {tab === 'consola' && (
         <div className="card p-0 overflow-hidden">
+          {/* Header Superior Consola */}
           <div className="px-4 py-3 border-b border-[#1e3a8a]/50 flex justify-between items-center bg-[#0d1526]">
             <span className="text-sm font-semibold text-white">Historial Global de Acciones del Sistema</span>
             <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Real-time DB Active</span>
           </div>
-          <div className="overflow-x-auto">
+          
+          {/* Opciones de Filtrado y Mostrar Registros */}
+          <div className="p-4 border-b border-slate-700 bg-[#0d1526] flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-slate-400">Desde:</label>
+                <input type="date" className="input-field text-xs py-1" value={fechaInicioLog} onChange={e => setFechaInicioLog(e.target.value)} />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-slate-400">Hasta:</label>
+                <input type="date" className="input-field text-xs py-1" value={fechaFinLog} onChange={e => setFechaFinLog(e.target.value)} />
+              </div>
+              {(fechaInicioLog || fechaFinLog) && (
+                <button onClick={() => { setFechaInicioLog(''); setFechaFinLog('') }} className="text-xs text-slate-400 hover:text-white underline">Limpiar</button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-400">Mostrar:</label>
+              <select className="input-field text-xs py-1 w-auto" value={registrosPorPagina} onChange={e => setRegistrosPorPagina(Number(e.target.value))}>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={300}>300</option>
+                <option value={1000000}>Todos</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto min-h-[400px]">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="bg-dark-800 border-b border-slate-700 text-slate-400">
@@ -224,10 +277,10 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 text-slate-300">
-                {logs.length === 0 ? (
-                  <tr><td colSpan={4} className="p-4 text-center text-slate-500">No hay acciones registradas aún.</td></tr>
+                {logsPaginados.length === 0 ? (
+                  <tr><td colSpan={4} className="p-4 text-center text-slate-500">No hay acciones registradas en este rango.</td></tr>
                 ) : (
-                  logs.map(l => (
+                  logsPaginados.map(l => (
                     <tr key={l.id} className="hover:bg-white/5">
                       <td className="p-3 font-mono text-slate-500 whitespace-nowrap">{new Date(l.fechaHora).toLocaleString('es-PE')}</td>
                       <td className="p-3 font-medium text-white">{l.usuarioNombre}</td>
@@ -239,6 +292,18 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Footer de Paginación */}
+          {totalPaginas > 1 && (
+            <div className="p-4 border-t border-slate-700 bg-[#0d1526] flex items-center justify-between">
+              <span className="text-xs text-slate-400">Mostrando {indexOfFirstLog + 1} - {Math.min(indexOfLastLog, logsFiltrados.length)} de {logsFiltrados.length} registros</span>
+              <div className="flex gap-2">
+                <button disabled={paginaActual === 1} onClick={() => setPaginaActual(p => p - 1)} className="btn-secondary text-xs px-3 py-1 disabled:opacity-50">Anterior</button>
+                <span className="text-xs text-slate-300 flex items-center px-2">Página {paginaActual} de {totalPaginas}</span>
+                <button disabled={paginaActual === totalPaginas} onClick={() => setPaginaActual(p => p + 1)} className="btn-secondary text-xs px-3 py-1 disabled:opacity-50">Siguiente</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
