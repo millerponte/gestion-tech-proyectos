@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { obtenerTodosHitos, obtenerProyectos, formatearFecha, esFechaVencida, eliminarHito } from '@/lib/db'
+import { obtenerTodosHitos, obtenerProyectos, formatearFecha, esFechaVencida, eliminarHito, registrarLog } from '@/lib/db'
 import type { Hito, Proyecto } from '@/types'
 import toast from 'react-hot-toast'
 import {
@@ -55,6 +55,9 @@ export default function DashboardPage() {
     
     try {
       await eliminarHito(id)
+      if (usuario) {
+        await registrarLog(usuario.uid, usuario.nombre, 'Dashboard', 'Eliminó un pendiente/hito del sistema')
+      }
       setHitos(prev => prev.filter(h => h.id !== id))
       if (hitoModal?.id === id) setHitoModal(null)
       toast.success('Pendiente eliminado exitosamente')
