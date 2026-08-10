@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { obtenerHitosPorProyecto } from '@/lib/db'
 import type { Hito } from '@/types'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { obtenerEntregables, obtenerClientes, obtenerProyectos, actualizarEntregable, eliminarEntregable } from '@/lib/db'
 import type { Entregable, Cliente, Proyecto } from '@/types'
 import { FileText, Plus, Search, Filter, Download, ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Mail, RefreshCw } from 'lucide-react'
@@ -28,7 +28,7 @@ export default function EntregablesPage() {
   const { isAdmin, tienePermiso } = useAuth()
   const searchParams = useSearchParams()
   const [hitosEdicion, setHitosEdicion] = useState<Hito[]>([])
-const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
+  const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
   const [entregables, setEntregables] = useState<Entregable[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
@@ -99,52 +99,52 @@ const [loadingHitosEdicion, setLoadingHitosEdicion] = useState(false)
   }
 
   const iniciarEdicion = async (e: Entregable) => {
-  setEditando(e.id)
-  setEditData({
-    asunto: e.asunto,
-    fecha: e.fecha,
-    responsableNombre: e.responsableNombre,
-    tipo: e.tipo,
-    descripcion: e.descripcion || '',
-    numeroDocumento: e.numeroDocumento,
-    numeroCargo: e.numeroCargo,
-    expediente: e.expediente || '',
-    estado: e.estado,
-    hitoId: e.hitoId,
-    hitoIds: (e as any).hitoIds || [],
-  })
-  if (e.proyectoId) {
-    setLoadingHitosEdicion(true)
-    const h = await obtenerHitosPorProyecto(e.proyectoId)
-    setHitosEdicion([...h].sort((a, b) => (a.numero || 0) - (b.numero || 0)))
-    setLoadingHitosEdicion(false)
-  }
-}
-
-const guardarEdicion = async (id: string) => {
-  try {
-    const dataActualizar: any = { ...editData }
-    // Limpiar hitoIds vacíos
-    if (dataActualizar.hitoIds?.length === 0) {
-      dataActualizar.hitoIds = []
-      dataActualizar.hitoId = null
+    setEditando(e.id)
+    setEditData({
+      asunto: e.asunto,
+      fecha: e.fecha,
+      responsableNombre: e.responsableNombre,
+      tipo: e.tipo,
+      descripcion: e.descripcion || '',
+      numeroDocumento: e.numeroDocumento,
+      numeroCargo: e.numeroCargo,
+      expediente: e.expediente || '',
+      estado: e.estado,
+      hitoId: e.hitoId,
+      hitoIds: (e as any).hitoIds || [],
+    })
+    if (e.proyectoId) {
+      setLoadingHitosEdicion(true)
+      const h = await obtenerHitosPorProyecto(e.proyectoId)
+      setHitosEdicion([...h].sort((a, b) => (a.numero || 0) - (b.numero || 0)))
+      setLoadingHitosEdicion(false)
     }
-    await actualizarEntregable(id, dataActualizar)
-    toast.success('Entregable actualizado')
-    setEditando(null)
-    setHitosEdicion([])
-    cargar()
-    setTimeout(() => {
-      setUltimoId(null)
-      requestAnimationFrame(() => {
-        setUltimoId(id)
-        setTimeout(() => setUltimoId(null), 5500)
-      })
-    }, 300)
-  } catch {
-    toast.error('Error al guardar')
   }
-}
+
+  const guardarEdicion = async (id: string) => {
+    try {
+      const dataActualizar: any = { ...editData }
+      // Limpiar hitoIds vacíos
+      if (dataActualizar.hitoIds?.length === 0) {
+        dataActualizar.hitoIds = []
+        dataActualizar.hitoId = null
+      }
+      await actualizarEntregable(id, dataActualizar)
+      toast.success('Entregable actualizado')
+      setEditando(null)
+      setHitosEdicion([])
+      cargar()
+      setTimeout(() => {
+        setUltimoId(null)
+        requestAnimationFrame(() => {
+          setUltimoId(id)
+          setTimeout(() => setUltimoId(null), 5500)
+        })
+      }, 300)
+    } catch {
+      toast.error('Error al guardar')
+    }
+  }
 
   const handleEliminar = async (id: string) => {
     if (!confirm('¿Eliminar este entregable?')) return
@@ -167,9 +167,13 @@ const guardarEdicion = async (id: string) => {
           <button onClick={exportarExcel} className="btn-secondary">
             <Download className="w-4 h-4" /> Exportar Excel
           </button>
-          <button onClick={() => setModalNuevo(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> Nuevo entregable
-          </button>
+          
+          {/* VALIDACIÓN AGREGADA AQUÍ PARA EL BOTÓN PRINCIPAL */}
+          {tienePermiso('entregables_agregar') && (
+            <button onClick={() => setModalNuevo(true)} className="btn-primary">
+              <Plus className="w-4 h-4" /> Nuevo entregable
+            </button>
+          )}
         </div>
       </div>
 
@@ -210,9 +214,13 @@ const guardarEdicion = async (id: string) => {
         <div className="card text-center py-16">
           <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
           <p className="text-slate-400">No se encontraron entregables</p>
-          <button onClick={() => setModalNuevo(true)} className="btn-primary mx-auto mt-4">
-            <Plus className="w-4 h-4" /> Registrar primero
-          </button>
+          
+          {/* VALIDACIÓN AGREGADA AQUÍ PARA EL ESTADO VACÍO */}
+          {tienePermiso('entregables_agregar') && (
+            <button onClick={() => setModalNuevo(true)} className="btn-primary mx-auto mt-4">
+              <Plus className="w-4 h-4" /> Registrar primero
+            </button>
+          )}
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
@@ -233,9 +241,9 @@ const guardarEdicion = async (id: string) => {
               </thead>
               <tbody>
                 {filtrados.map(e => (
-                  <>
+                  <Fragment key={e.id}>
                     {/* Fila principal */}
-                    <tr key={e.id}
+                    <tr
                       id={`entregable-${e.id}`}
                       className={clsx('tabla-row', expandido === e.id && 'bg-[#1e3a8a]/10', ultimoId === e.id && 'highlight-new')}
                       onClick={() => setExpandido(expandido === e.id ? null : e.id)}>
@@ -293,7 +301,7 @@ const guardarEdicion = async (id: string) => {
                             </button>
                           )}
                     
-                         {tienePermiso('entregables_editar') && (
+                          {tienePermiso('entregables_editar') && (
                             <button onClick={() => { setExpandido(e.id); iniciarEdicion(e) }}
                               className="text-slate-500 hover:text-blue-400 transition-colors">
                               <Pencil className="w-3.5 h-3.5" />
@@ -364,44 +372,44 @@ const guardarEdicion = async (id: string) => {
                                 <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={ev => setEditData(d => ({ ...d, descripcion: ev.target.value }))} />
                               </div>
                               {/* Hitos vinculados — editable */}
-{hitosEdicion.length > 0 && (
-  <div>
-    <label className="label">Hitos vinculados</label>
-    <div className="space-y-1 max-h-40 overflow-y-auto bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-2">
-      {hitosEdicion.map(h => {
-        const hitoIdsActual: string[] = (editData as any).hitoIds || []
-        const seleccionado = hitoIdsActual.includes(h.id)
-        return (
-          <button key={h.id}
-            onClick={() => {
-              const nuevos = seleccionado
-                ? hitoIdsActual.filter((id: string) => id !== h.id)
-                : [...hitoIdsActual, h.id]
-              setEditData(d => ({ ...d, hitoIds: nuevos, hitoId: nuevos[0] || undefined }))
-            }}
-            className={clsx(
-              'w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all border flex items-center gap-2',
-              seleccionado
-                ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
-                : 'bg-[#111d35] border-[#1e3a8a]/30 text-slate-400 hover:border-blue-500/40'
-            )}>
-            <div className={clsx(
-              'w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center',
-              seleccionado ? 'bg-blue-600 border-blue-500' : 'border-slate-600'
-            )}>
-              {seleccionado && <Check className="w-2.5 h-2.5 text-white" />}
-            </div>
-            <span className="font-mono text-slate-500">{h.numero || '—'}.</span>
-            <span className="flex-1 truncate">{h.nombre}</span>
-          </button>
-        )
-      })}
-    </div>
-    {((editData as any).hitoIds?.length > 0) && (
-      <p className="text-xs text-blue-400 mt-1">{(editData as any).hitoIds.length} hito(s) seleccionado(s)</p>
-    )}
-  </div>
-)}
+                              {hitosEdicion.length > 0 && (
+                                <div>
+                                  <label className="label">Hitos vinculados</label>
+                                  <div className="space-y-1 max-h-40 overflow-y-auto bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-2">
+                                    {hitosEdicion.map(h => {
+                                      const hitoIdsActual: string[] = (editData as any).hitoIds || []
+                                      const seleccionado = hitoIdsActual.includes(h.id)
+                                      return (
+                                        <button key={h.id}
+                                          onClick={() => {
+                                            const nuevos = seleccionado
+                                              ? hitoIdsActual.filter((id: string) => id !== h.id)
+                                              : [...hitoIdsActual, h.id]
+                                            setEditData(d => ({ ...d, hitoIds: nuevos, hitoId: nuevos[0] || undefined }))
+                                          }}
+                                          className={clsx(
+                                            'w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all border flex items-center gap-2',
+                                            seleccionado
+                                              ? 'bg-blue-600/20 border-blue-500/60 text-blue-300'
+                                              : 'bg-[#111d35] border-[#1e3a8a]/30 text-slate-400 hover:border-blue-500/40'
+                                          )}>
+                                          <div className={clsx(
+                                            'w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center',
+                                            seleccionado ? 'bg-blue-600 border-blue-500' : 'border-slate-600'
+                                          )}>
+                                            {seleccionado && <Check className="w-2.5 h-2.5 text-white" />}
+                                          </div>
+                                          <span className="font-mono text-slate-500">{h.numero || '—'}.</span>
+                                          <span className="flex-1 truncate">{h.nombre}</span>
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                  {((editData as any).hitoIds?.length > 0) && (
+                                    <p className="text-xs text-blue-400 mt-1">{(editData as any).hitoIds.length} hito(s) seleccionado(s)</p>
+                                  )}
+                                </div>
+                              )}
                               <div className="flex gap-2">
                                 <button onClick={() => guardarEdicion(e.id)} className="btn-primary text-xs">
                                   <Check className="w-3.5 h-3.5" /> Guardar cambios
@@ -427,22 +435,22 @@ const guardarEdicion = async (id: string) => {
                                 <p className="text-slate-200">{e.responsableNombre}</p>
                               </div>
                               <div>
-  <p className="text-slate-500 mb-0.5">Cliente</p>
-  <p className="text-slate-200">{e.clienteNombre}</p>
-</div>
-<div>
-  <p className="text-slate-500 mb-0.5">Proyecto / Contrato</p>
-  <p className="text-slate-200">{e.proyectoNombre}</p>
-</div>
-{(() => {
-  const proyecto = proyectos.find(p => p.id === e.proyectoId)
-  return proyecto?.solucion ? (
-    <div className="col-span-2">
-      <p className="text-slate-500 mb-0.5">Solución</p>
-      <p className="text-slate-200">{proyecto.solucion}</p>
-    </div>
-  ) : null
-})()}
+                                <p className="text-slate-500 mb-0.5">Cliente</p>
+                                <p className="text-slate-200">{e.clienteNombre}</p>
+                              </div>
+                              <div>
+                                <p className="text-slate-500 mb-0.5">Proyecto / Contrato</p>
+                                <p className="text-slate-200">{e.proyectoNombre}</p>
+                              </div>
+                              {(() => {
+                                const proyecto = proyectos.find(p => p.id === e.proyectoId)
+                                return proyecto?.solucion ? (
+                                  <div className="col-span-2">
+                                    <p className="text-slate-500 mb-0.5">Solución</p>
+                                    <p className="text-slate-200">{proyecto.solucion}</p>
+                                  </div>
+                                ) : null
+                              })()}
                               <div className="col-span-2">
                                 <p className="text-slate-500 mb-0.5">Asunto completo</p>
                                 <p className="text-slate-200">{e.asunto}</p>
@@ -492,7 +500,7 @@ const guardarEdicion = async (id: string) => {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
