@@ -259,6 +259,13 @@ export async function registrarLog(usuarioUid: string, usuarioNombre: string, mo
     return // No registrar si está deshabilitado
   }
 
+  // NUEVO: Validar si el usuario que ejecutó la acción es Administrador para ignorarlo
+  const userRef = doc(db, 'usuarios', usuarioUid)
+  const userSnap = await getDoc(userRef)
+  if (userSnap.exists() && userSnap.data().rol === 'admin') {
+    return // Ignorar silenciosamente las acciones de los administradores
+  }
+
   await addDoc(collection(db, 'audit_logs'), {
     usuarioUid,
     usuarioNombre,
