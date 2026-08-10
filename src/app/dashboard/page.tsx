@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { obtenerTodosHitos, obtenerProyectos, obtenerEntregables, formatearFecha, esFechaVencida } from '@/lib/db'
-import type { Hito, Proyecto, Entregable } from '@/types'
+import { obtenerTodosHitos, obtenerProyectos, formatearFecha, esFechaVencida, eliminarHito } from '@/lib/db'
+import type { Hito, Proyecto } from '@/types'
+import toast from 'react-hot-toast'
 import {
   CalendarDays, AlertCircle, CheckCircle2, Clock,
-  FolderKanban, ChevronLeft, ChevronRight, ArrowRight, X
+  FolderKanban, ChevronLeft, ChevronRight, ArrowRight, X, Trash2
 } from 'lucide-react'
 import Link from 'next/link'
 import clsx from 'clsx'
@@ -14,7 +15,7 @@ import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   isSameDay, isSameMonth, addMonths, subMonths, isToday,
   startOfWeek, endOfWeek, parseISO, isWithinInterval,
-  startOfDay, endOfDay, startOfYear
+  startOfYear
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -22,7 +23,7 @@ type VistaPendientes = 'mes' | 'semana' | 'dia' | 'todo'
 type VistaRealizados = 'mes' | 'semana' | 'dia' | 'año' | 'todo'
 
 export default function DashboardPage() {
-  const { usuario } = useAuth()
+  const { usuario, isAdmin } = useAuth()
   const [hitos, setHitos] = useState<Hito[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,6 +44,24 @@ export default function DashboardPage() {
   }, [])
 
   const hoy = new Date()
+
+  const handleEliminarPendiente = async (id: string, e: React.MouseEvent, esHuerfano: boolean) => {
+    e.stopPropagation()
+    if (!esHuerfano) {
+      if (!confirm('Este pendiente pertenece a un cronograma activo. ¿Estás seguro de eliminarlo permanentemente?')) return
+    } else {
+      if (!confirm('Este es un registro huérfano (su proyecto ya fue eliminado). ¿Limpiar pendiente?')) return
+    }
+    
+    try {
+      await eliminarHito(id)
+      setHitos(prev => prev.filter(h => h.id !== id))
+      if (hitoModal?.id === id) setHitoModal(null)
+      toast.success('Pendiente eliminado exitosamente')
+    } catch (error) {
+      toast.error('Ocurrió un error al eliminar')
+    }
+  }
 
   // ── Stats ────────────────────────────────────────────────────────────────
   const proyectosActivos = proyectos.filter(p => p.estado === 'activo')
@@ -194,9 +213,19 @@ export default function DashboardPage() {
           <div className="flex-1 space-y-1.5 overflow-y-auto max-h-80 pr-1">
             {pendientesFiltrados.length === 0
               ? <p className="text-slate-500 text-sm text-center py-8">¡Sin pendientes! 🎉</p>
-              : pendientesFiltrados.map(h => (
-                  <HitoItem key={h.id} hito={h} proyectos={proyectos} onClick={() => setHitoModal(h)} />
-                ))
+              : pendientesFiltrados.map(h => {
+                  const esHuerfano = !proyectos.some(p => p.id === h.proyectoId);
+                  return (
+                    <HitoItem 
+                      key={h.id} 
+                      hito={h} 
+                      proyectos={proyectos} 
+                      onClick={() => setHitoModal(h)} 
+                      onDelete={(e) => handleEliminarPendiente(h.id, e, esHuerfano)}
+                      isAdmin={isAdmin}
+                    />
+                  )
+                })
             }
           </div>
         </div>
@@ -222,9 +251,18 @@ export default function DashboardPage() {
           <div className="flex-1 space-y-1.5 overflow-y-auto max-h-80 pr-1">
             {realizadosFiltrados.length === 0
               ? <p className="text-slate-500 text-sm text-center py-8">Sin realizados en este período</p>
-              : realizadosFiltrados.map(h => (
-                  <HitoItemRealizado key={h.id} hito={h} proyectos={proyectos} />
-                ))
+              : realizadosFiltrados.map(h => {
+                  const esHuerfano = !proyectos.some(p => p.id === h.proyectoId);
+                  return (
+                    <HitoItemRealizado 
+                      key={h.id} 
+                      hito={h} 
+                      proyectos={proyectos} 
+                      onDelete={(e) => handleEliminarPendiente(h.id, e as unknown as React.MouseEvent, esHuerfano)}
+                      isAdmin={isAdmin}
+                    />
+                  )
+                })
             }
           </div>
         </div>
@@ -305,9 +343,19 @@ export default function DashboardPage() {
           {hitosDiaSeleccionado.length === 0
             ? <p className="text-slate-600 text-xs">Sin hitos este día</p>
             : <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                {hitosDiaSeleccionado.map(h => (
-                  <HitoItem key={h.id} hito={h} proyectos={proyectos} onClick={() => setHitoModal(h)} />
-                ))}
+                {hitosDiaSeleccionado.map(h => {
+                  const esHuerfano = !proyectos.some(p => p.id === h.proyectoId);
+                  return (
+                    <HitoItem 
+                      key={h.id} 
+                      hito={h} 
+                      proyectos={proyectos} 
+                      onClick={() => setHitoModal(h)} 
+                      onDelete={(e) => handleEliminarPendiente(h.id, e, esHuerfano)}
+                      isAdmin={isAdmin}
+                    />
+                  )
+                })}
               </div>
           }
         </div>
@@ -346,9 +394,9 @@ function ModalHitoRango({ hito, proyectos, onClose }: { hito: Hito; proyectos: P
   const diasSemana = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box max-w-md">
-        <div className="flex items-center justify-between p-5 border-b border-[#1e3a8a]/50">
+    <div className="modal-overlay z-50" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box max-w-md shadow-2xl border border-slate-600">
+        <div className="flex items-center justify-between p-5 border-b border-[#1e3a8a]/50 bg-[#0d1526]">
           <div className="flex items-center gap-3">
             <div className={clsx('w-3 h-3 rounded-full', vencido ? 'bg-red-400' : 'bg-cyan-400')} />
             <div>
@@ -365,7 +413,7 @@ function ModalHitoRango({ hito, proyectos, onClose }: { hito: Hito; proyectos: P
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 bg-[#111d35]">
           {/* Info rápida */}
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-3">
@@ -444,15 +492,19 @@ function ModalHitoRango({ hito, proyectos, onClose }: { hito: Hito; proyectos: P
           )}
         </div>
 
-        <div className="flex justify-end gap-3 px-5 pb-5">
+        <div className="flex justify-end gap-3 px-5 pb-5 bg-[#111d35]">
           <button onClick={onClose} className="btn-secondary text-xs">Cerrar</button>
-          <Link
-            href={`/cronogramas?proyecto=${hito.proyectoId}&expandir=${hito.id}`}
-            className="btn-primary text-xs"
-            onClick={onClose}
-          >
-            Ver en cronograma <ArrowRight className="w-3 h-3" />
-          </Link>
+          {!proyecto ? (
+             <button disabled className="btn-primary opacity-50 cursor-not-allowed text-xs">Proyecto Eliminado</button>
+          ) : (
+            <Link
+              href={`/cronogramas?proyecto=${hito.proyectoId}&expandir=${hito.id}`}
+              className="btn-primary text-xs"
+              onClick={onClose}
+            >
+              Ver en cronograma <ArrowRight className="w-3 h-3" />
+            </Link>
+          )}
         </div>
       </div>
     </div>
@@ -484,59 +536,99 @@ function StatCard({ label, value, icon, color }: {
   )
 }
 
-function HitoItem({ hito, proyectos, onClick }: { hito: Hito; proyectos: Proyecto[]; onClick: () => void }) {
+function HitoItem({ hito, proyectos, onClick, onDelete, isAdmin }: { hito: Hito; proyectos: Proyecto[]; onClick: () => void; onDelete?: (e: React.MouseEvent) => void; isAdmin?: boolean }) {
   const vencido = esFechaVencida(hito.fechaLimite)
   const proyecto = proyectos.find(p => p.id === hito.proyectoId)
+  const esHuerfano = !proyecto;
+
   return (
-    <button onClick={onClick}
-      className={clsx(
-        'w-full text-left flex items-start gap-2 p-2.5 rounded-lg border text-xs transition-all hover:border-blue-500/50 group',
-        vencido ? 'bg-red-900/20 border-red-800/40' : 'bg-[#0d1526] border-[#1e3a8a]/30'
-      )}>
-      <span className={clsx('w-2 h-2 rounded-full mt-0.5 flex-shrink-0', vencido ? 'bg-red-400' : 'bg-cyan-400')} />
-      <div className="min-w-0 flex-1">
-        <p className={clsx('font-medium truncate', vencido ? 'text-red-300' : 'text-slate-200')}>
-          {hito.nombre}
-        </p>
-        <div className="flex gap-3 mt-0.5 text-slate-500">
-          <span>Inicio: <span className="text-slate-400">{formatearFecha(hito.fechaInicio)}</span></span>
-          <span>Límite: <span className={vencido ? 'text-red-400' : 'text-slate-400'}>{formatearFecha(hito.fechaLimite)}</span></span>
-        </div>
-        {hito.responsable && <p className="text-slate-600 mt-0.5">{hito.responsable}</p>}
-        {proyecto && (
-          <p className="text-slate-500 mt-0.5 truncate">
-            {proyecto.clienteNombre}
-            {proyecto.solucion && <span className="text-slate-600"> — {proyecto.solucion}</span>}
+    <div className="flex items-center gap-2 group">
+      <button onClick={onClick}
+        className={clsx(
+          'flex-1 text-left flex items-start gap-2 p-2.5 rounded-lg border text-xs transition-all hover:border-blue-500/50',
+          vencido ? 'bg-red-900/20 border-red-800/40' : 'bg-[#0d1526] border-[#1e3a8a]/30'
+        )}>
+        <span className={clsx('w-2 h-2 rounded-full mt-0.5 flex-shrink-0', vencido ? 'bg-red-400' : 'bg-cyan-400')} />
+        <div className="min-w-0 flex-1">
+          <p className={clsx('font-medium truncate', vencido ? 'text-red-300' : 'text-slate-200')}>
+            {hito.nombre}
           </p>
-        )}
-      </div>
-      <ArrowRight className="w-3 h-3 text-slate-600 group-hover:text-blue-400 flex-shrink-0 mt-0.5 transition-colors" />
-    </button>
+          <div className="flex gap-3 mt-0.5 text-slate-500">
+            <span>Inicio: <span className="text-slate-400">{formatearFecha(hito.fechaInicio)}</span></span>
+            <span>Límite: <span className={vencido ? 'text-red-400' : 'text-slate-400'}>{formatearFecha(hito.fechaLimite)}</span></span>
+          </div>
+          {hito.responsable && <p className="text-slate-600 mt-0.5">{hito.responsable}</p>}
+          {proyecto ? (
+            <p className="text-slate-500 mt-0.5 truncate">
+              {proyecto.clienteNombre}
+              {proyecto.solucion && <span className="text-slate-600"> — {proyecto.solucion}</span>}
+            </p>
+          ) : (
+            <p className="text-red-500 mt-0.5 font-medium flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> Proyecto Eliminado (Huérfano)
+            </p>
+          )}
+        </div>
+        <ArrowRight className="w-3 h-3 text-slate-600 group-hover:text-blue-400 flex-shrink-0 mt-0.5 transition-colors" />
+      </button>
+      
+      {isAdmin && onDelete && (
+        <button 
+          onClick={onDelete}
+          title="Eliminar pendiente"
+          className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </div>
   )
 }
 
-function HitoItemRealizado({ hito, proyectos }: { hito: Hito; proyectos: Proyecto[] }) {
+function HitoItemRealizado({ hito, proyectos, onDelete, isAdmin }: { hito: Hito; proyectos: Proyecto[]; onDelete?: (e: React.MouseEvent) => void; isAdmin?: boolean }) {
   const proyecto = proyectos.find(p => p.id === hito.proyectoId)
+  const esHuerfano = !proyecto;
+
   return (
-    <Link
-      href={`/cronogramas?proyecto=${hito.proyectoId}&expandir=${hito.id}`}
-      className="flex items-start gap-2 p-2.5 rounded-lg border text-xs transition-all hover:border-green-500/50 bg-green-900/10 border-green-800/30 group"
-    >
-      <span className="w-2 h-2 rounded-full mt-0.5 flex-shrink-0 bg-green-400" />
-      <div className="min-w-0 flex-1">
-        <p className="font-medium truncate text-green-300">{hito.nombre}</p>
-        {hito.fechaRealEnvio && (
-          <p className="text-slate-500 mt-0.5">Realizado: <span className="text-green-400">{formatearFecha(hito.fechaRealEnvio)}</span></p>
-        )}
-        {hito.responsable && <p className="text-slate-600 mt-0.5">{hito.responsable}</p>}
-        {proyecto && (
-          <p className="text-slate-500 mt-0.5 truncate">
-            {proyecto.clienteNombre}
-            {proyecto.solucion && <span className="text-slate-600"> — {proyecto.solucion}</span>}
-          </p>
-        )}
-      </div>
-      <ArrowRight className="w-3 h-3 text-slate-600 group-hover:text-green-400 flex-shrink-0 mt-0.5 transition-colors" />
-    </Link>
+    <div className="flex items-center gap-2 group">
+      <Link
+        href={esHuerfano ? '#' : `/cronogramas?proyecto=${hito.proyectoId}&expandir=${hito.id}`}
+        className={clsx("flex-1 flex items-start gap-2 p-2.5 rounded-lg border text-xs transition-all hover:border-green-500/50 bg-green-900/10 border-green-800/30", esHuerfano && "pointer-events-none opacity-70")}
+      >
+        <span className="w-2 h-2 rounded-full mt-0.5 flex-shrink-0 bg-green-400" />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium truncate text-green-300">{hito.nombre}</p>
+          {hito.fechaRealEnvio && (
+            <p className="text-slate-500 mt-0.5">Realizado: <span className="text-green-400">{formatearFecha(hito.fechaRealEnvio)}</span></p>
+          )}
+          {hito.responsable && <p className="text-slate-600 mt-0.5">{hito.responsable}</p>}
+          {proyecto ? (
+            <p className="text-slate-500 mt-0.5 truncate">
+              {proyecto.clienteNombre}
+              {proyecto.solucion && <span className="text-slate-600"> — {proyecto.solucion}</span>}
+            </p>
+          ) : (
+            <p className="text-red-500 mt-0.5 font-medium flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> Proyecto Eliminado
+            </p>
+          )}
+        </div>
+        {!esHuerfano && <ArrowRight className="w-3 h-3 text-slate-600 group-hover:text-green-400 flex-shrink-0 mt-0.5 transition-colors" />}
+      </Link>
+
+      {isAdmin && onDelete && (
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete(e);
+          }}
+          title="Eliminar registro"
+          className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </div>
   )
 }
