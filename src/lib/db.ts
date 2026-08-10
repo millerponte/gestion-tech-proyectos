@@ -89,7 +89,7 @@ export async function eliminarCliente(id: string) {
   await deleteDoc(doc(db, 'clientes', id))
 }
 
-// ─── PROYECTOS ───────────────────────────────────────────────────────────────
+// ─── PROYECTOS (CON ELIMINACIÓN EN CASCADA) ──────────────────────────────────
 
 export async function obtenerProyectos(): Promise<Proyecto[]> {
   const snap = await getDocs(query(collection(db, 'proyectos'), orderBy('fechaInicio', 'desc')))
@@ -111,6 +111,17 @@ export async function actualizarProyecto(id: string, data: Partial<Proyecto>) {
 }
 
 export async function eliminarProyecto(id: string) {
+  // 1. Obtener y borrar todos los hitos (pendientes del cronograma) vinculados al proyecto
+  const hitosSnap = await getDocs(query(collection(db, 'hitos'), where('proyectoId', '==', id)))
+  const hitosPromises = hitosSnap.docs.map(d => deleteDoc(doc(db, 'hitos', d.id)))
+  await Promise.all(hitosPromises)
+
+  // 2. Obtener y borrar todos los comentarios vinculados al proyecto
+  const comentariosSnap = await getDocs(query(collection(db, 'comentarios'), where('proyectoId', '==', id)))
+  const comentariosPromises = comentariosSnap.docs.map(d => deleteDoc(doc(db, 'comentarios', d.id)))
+  await Promise.all(comentariosPromises)
+
+  // 3. Finalmente, borrar el proyecto en sí
   await deleteDoc(doc(db, 'proyectos', id))
 }
 
@@ -237,6 +248,7 @@ export async function obtenerPendientesVentas(): Promise<import('@/types').Pendi
 export async function crearPendienteVenta(data: Omit<import('@/types').PendienteVenta, 'id'>): Promise<string> { const ref = await addDoc(collection(db, 'ventas_pendientes'), data); return ref.id }
 export async function actualizarPendienteVenta(id: string, data: Partial<import('@/types').PendienteVenta>) { await updateDoc(doc(db, 'ventas_pendientes', id), data) }
 export async function eliminarPendienteVenta(id: string) { await deleteDoc(doc(db, 'ventas_pendientes', id)) }
+
 // ─── SISTEMA DE AUDITORÍA Y CONSOLA ──────────────────────────────────────────
 
 export async function registrarLog(usuarioUid: string, usuarioNombre: string, modulo: string, accion: string) {
