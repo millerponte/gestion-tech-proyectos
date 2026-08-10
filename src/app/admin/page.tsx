@@ -15,6 +15,7 @@ import clsx from 'clsx'
 type Tab = 'usuarios' | 'consola'
 
 const PERMISOS_LABELS: Record<keyof PermisoUsuario, string> = {
+  dashboard_ver: 'Dashboard — Ver',
   proyectos_ver: 'Proyectos — Ver',
   proyectos_agregar: 'Proyectos — Agregar',
   proyectos_editar: 'Proyectos — Editar',
@@ -29,12 +30,12 @@ const PERMISOS_LABELS: Record<keyof PermisoUsuario, string> = {
 }
 
 const PERMISOS_POR_ROL: Record<string, PermisoUsuario> = {
-  soc:            { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: true,  entregables_editar: true,  comentarios: true, ventas_ver: false },
-  administracion: { proyectos_ver: true,  proyectos_agregar: true,  proyectos_editar: true,  cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: true },
-  legal:          { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: false },
-  gerente:        { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: true },
-  preventa:       { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: true },
-  usuario:        { proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: false },
+  soc:            { dashboard_ver: true, proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: true,  entregables_editar: true,  comentarios: true, ventas_ver: false },
+  administracion: { dashboard_ver: true, proyectos_ver: true,  proyectos_agregar: true,  proyectos_editar: true,  cronogramas_ver: true,  cronogramas_agregar: true,  cronogramas_editar: true,  entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: true },
+  legal:          { dashboard_ver: true, proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: false },
+  gerente:        { dashboard_ver: true, proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: true },
+  preventa:       { dashboard_ver: true, proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: true },
+  usuario:        { dashboard_ver: false, proyectos_ver: true,  proyectos_agregar: false, proyectos_editar: false, cronogramas_ver: true,  cronogramas_agregar: false, cronogramas_editar: false, entregables_ver: true,  entregables_agregar: false, entregables_editar: false, comentarios: true, ventas_ver: false },
 }
 
 export default function AdminPage() {
