@@ -31,17 +31,18 @@ export interface Usuario {
 }
 
 export interface PermisoUsuario {
-  ventas_ver: boolean
-  proyectos_ver: boolean
-  proyectos_agregar: boolean
-  proyectos_editar: boolean
-  cronogramas_ver: boolean
-  cronogramas_agregar: boolean
-  cronogramas_editar: boolean
-  entregables_ver: boolean
-  entregables_agregar: boolean
-  entregables_editar: boolean
-  comentarios: boolean
+  dashboard_ver?: boolean
+  ventas_ver?: boolean
+  proyectos_ver?: boolean
+  proyectos_agregar?: boolean
+  proyectos_editar?: boolean
+  cronogramas_ver?: boolean
+  cronogramas_agregar?: boolean
+  cronogramas_editar?: boolean
+  entregables_ver?: boolean
+  entregables_agregar?: boolean
+  entregables_editar?: boolean
+  comentarios?: boolean
 }
 
 export interface Cliente {
@@ -74,7 +75,7 @@ export interface Proyecto {
 export interface Hito {
   id: string
   proyectoId: string
-  numero: number          // <-- NUEVO: número de orden del hito
+  numero: number
   nombre: string
   descripcion: string
   responsable: string
@@ -96,8 +97,8 @@ export interface Entregable {
   clienteNombre: string
   proyectoId: string
   proyectoNombre: string
-  hitoId?: string        // legacy — un solo hito
-  hitoIds?: string[]     // nuevo — múltiples hitos
+  hitoId?: string
+  hitoIds?: string[]
   fecha: string
   asunto: string
   responsableUid: string
@@ -139,13 +140,7 @@ export interface HistorialNota {
   nota: string;
 }
 
-export interface HistorialNota {
-  fecha: string;
-  nota: string;
-}
-
 export interface ClienteVentas { id: string; nombre: string; contacto: string; telefono?: string; correo: string; proyecto: string; solucion: string; mayorista: string; fechaCotizacion: string; statusProyecto: string; historialStatus?: HistorialNota[]; historialPlan?: HistorialNota[]; planAccion: string; status: StatusPipeline; año: string; createdAt: string; esPendiente?: boolean; pendienteFechaInicio?: string; pendienteFechaLimite?: string; fechaPendienteResuelto?: string; historialPendientes?: HistorialNota[]; }
 export interface CitaVentas { id: string; cliente: string; empresa?: string; contacto: string; correo: string; cargo: string; sector: SectorCita; fechaReunion: string; horario: string; solucion: string; observaciones: string; statusProyecto: string; status: 'pendiente' | 'realizado' | 'cancelado' | 'vencido'; createdAt: string; esPendiente?: boolean; pendienteFechaInicio?: string; pendienteFechaLimite?: string; fechaPendienteResuelto?: string; historialPendientes?: HistorialNota[]; }
 export interface FirmaVentas { id: string; cliente: string; autorizadoPor: string; documento: string; empresa: string; fecha: string; firmadoPor: string; tipoFirma: string; medioEntrega: string; nombreProyecto: string; enviadoPor: string; codigo: string; observaciones: string; historialStatus?: HistorialNota[]; createdAt: string; esPendiente?: boolean; pendienteFechaInicio?: string; pendienteFechaLimite?: string; fechaPendienteResuelto?: string; historialPendientes?: HistorialNota[]; }
 export interface LicitacionVentas { id: string; entidad: string; basesIntegradas: string; proceso: string; fechaPresentacion: string; fechaFinEvaluacion: string; buenaPro: string; consentimiento: string; fechaFirmaContrato: string; observaciones: string; empresa: string; resultado: ResultadoLicitacion; año: string; createdAt: string; esPendiente?: boolean; pendienteFechaInicio?: string; pendienteFechaLimite?: string; fechaPendienteResuelto?: string; historialPendientes?: HistorialNota[]; }
-export interface LicitacionVentas { id: string; entidad: string; basesIntegradas: string; proceso: string; fechaPresentacion: string; fechaFinEvaluacion: string; buenaPro: string; consentimiento: string; fechaFirmaContrato: string; observaciones: string; empresa: string; resultado: ResultadoLicitacion; año: string; createdAt: string }
