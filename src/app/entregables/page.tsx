@@ -247,30 +247,30 @@ export default function EntregablesPage() {
                       id={`entregable-${e.id}`}
                       className={clsx('tabla-row', expandido === e.id && 'bg-[#1e3a8a]/10', ultimoId === e.id && 'highlight-new')}
                       onClick={() => setExpandido(expandido === e.id ? null : e.id)}>
-                      <td className="tabla-cell text-slate-500 w-6">
+                      <td className="tabla-cell text-slate-500 w-6 align-top pt-4">
                         {expandido === e.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </td>
-                      <td className="tabla-cell">
+                      <td className="tabla-cell align-top pt-4">
                         <p className="font-mono text-cyan-400 text-xs">{e.numeroDocumento}</p>
                         <p className="font-mono text-slate-500 text-xs">{e.numeroCargo}</p>
                       </td>
-                      <td className="tabla-cell">
+                      <td className="tabla-cell align-top pt-4">
                         <span className={BADGE_EMPRESA[e.empresa] || 'badge-okinawatec'}>
                           {e.empresa === 'TECH SOLUTIONS' ? 'TECH' : e.empresa === 'OKINAWATEC' ? 'OKINA' : 'QUANTIC'}
                         </span>
                       </td>
-                      <td className="tabla-cell">
+                      <td className="tabla-cell align-top pt-4">
                         <span className="text-xs text-slate-300 bg-slate-800/50 px-2 py-0.5 rounded-full">{e.tipo}</span>
                       </td>
-                      <td className="tabla-cell">
-                        <p className="text-sm text-slate-200 max-w-32 truncate">{e.clienteNombre}</p>
-                        <p className="text-xs text-slate-500 max-w-32 truncate">{e.proyectoNombre}</p>
+                      <td className="tabla-cell align-top pt-4">
+                        <p className="text-sm text-slate-200 whitespace-normal break-words max-w-[200px]">{e.clienteNombre}</p>
+                        <p className="text-xs text-slate-500 whitespace-normal break-words max-w-[200px] mt-0.5">{e.proyectoNombre}</p>
                       </td>
-                      <td className="tabla-cell">
-                        <p className="text-sm text-slate-200 max-w-48 truncate">{e.asunto}</p>
+                      <td className="tabla-cell align-top pt-4">
+                        <p className="text-sm text-slate-200 whitespace-normal break-words max-w-[300px]">{e.asunto}</p>
                       </td>
-                      <td className="tabla-cell whitespace-nowrap text-slate-400 text-xs">{formatearFecha(e.fecha)}</td>
-                      <td className="tabla-cell">
+                      <td className="tabla-cell whitespace-nowrap text-slate-400 text-xs align-top pt-4">{formatearFecha(e.fecha)}</td>
+                      <td className="tabla-cell align-top pt-4">
                         <span className={clsx('text-xs px-2 py-0.5 rounded-full border',
                           e.estado === 'reservado'
                             ? 'bg-amber-900/30 text-amber-300 border-amber-700/40'
@@ -278,7 +278,7 @@ export default function EntregablesPage() {
                           {e.estado}
                         </span>
                       </td>
-                      <td className="tabla-cell" onClick={ev => ev.stopPropagation()}>
+                      <td className="tabla-cell align-top pt-4" onClick={ev => ev.stopPropagation()}>
                         <div className="flex items-center gap-2">
                           {e.estado === 'reservado' && (
                             <button onClick={() => setEntregableExpediente(e)}
