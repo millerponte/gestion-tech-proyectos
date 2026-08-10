@@ -42,7 +42,8 @@ export default function Sidebar() {
   // ── FILTRO DE PERMISOS: Ocultar ítems si no tienen permiso ──
   const menuItems = navItems.filter(item => {
     if (item.href === '/ventas') {
-      return isAdmin || usuario?.permisos?.ventasVer
+      // Usamos ventas_ver tal como está en tus tipos
+      return isAdmin || usuario?.permisos?.ventas_ver
     }
     // Si en un futuro quieres bloquear proyectos, entregables, etc., puedes agregar la validación aquí
     return true
