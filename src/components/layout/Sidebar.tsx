@@ -12,10 +12,9 @@ import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 
-
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/clientes', label: 'Clientes', icon: Building2 }, // Agregado afuera
+  { href: '/clientes', label: 'Clientes', icon: Building2 },
   { href: '/proyectos', label: 'Proyectos', icon: FolderKanban },
   { href: '/entregables', label: 'Entregables', icon: FileText },
   { href: '/cronogramas', label: 'Cronogramas', icon: CalendarDays },
@@ -40,6 +39,15 @@ export default function Sidebar() {
     router.push('/auth/login')
   }
 
+  // ── FILTRO DE PERMISOS: Ocultar ítems si no tienen permiso ──
+  const menuItems = navItems.filter(item => {
+    if (item.href === '/ventas') {
+      return isAdmin || usuario?.permisos?.ventasVer
+    }
+    // Si en un futuro quieres bloquear proyectos, entregables, etc., puedes agregar la validación aquí
+    return true
+  })
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
@@ -57,7 +65,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {menuItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
           return (
             <Link
@@ -115,13 +123,13 @@ export default function Sidebar() {
             {usuario && (
               <span className={clsx(
                 'mt-2 inline-block text-xs rounded-full px-2 py-0.5 border',
-                usuario.rol === 'admin'        && 'text-amber-400 bg-amber-900/30 border-amber-700/30',
-                usuario.rol === 'soc'          && 'text-blue-400 bg-blue-900/30 border-blue-700/30',
-                usuario.rol === 'preventa'     && 'text-indigo-400 bg-indigo-900/30 border-indigo-700/30',
+                usuario.rol === 'admin'          && 'text-amber-400 bg-amber-900/30 border-amber-700/30',
+                usuario.rol === 'soc'            && 'text-blue-400 bg-blue-900/30 border-blue-700/30',
+                usuario.rol === 'preventa'       && 'text-indigo-400 bg-indigo-900/30 border-indigo-700/30',
                 usuario.rol === 'administracion' && 'text-green-400 bg-green-900/30 border-green-700/30',
-                usuario.rol === 'legal'        && 'text-purple-400 bg-purple-900/30 border-purple-700/30',
-                usuario.rol === 'gerente'      && 'text-cyan-400 bg-cyan-900/30 border-cyan-700/30',
-                usuario.rol === 'usuario'      && 'text-slate-400 bg-slate-800/30 border-slate-600/30',
+                usuario.rol === 'legal'          && 'text-purple-400 bg-purple-900/30 border-purple-700/30',
+                usuario.rol === 'gerente'        && 'text-cyan-400 bg-cyan-900/30 border-cyan-700/30',
+                usuario.rol === 'usuario'        && 'text-slate-400 bg-slate-800/30 border-slate-600/30',
               )}>
                 {{
                   admin: 'Admin',
