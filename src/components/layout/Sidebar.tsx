@@ -39,14 +39,29 @@ export default function Sidebar() {
     router.push('/auth/login')
   }
 
-  // ── FILTRO DE PERMISOS: Ocultar ítems si no tienen permiso ──
+  // ── FILTRO DE PERMISOS ESTRUCTURADO PARA TODOS LOS ROLES ──
   const menuItems = navItems.filter(item => {
-    if (item.href === '/ventas') {
-      // Usamos ventas_ver tal como está en tus tipos
-      return isAdmin || usuario?.permisos?.ventas_ver
+    // Si es un Administrador principal, siempre ve todo
+    if (isAdmin) return true;
+
+    // Si no es admin, dependemos estrictamente de sus casillas de permisos
+    const p = usuario?.permisos || {};
+
+    switch (item.href) {
+      case '/dashboard':
+        return p.dashboard_ver === true;
+      case '/proyectos':
+        return p.proyectos_ver === true;
+      case '/entregables':
+        return p.entregables_ver === true;
+      case '/cronogramas':
+        return p.cronogramas_ver === true;
+      case '/ventas':
+        return p.ventas_ver === true;
+      // Clientes queda público por defecto para usuarios logueados (o puedes limitarlo si lo deseas)
+      default:
+        return true;
     }
-    // Si en un futuro quieres bloquear proyectos, entregables, etc., puedes agregar la validación aquí
-    return true
   })
 
   const SidebarContent = () => (
