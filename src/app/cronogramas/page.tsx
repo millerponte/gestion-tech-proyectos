@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { obtenerProyectos, obtenerClientes, obtenerHitosPorProyecto, crearHito, actualizarHito, eliminarHito, obtenerEntregables, obtenerTodosHitos } from '@/lib/db'
 import type { Proyecto, Cliente, Hito, Entregable } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
@@ -18,6 +18,18 @@ const ESTADO_HITO: Record<string, string> = {
 }
 
 const ROLES_RESPONSABLE = ['SOC', 'PRE VENTA', 'ADMINISTRACIÓN', 'LEGAL', 'GERENCIA']
+
+// Función helper para calcular fecha sumando días del texto
+const calcularFechaLimite = (fechaIni: string, plazoStr: string) => {
+  if (!fechaIni || fechaIni === 'por definir' || !plazoStr) return null
+  const dias = parseInt(plazoStr.replace(/\D/g, ''), 10) // Extrae solo los números
+  if (isNaN(dias)) return null
+  try {
+    const fecha = new Date(fechaIni + 'T12:00:00') // T12 para evitar bugs de zona horaria
+    fecha.setDate(fecha.getDate() + dias)
+    return fecha.toISOString().split('T')[0]
+  } catch { return null }
+}
 
 export default function CronogramasPage() {
   const { isAdmin, tienePermiso, usuario } = useAuth()
@@ -44,6 +56,11 @@ export default function CronogramasPage() {
   const [modoGlobalHitos, setModoGlobalHitos] = useState(false)
   const [todosHitos, setTodosHitos] = useState<Hito[]>([])
   const [loadingGlobal, setLoadingGlobal] = useState(false)
+  
+  // Paginación
+  const [paginaActual, setPaginaActual] = useState(1)
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(50)
+
   const [nuevoHito, setNuevoHito] = useState<Partial<Hito>>({
     numero: 0, nombre: '', descripcion: '', responsable: '',
     plazoContractual: '', fechaInicio: hoy(),
@@ -68,6 +85,11 @@ export default function CronogramasPage() {
     }
     cargar()
   }, [])
+
+  // Resetear paginación al cambiar filtros o proyecto
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [filtroResponsable, filtroEstadoHito, proyectoSeleccionado, registrosPorPagina])
 
   const seleccionarProyecto = async (p: Proyecto) => {
     setProyectoSeleccionado(p)
@@ -148,9 +170,21 @@ export default function CronogramasPage() {
       return
     }
     try {
+      const numeroDeseado = nuevoHito.numero || 0;
+      
+      // 1. REORDENAMIENTO AUTOMÁTICO (Desplazar hitos >= numeroDeseado)
+      if (numeroDeseado > 0) {
+        const hitosAfectados = hitos.filter(h => h.numero >= numeroDeseado);
+        if (hitosAfectados.length > 0) {
+          // Aumentamos en 1 a todos los afectados
+          await Promise.all(hitosAfectados.map(h => actualizarHito(h.id, { numero: h.numero + 1 })));
+        }
+      }
+
+      // 2. CREAR EL NUEVO HITO
       await crearHito({
         proyectoId: proyectoSeleccionado.id,
-        numero: nuevoHito.numero || 0,
+        numero: numeroDeseado,
         nombre: nuevoHito.nombre!.trim(),
         descripcion: nuevoHito.descripcion || '',
         responsable: nuevoHito.responsable || '',
@@ -196,7 +230,13 @@ export default function CronogramasPage() {
     )
   })
 
-const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filter(Boolean)))
+  // Lógica de Paginación para Hitos
+  const indexOfLastHito = paginaActual * registrosPorPagina
+  const indexOfFirstHito = indexOfLastHito - registrosPorPagina
+  const hitosPaginados = hitosFiltrados.slice(indexOfFirstHito, indexOfLastHito)
+  const totalPaginas = Math.ceil(hitosFiltrados.length / registrosPorPagina)
+
+  const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filter(Boolean)))
 
   const buscarHitosGlobal = async (q: string) => {
     if (!q.trim()) { setModoGlobalHitos(false); setTodosHitos([]); return }
@@ -437,14 +477,21 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                     Limpiar
                   </button>
                 )}
-                <span className="text-xs text-slate-500 self-center ml-auto">
-                  {hitosFiltrados.length} de {hitos.length} hitos
-                </span>
+                <div className="flex items-center gap-2 ml-auto">
+                  <select className="input-field text-xs py-1 w-auto" value={registrosPorPagina} onChange={e => setRegistrosPorPagina(Number(e.target.value))}>
+                    <option value={50}>Mostrar 50</option>
+                    <option value={100}>Mostrar 100</option>
+                    <option value={100000}>Mostrar Todos</option>
+                  </select>
+                  <span className="text-xs text-slate-500 self-center">
+                    {hitosFiltrados.length} de {hitos.length} hitos
+                  </span>
+                </div>
               </div>
 
               {/* Tabla */}
               <div className="card p-0 overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto min-h-[400px]">
                   <table className="w-full">
                     <thead className="bg-[#0d1526] border-b border-[#1e3a8a]/50">
                       <tr>
@@ -460,15 +507,15 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                       </tr>
                     </thead>
                     <tbody>
-                      {hitosFiltrados.map(h => {
+                      {/* MAPEO CON PAGINACIÓN */}
+                      {hitosPaginados.map(h => {
                         const estado = estadoHito(h)
                         const entregablesVinculados = entregables.filter(e =>
                           e.hitoId === h.id || (e as any).hitoIds?.includes(h.id)
                         )
                         return (
-                          <>
+                          <Fragment key={h.id}>
                             <tr
-                              key={h.id}
                               id={`hito-${h.id}`}
                               className={clsx(
                                 'tabla-row',
@@ -586,12 +633,28 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                                       </div>
                                       <div className="grid grid-cols-3 gap-3">
                                         <div>
+                                          <label className="label">Plazo contractual</label>
+                                          <input
+                                            className="input-field"
+                                            value={editData.plazoContractual}
+                                            onChange={e => {
+                                              const val = e.target.value
+                                              const limite = calcularFechaLimite(editData.fechaInicio!, val)
+                                              setEditData(d => ({ ...d, plazoContractual: val, ...(limite ? { fechaLimite: limite } : {}) }))
+                                            }}
+                                          />
+                                        </div>
+                                        <div>
                                           <label className="label">Fecha inicio</label>
                                           <input
                                             type="date"
                                             className="input-field"
                                             value={editData.fechaInicio === 'por definir' ? '' : editData.fechaInicio}
-                                            onChange={e => setEditData(d => ({ ...d, fechaInicio: e.target.value || 'por definir' }))}
+                                            onChange={e => {
+                                              const val = e.target.value || 'por definir'
+                                              const limite = calcularFechaLimite(val, editData.plazoContractual!)
+                                              setEditData(d => ({ ...d, fechaInicio: val, ...(limite ? { fechaLimite: limite } : {}) }))
+                                            }}
                                           />
                                         </div>
                                         <div>
@@ -603,6 +666,8 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                                             onChange={e => setEditData(d => ({ ...d, fechaLimite: e.target.value || 'por definir' }))}
                                           />
                                         </div>
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-3">
                                         <div>
                                           <label className="label">Fecha real envío</label>
                                           <input
@@ -610,16 +675,6 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                                             className="input-field"
                                             value={editData.fechaRealEnvio || ''}
                                             onChange={e => setEditData(d => ({ ...d, fechaRealEnvio: e.target.value }))}
-                                          />
-                                        </div>
-                                      </div>
-                                      <div className="grid grid-cols-3 gap-3">
-                                        <div>
-                                          <label className="label">Plazo contractual</label>
-                                          <input
-                                            className="input-field"
-                                            value={editData.plazoContractual}
-                                            onChange={e => setEditData(d => ({ ...d, plazoContractual: e.target.value }))}
                                           />
                                         </div>
                                         <div>
@@ -648,7 +703,7 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                                       </div>
                                       <div className="flex gap-2">
                                         <button onClick={() => guardarEdicion(h.id)} className="btn-primary text-xs">
-                                          <Check className="w-3.5 h-3.5" /> Guardar
+                                          <Check className="w-3.5 h-3.5" /> Guardar cambios
                                         </button>
                                         <button onClick={() => setEditando(null)} className="btn-secondary text-xs">
                                           <X className="w-3.5 h-3.5" /> Cancelar
@@ -695,12 +750,40 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                                 </td>
                               </tr>
                             )}
-                          </>
+                          </Fragment>
                         )
                       })}
                     </tbody>
                   </table>
                 </div>
+
+                {/* PAGINACIÓN FOOTER */}
+                {totalPaginas > 1 && (
+                  <div className="p-4 border-t border-slate-700 bg-[#0d1526] flex items-center justify-between">
+                    <span className="text-xs text-slate-400">
+                      Mostrando {indexOfFirstHito + 1} - {Math.min(indexOfLastHito, hitosFiltrados.length)} de {hitosFiltrados.length} hitos
+                    </span>
+                    <div className="flex gap-2">
+                      <button 
+                        disabled={paginaActual === 1} 
+                        onClick={() => setPaginaActual(p => p - 1)} 
+                        className="btn-secondary text-xs px-3 py-1 disabled:opacity-50"
+                      >
+                        Anterior
+                      </button>
+                      <span className="text-xs text-slate-300 flex items-center px-2">
+                        Página {paginaActual} de {totalPaginas}
+                      </span>
+                      <button 
+                        disabled={paginaActual === totalPaginas} 
+                        onClick={() => setPaginaActual(p => p + 1)} 
+                        className="btn-secondary text-xs px-3 py-1 disabled:opacity-50"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -709,9 +792,9 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
 
       {/* MODAL: Nuevo hito */}
       {modalNuevoHito && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModalNuevoHito(false)}>
-          <div className="modal-box">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a8a]/50">
+        <div className="modal-overlay z-50" onClick={e => e.target === e.currentTarget && setModalNuevoHito(false)}>
+          <div className="modal-box shadow-2xl border border-slate-600">
+            <div className="flex items-center justify-between p-6 border-b border-[#1e3a8a]/50 bg-[#0d1526]">
               <h2 className="font-display font-semibold text-white flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-blue-400" /> Nuevo Hito
               </h2>
@@ -719,7 +802,7 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 bg-[#111d35]">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">N° de hito</label>
@@ -768,7 +851,11 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                     className="input-field"
                     placeholder="Ej: 15 días cal."
                     value={nuevoHito.plazoContractual}
-                    onChange={e => setNuevoHito(d => ({ ...d, plazoContractual: e.target.value }))}
+                    onChange={e => {
+                      const val = e.target.value;
+                      const limite = calcularFechaLimite(nuevoHito.fechaInicio!, val);
+                      setNuevoHito(d => ({ ...d, plazoContractual: val, ...(limite ? { fechaLimite: limite } : {}) }))
+                    }}
                   />
                 </div>
                 <div>
@@ -777,7 +864,11 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                     type="date"
                     className="input-field"
                     value={nuevoHito.fechaInicio}
-                    onChange={e => setNuevoHito(d => ({ ...d, fechaInicio: e.target.value }))}
+                    onChange={e => {
+                      const val = e.target.value;
+                      const limite = calcularFechaLimite(val, nuevoHito.plazoContractual!);
+                      setNuevoHito(d => ({ ...d, fechaInicio: val, ...(limite ? { fechaLimite: limite } : {}) }))
+                    }}
                   />
                 </div>
                 <div>
@@ -800,7 +891,7 @@ const responsablesUnicos = Array.from(new Set(hitos.map(h => h.responsable).filt
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 px-6 pb-6">
+            <div className="flex justify-end gap-3 px-6 pb-6 bg-[#111d35]">
               <button onClick={() => setModalNuevoHito(false)} className="btn-secondary">Cancelar</button>
               <button onClick={handleCrearHito} className="btn-primary">
                 <Plus className="w-4 h-4" /> Crear hito
