@@ -524,45 +524,45 @@ export default function CronogramasPage() {
                               )}
                               onClick={() => setExpandido(expandido === h.id ? null : h.id)}
                             >
-                              <td className="tabla-cell text-slate-500">
+                              <td className="tabla-cell text-slate-500 align-top pt-4">
                                 {expandido === h.id
                                   ? <ChevronUp className="w-3.5 h-3.5" />
                                   : <ChevronDown className="w-3.5 h-3.5" />}
                               </td>
-                              <td className="tabla-cell text-slate-400 text-xs font-mono">{h.numero || '—'}</td>
-                              <td className="tabla-cell">
-                                <div className="flex items-center gap-2">
-                                  {h.esCritico && <span className="text-red-400 text-xs">★</span>}
-                                  <p className="text-sm text-slate-200 max-w-xs line-clamp-1">{h.nombre}</p>
+                              <td className="tabla-cell text-slate-400 text-xs font-mono align-top pt-4">{h.numero || '—'}</td>
+                              <td className="tabla-cell align-top pt-3.5">
+                                <div className="flex items-start gap-2">
+                                  {h.esCritico && <span className="text-red-400 text-xs mt-0.5">★</span>}
+                                  <p className="text-sm text-slate-200 whitespace-normal break-words max-w-[300px] leading-tight">{h.nombre}</p>
                                   {entregablesVinculados.length > 0 && (
-                                    <span className="text-xs bg-green-900/30 text-green-400 border border-green-700/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                    <span className="text-xs bg-green-900/30 text-green-400 border border-green-700/30 px-1.5 py-0.5 rounded-full flex-shrink-0 mt-0.5">
                                       {entregablesVinculados.length} entregable{entregablesVinculados.length > 1 ? 's' : ''}
                                     </span>
                                   )}
                                 </div>
                               </td>
-                              <td className="tabla-cell text-xs text-slate-400">{h.responsable}</td>
-                              <td className="tabla-cell text-xs text-slate-400 whitespace-nowrap">
+                              <td className="tabla-cell text-xs text-slate-400 align-top pt-4">{h.responsable}</td>
+                              <td className="tabla-cell text-xs text-slate-400 whitespace-nowrap align-top pt-4">
                                 {h.fechaInicio === 'por definir'
                                   ? <span className="text-amber-400">por definir</span>
                                   : formatearFecha(h.fechaInicio)}
                               </td>
-                              <td className="tabla-cell text-xs whitespace-nowrap">
+                              <td className="tabla-cell text-xs whitespace-nowrap align-top pt-4">
                                 {h.fechaLimite === 'por definir'
                                   ? <span className="text-amber-400">por definir</span>
                                   : <span className={estado === 'vencido' ? 'text-red-400' : 'text-slate-400'}>
                                       {formatearFecha(h.fechaLimite)}
                                     </span>}
                               </td>
-                              <td className="tabla-cell">
+                              <td className="tabla-cell align-top pt-4">
                                 <span className={clsx('text-xs px-2 py-0.5 rounded-full border', ESTADO_HITO[estado])}>
                                   {estado}
                                 </span>
                               </td>
-                              <td className="tabla-cell text-xs text-green-400 whitespace-nowrap">
+                              <td className="tabla-cell text-xs text-green-400 whitespace-nowrap align-top pt-4">
                                 {h.fechaRealEnvio ? formatearFecha(h.fechaRealEnvio) : '—'}
                               </td>
-                              <td className="tabla-cell" onClick={e => e.stopPropagation()}>
+                              <td className="tabla-cell align-top pt-4" onClick={e => e.stopPropagation()}>
                                 <div className="flex gap-2">
                                   {tienePermiso('cronogramas_editar') && (
                                     <button
