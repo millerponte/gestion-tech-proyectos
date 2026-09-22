@@ -19,7 +19,7 @@ import {
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-type VistaPendientes = 'mes' | 'semana' | 'dia' | 'todo'
+type VistaPendientes = 'mes' | 'semana' | 'dia' | 'todo' | 'sin_fecha'
 type VistaRealizados = 'mes' | 'semana' | 'dia' | 'año' | 'todo'
 
 export default function DashboardPage() {
@@ -70,18 +70,26 @@ export default function DashboardPage() {
   const proyectosActivos = proyectos.filter(p => p.estado === 'activo')
   const proyectosTerminados = proyectos.filter(p => p.estado === 'completado')
 
-  const hitosPendientesAll = hitos.filter(h =>
-    h.estado !== 'realizado' &&
-    h.fechaInicio !== 'por definir' &&
-    h.fechaLimite !== 'por definir'
-  )
+  // Se incluyen todos los que no están realizados (incluso los sin fecha)
+  const hitosPendientesAll = hitos.filter(h => h.estado !== 'realizado')
   const hitosRealizadosAll = hitos.filter(h => h.estado === 'realizado')
-  const hitosVencidos = hitosPendientesAll.filter(h => esFechaVencida(h.fechaLimite))
-  const hitosHoy = hitosPendientesAll.filter(h => isSameDay(parseISO(h.fechaLimite), hoy))
+  
+  const hitosVencidos = hitosPendientesAll.filter(h => h.fechaLimite !== 'por definir' && esFechaVencida(h.fechaLimite))
+  const hitosHoy = hitosPendientesAll.filter(h => h.fechaLimite !== 'por definir' && isSameDay(parseISO(h.fechaLimite), hoy))
 
   // ── Pendientes filtrados por vista ───────────────────────────────────────
   const pendientesFiltrados = (() => {
-    const base = [...hitosPendientesAll].sort((a, b) => a.fechaLimite.localeCompare(b.fechaLimite))
+    // Separar hitos con fecha de los hitos sin fecha
+    const conFecha = hitosPendientesAll.filter(h => h.fechaLimite !== 'por definir')
+    const sinFecha = hitosPendientesAll.filter(h => h.fechaLimite === 'por definir')
+
+    if (vistaPendientes === 'sin_fecha') return sinFecha
+
+    // Ordenar los que tienen fecha por fecha más cercana a vencer (ascendente)
+    const base = [...conFecha].sort((a, b) => {
+      return new Date(a.fechaLimite).getTime() - new Date(b.fechaLimite).getTime()
+    })
+
     if (vistaPendientes === 'todo') return base
     if (vistaPendientes === 'dia') {
       return base.filter(h => {
@@ -113,6 +121,7 @@ export default function DashboardPage() {
     if (vistaRealizados === 'todo') return base
     if (vistaRealizados === 'dia') {
       return base.filter(h => {
+        if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false;
         try { return isSameDay(parseISO(h.fechaRealEnvio || h.fechaLimite), hoy) } catch { return false }
       })
     }
@@ -120,17 +129,20 @@ export default function DashboardPage() {
       const ini = startOfWeek(hoy, { weekStartsOn: 1 })
       const fin = endOfWeek(hoy, { weekStartsOn: 1 })
       return base.filter(h => {
+        if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false;
         try { const f = parseISO(h.fechaRealEnvio || h.fechaLimite); return f >= ini && f <= fin } catch { return false }
       })
     }
     if (vistaRealizados === 'año') {
       const ini = startOfYear(hoy)
       return base.filter(h => {
+        if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false;
         try { return parseISO(h.fechaRealEnvio || h.fechaLimite) >= ini } catch { return false }
       })
     }
     // mes
     return base.filter(h => {
+      if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false;
       try { return isSameMonth(parseISO(h.fechaRealEnvio || h.fechaLimite), hoy) } catch { return false }
     })
   })()
@@ -145,6 +157,7 @@ export default function DashboardPage() {
 
   const diasConHitos = (dia: Date) =>
     hitosPendientesAll.filter(h => {
+      if (h.fechaInicio === 'por definir' || h.fechaLimite === 'por definir') return false;
       try {
         const ini = parseISO(h.fechaInicio)
         const fin = parseISO(h.fechaLimite)
@@ -153,6 +166,7 @@ export default function DashboardPage() {
     })
 
   const hitosDiaSeleccionado = hitosPendientesAll.filter(h => {
+    if (h.fechaInicio === 'por definir' || h.fechaLimite === 'por definir') return false;
     try {
       const ini = parseISO(h.fechaInicio)
       const fin = parseISO(h.fechaLimite)
@@ -186,7 +200,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Proyectos activos" value={proyectosActivos.length} icon={<FolderKanban className="w-5 h-5" />} color="blue" />
         <StatCard label="Proyectos terminados" value={proyectosTerminados.length} icon={<CheckCircle2 className="w-5 h-5" />} color="green" />
-        <StatCard label="Pendientes del mes" value={hitosPendientesAll.filter(h => { try { return isSameMonth(parseISO(h.fechaLimite), hoy) } catch { return false } }).length} icon={<Clock className="w-5 h-5" />} color="cyan" />
+        <StatCard label="Pendientes del mes" value={hitosPendientesAll.filter(h => { 
+          if (h.fechaLimite === 'por definir') return false;
+          try { return isSameMonth(parseISO(h.fechaLimite), hoy) } catch { return false } 
+        }).length} icon={<Clock className="w-5 h-5" />} color="cyan" />
         <StatCard label="Vencidos" value={hitosVencidos.length} icon={<AlertCircle className="w-5 h-5" />} color="red" />
         <StatCard label="Vencen hoy" value={hitosHoy.length} icon={<CalendarDays className="w-5 h-5" />} color="amber" />
         <StatCard label="Realizados del mes" value={realizadosFiltrados.length} icon={<CheckCircle2 className="w-5 h-5" />} color="purple" />
@@ -204,11 +221,11 @@ export default function DashboardPage() {
               <span className="text-xs text-slate-500">({pendientesFiltrados.length})</span>
             </div>
             <div className="flex bg-[#0d1526] border border-[#1e3a8a]/50 rounded-lg overflow-hidden text-xs">
-              {(['dia', 'semana', 'mes', 'todo'] as VistaPendientes[]).map(v => (
+              {(['dia', 'semana', 'mes', 'todo', 'sin_fecha'] as VistaPendientes[]).map(v => (
                 <button key={v} onClick={() => setVistaPendientes(v)}
                   className={clsx('px-2.5 py-1.5 capitalize transition-colors',
                     vistaPendientes === v ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white')}>
-                  {v === 'todo' ? 'Todo' : v === 'dia' ? 'Hoy' : v === 'semana' ? 'Semana' : 'Mes'}
+                  {v === 'todo' ? 'Todo' : v === 'dia' ? 'Hoy' : v === 'semana' ? 'Semana' : v === 'mes' ? 'Mes' : 'Sin fecha'}
                 </button>
               ))}
             </div>
@@ -381,18 +398,21 @@ export default function DashboardPage() {
 function ModalHitoRango({ hito, proyectos, onClose }: { hito: Hito; proyectos: Proyecto[]; onClose: () => void }) {
   const proyecto = proyectos.find(p => p.id === hito.proyectoId)
   const hoy = new Date()
-  const inicio = parseISO(hito.fechaInicio)
-  const fin = parseISO(hito.fechaLimite)
-  const vencido = esFechaVencida(hito.fechaLimite)
+  
+  const vencido = hito.fechaLimite !== 'por definir' && esFechaVencida(hito.fechaLimite)
 
   // Construir rango de días
   let diasRango: Date[] = []
-  try {
-    diasRango = eachDayOfInterval({ start: inicio, end: fin })
-  } catch { diasRango = [] }
+  if (hito.fechaInicio !== 'por definir' && hito.fechaLimite !== 'por definir') {
+    try {
+      const inicio = parseISO(hito.fechaInicio)
+      const fin = parseISO(hito.fechaLimite)
+      diasRango = eachDayOfInterval({ start: inicio, end: fin })
+    } catch { diasRango = [] }
+  }
 
   // Semanas del rango (con padding al inicio para alinear con día de semana)
-  const primerDia = diasRango[0] || inicio
+  const primerDia = diasRango[0] || new Date()
   const diaSemanaInicio = (primerDia.getDay() + 6) % 7 // 0=Lun
   const diasSemana = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
@@ -421,11 +441,15 @@ function ModalHitoRango({ hito, proyectos, onClose }: { hito: Hito; proyectos: P
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-3">
               <p className="text-slate-500 mb-1">Fecha inicio</p>
-              <p className="text-cyan-400 font-medium">{formatearFecha(hito.fechaInicio)}</p>
+              <p className={clsx('font-medium', hito.fechaInicio === 'por definir' ? 'text-amber-400' : 'text-cyan-400')}>
+                {hito.fechaInicio === 'por definir' ? 'por definir' : formatearFecha(hito.fechaInicio)}
+              </p>
             </div>
             <div className={clsx('border rounded-lg p-3', vencido ? 'bg-red-900/20 border-red-700/40' : 'bg-[#0d1526] border-[#1e3a8a]/40')}>
               <p className="text-slate-500 mb-1">Fecha límite</p>
-              <p className={clsx('font-medium', vencido ? 'text-red-400' : 'text-slate-200')}>{formatearFecha(hito.fechaLimite)}</p>
+              <p className={clsx('font-medium', hito.fechaLimite === 'por definir' ? 'text-amber-400' : vencido ? 'text-red-400' : 'text-slate-200')}>
+                {hito.fechaLimite === 'por definir' ? 'por definir' : formatearFecha(hito.fechaLimite)}
+              </p>
             </div>
             {hito.responsable && (
               <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-3">
@@ -435,7 +459,7 @@ function ModalHitoRango({ hito, proyectos, onClose }: { hito: Hito; proyectos: P
             )}
             <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-3">
               <p className="text-slate-500 mb-1">Duración</p>
-              <p className="text-slate-200">{diasRango.length} día(s)</p>
+              <p className="text-slate-200">{diasRango.length > 0 ? `${diasRango.length} día(s)` : 'por definir'}</p>
             </div>
           </div>
 
@@ -456,8 +480,8 @@ function ModalHitoRango({ hito, proyectos, onClose }: { hito: Hito; proyectos: P
                   ))}
                   {diasRango.map(dia => {
                     const esHoyDia = isToday(dia)
-                    const esIni = isSameDay(dia, inicio)
-                    const esFin = isSameDay(dia, fin)
+                    const esIni = isSameDay(dia, parseISO(hito.fechaInicio))
+                    const esFin = isSameDay(dia, parseISO(hito.fechaLimite))
                     return (
                       <div key={dia.toISOString()}
                         className={clsx(
@@ -540,7 +564,7 @@ function StatCard({ label, value, icon, color }: {
 }
 
 function HitoItem({ hito, proyectos, onClick, onDelete, isAdmin }: { hito: Hito; proyectos: Proyecto[]; onClick: () => void; onDelete?: (e: React.MouseEvent) => void; isAdmin?: boolean }) {
-  const vencido = esFechaVencida(hito.fechaLimite)
+  const vencido = hito.fechaLimite !== 'por definir' && esFechaVencida(hito.fechaLimite)
   const proyecto = proyectos.find(p => p.id === hito.proyectoId)
   const esHuerfano = !proyecto;
 
@@ -557,8 +581,8 @@ function HitoItem({ hito, proyectos, onClick, onDelete, isAdmin }: { hito: Hito;
             {hito.nombre}
           </p>
           <div className="flex gap-3 mt-0.5 text-slate-500">
-            <span>Inicio: <span className="text-slate-400">{formatearFecha(hito.fechaInicio)}</span></span>
-            <span>Límite: <span className={vencido ? 'text-red-400' : 'text-slate-400'}>{formatearFecha(hito.fechaLimite)}</span></span>
+            <span>Inicio: <span className="text-slate-400">{hito.fechaInicio === 'por definir' ? 'por definir' : formatearFecha(hito.fechaInicio)}</span></span>
+            <span>Límite: <span className={vencido ? 'text-red-400' : 'text-slate-400'}>{hito.fechaLimite === 'por definir' ? 'por definir' : formatearFecha(hito.fechaLimite)}</span></span>
           </div>
           {hito.responsable && <p className="text-slate-600 mt-0.5">{hito.responsable}</p>}
           {proyecto ? (
@@ -601,7 +625,7 @@ function HitoItemRealizado({ hito, proyectos, onDelete, isAdmin }: { hito: Hito;
         <span className="w-2 h-2 rounded-full mt-0.5 flex-shrink-0 bg-green-400" />
         <div className="min-w-0 flex-1">
           <p className="font-medium truncate text-green-300">{hito.nombre}</p>
-          {hito.fechaRealEnvio && (
+          {hito.fechaRealEnvio && hito.fechaRealEnvio !== 'por definir' && (
             <p className="text-slate-500 mt-0.5">Realizado: <span className="text-green-400">{formatearFecha(hito.fechaRealEnvio)}</span></p>
           )}
           {hito.responsable && <p className="text-slate-600 mt-0.5">{hito.responsable}</p>}
