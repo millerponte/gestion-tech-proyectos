@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import { LogIn, Eye, EyeOff, Shield } from 'lucide-react'
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth'
 
 export default function LoginPage() {
   const [correo, setCorreo] = useState('')
@@ -28,6 +29,20 @@ export default function LoginPage() {
       toast.error(msg)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRecuperarPass = async () => {
+    if (!correo) {
+      toast.error('Ingresa tu correo electrónico primero para recuperar la contraseña')
+      return
+    }
+    try {
+      const auth = getAuth()
+      await sendPasswordResetEmail(auth, correo)
+      toast.success('Correo de recuperación enviado. Revisa tu bandeja de entrada o SPAM.')
+    } catch (error: any) {
+      toast.error(error.code === 'auth/user-not-found' ? 'Usuario no encontrado' : 'Error al enviar correo')
     }
   }
 
@@ -64,7 +79,12 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="label">Contraseña</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="label mb-0">Contraseña</label>
+                <button type="button" onClick={handleRecuperarPass} className="text-xs text-blue-400 hover:text-blue-300">
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
               <div className="relative">
                 <input
                   type={showPass ? 'text' : 'password'}
