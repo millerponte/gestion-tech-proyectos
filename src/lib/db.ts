@@ -288,3 +288,43 @@ export async function obtenerEstadoAuditoria(): Promise<boolean> {
   const snap = await getDoc(doc(db, 'configuracion', 'auditoria'))
   return snap.exists() ? !!snap.data().deshabilitado : false
 }
+
+// ─── TICKETS OKINAWATEC (HELP DESK) ──────────────────────────────────────
+
+export async function obtenerTicketsOkinawa(): Promise<import('@/types').TicketOkinawa[]> {
+  const snap = await getDocs(query(collection(db, 'tickets_okinawatec'), orderBy('createdAt', 'desc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as import('@/types').TicketOkinawa))
+}
+
+export async function crearTicketOkinawa(data: Omit<import('@/types').TicketOkinawa, 'id'>): Promise<string> {
+  const ref = await addDoc(collection(db, 'tickets_okinawatec'), data)
+  return ref.id
+}
+
+export async function actualizarTicketOkinawa(id: string, data: Partial<import('@/types').TicketOkinawa>) {
+  await updateDoc(doc(db, 'tickets_okinawatec', id), data)
+}
+
+export async function eliminarTicketOkinawa(id: string) {
+  await deleteDoc(doc(db, 'tickets_okinawatec', id))
+}
+
+export async function generarNumeroTicketOkinawa(): Promise<string> {
+  const ref = doc(db, 'contadores', 'TICKETS_OKINAWA')
+  let siguiente = 1
+  const año = new Date().getFullYear() // Extrae el año actual (ej. 2026)
+  
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(ref)
+    if (!snap.exists() || snap.data().año !== año) {
+      // Si no existe o cambió el año, reinicia en 1
+      transaction.set(ref, { ultimoNumero: 1, año })
+    } else {
+      siguiente = (snap.data().ultimoNumero as number) + 1
+      transaction.update(ref, { ultimoNumero: siguiente })
+    }
+  })
+  
+  // Genera el formato OK2026HD0001
+  return `OK${año}HD${String(siguiente).padStart(4, '0')}`
+}
