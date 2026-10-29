@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { crearEntregable, obtenerSiguienteNumero, formatearNumeroDoc } from '@/lib/db'
+import { crearEntregable } from '@/lib/db'
 import type { Entregable } from '@/types'
 import { X, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -21,20 +21,23 @@ export default function ModalSubsanacion({ entregable, onClose, onSuccess }: Pro
 
   // Genera número de documento con "c": ITOK-26055 → ITOK-c26055
   const generarNumDoc = (original: string): string => {
-    // Detecta el patrón: prefijo-número
     const match = original.match(/^([A-Z]+-?)(\d+)$/)
     if (match) return `${match[1]}c${match[2]}`
     return `c${original}`
+  }
+
+  // Genera el número de cargo con "c": Cargo 26055-OK-TEC -> Cargo c26055-OK-TEC
+  const generarNumCargo = (original: string): string => {
+    // Busca la palabra "Cargo " seguida del número
+    return original.replace(/Cargo (\d+)/, 'Cargo c$1')
   }
 
   const handleCrear = async () => {
     if (!asunto.trim()) { toast.error('Ingresa el asunto'); return }
     setLoading(true)
     try {
-      // Nuevo número de cargo (correlativo nuevo)
-      const siguiente = await obtenerSiguienteNumero()
-      const { cargo } = formatearNumeroDoc(entregable.empresa, siguiente)
       const nuevoNumDoc = generarNumDoc(entregable.numeroDocumento)
+      const nuevoNumCargo = generarNumCargo(entregable.numeroCargo)
 
       const id = await crearEntregable({
         empresa: entregable.empresa,
@@ -50,7 +53,7 @@ export default function ModalSubsanacion({ entregable, onClose, onSuccess }: Pro
         responsableUid: entregable.responsableUid,
         responsableNombre: responsable.trim(),
         numeroDocumento: nuevoNumDoc,
-        numeroCargo: cargo,
+        numeroCargo: nuevoNumCargo,
         estado: 'reservado',
         expediente: '',
         descripcion: `Subsanación de ${entregable.numeroDocumento}`,
@@ -89,7 +92,7 @@ export default function ModalSubsanacion({ entregable, onClose, onSuccess }: Pro
           <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg p-3 text-xs space-y-1">
             <p className="text-slate-400">Original: <span className="text-cyan-400 font-mono">{entregable.numeroDocumento}</span></p>
             <p className="text-slate-400">Nuevo N° doc: <span className="text-amber-400 font-mono">{generarNumDoc(entregable.numeroDocumento)}</span></p>
-            <p className="text-slate-400">N° cargo: <span className="text-slate-300">nuevo correlativo automático</span></p>
+            <p className="text-slate-400">N° cargo: <span className="text-slate-300 font-mono">{generarNumCargo(entregable.numeroCargo)}</span></p>
             <p className="text-slate-400">Empresa: <span className="text-slate-300">{entregable.empresa}</span></p>
             <p className="text-slate-400">Cliente: <span className="text-slate-300">{entregable.clienteNombre}</span></p>
             <p className="text-slate-400">Proyecto: <span className="text-slate-300">{entregable.proyectoNombre}</span></p>
