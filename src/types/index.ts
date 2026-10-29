@@ -62,6 +62,7 @@ export interface Proyecto {
   empresa: Empresa
   contratista: string
   numeroContrato: string
+  fechaContrato?: string
   plazo: number
   fechaInicio: string
   fechaFin: string
