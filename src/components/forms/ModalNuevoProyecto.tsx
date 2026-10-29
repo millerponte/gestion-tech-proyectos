@@ -30,6 +30,7 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
   const [clienteId, setClienteId] = useState('')
   const [contratista, setContratista] = useState('')
   const [numeroContrato, setNumeroContrato] = useState('')
+  const [fechaContrato, setFechaContrato] = useState(hoy())
   const [plazoModo, setPlazoModo] = useState<'lista' | 'manual'>('lista')
   const [plazo, setPlazo] = useState(12)
   const [plazoManual, setPlazoManual] = useState('')
@@ -72,6 +73,7 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
         clienteNombre: clienteSeleccionado?.nombre || '',
         contratista: contratista.trim(),
         numeroContrato: numeroContrato.trim(),
+        fechaContrato: fechaContrato,
         plazo: plazoFinal,
         fechaInicio, fechaFin,
         solucion: solucion.trim(),
@@ -91,7 +93,7 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box">
+      <div className="modal-box max-w-xl">
         <div className="flex items-center justify-between p-6 border-b border-[#1e3a8a]/50">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center">
@@ -118,7 +120,8 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
             <label className="label">Solución / Equipo (con marca)</label>
             <input className="input-field" placeholder="Ej: Trend Micro Vision One – Endpoint Security" value={solucion} onChange={e => setSolucion(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="label">Contratista</label>
               <select className="input-field" value={contratista} onChange={e => setContratista(e.target.value)}>
@@ -132,12 +135,16 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
               <label className="label">N° de contrato</label>
               <input className="input-field" placeholder="Ej: TECH_100425_B" value={numeroContrato} onChange={e => setNumeroContrato(e.target.value)} />
             </div>
+            <div>
+              <label className="label">F. del Contrato</label>
+              <input type="date" className="input-field" value={fechaContrato} onChange={e => setFechaContrato(e.target.value)} />
+            </div>
           </div>
 
           {/* Plazo — lista o manual */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="label">Fecha de inicio *</label>
+              <label className="label">F. inicio servicio *</label>
               <input type="date" className="input-field" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} />
             </div>
             <div>
@@ -145,7 +152,7 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
                 <label className="label mb-0">Plazo</label>
                 <button onClick={() => setPlazoModo(plazoModo === 'lista' ? 'manual' : 'lista')}
                   className="text-xs text-blue-400 hover:text-blue-300 underline">
-                  {plazoModo === 'lista' ? 'Ingresar manual' : 'Usar lista'}
+                  {plazoModo === 'lista' ? 'Manual' : 'Lista'}
                 </button>
               </div>
               {plazoModo === 'lista' ? (
@@ -173,7 +180,7 @@ export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuc
           <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-lg px-4 py-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-slate-400">Fecha de fin:</span>
+                <span className="text-slate-400">Fecha de fin servicio:</span>
                 {editarFechaFin ? (
                   <input type="date" className="input-field py-0.5 text-xs w-36"
                     value={fechaFinManual} onChange={e => setFechaFinManual(e.target.value)} />
