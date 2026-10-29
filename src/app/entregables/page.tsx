@@ -6,7 +6,7 @@ import type { Hito } from '@/types'
 import { useEffect, useState, Fragment } from 'react'
 import { obtenerEntregables, obtenerClientes, obtenerProyectos, actualizarEntregable, eliminarEntregable } from '@/lib/db'
 import type { Entregable, Cliente, Proyecto } from '@/types'
-import { FileText, Plus, Search, Filter, Download, ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Mail, RefreshCw } from 'lucide-react'
+import { FileText, Plus, Search, Filter, Download, ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Mail, RefreshCw, CalendarDays } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
@@ -200,7 +200,7 @@ export default function EntregablesPage() {
         </div>
         <div className="flex gap-2">
           <button onClick={exportarExcel} className="btn-secondary">
-            <Download className="w-4 h-4" /> Exportar
+            <Download className="w-4 h-4" /> Exportar Excel
           </button>
           
           {tienePermiso('entregables_agregar') && (
@@ -211,44 +211,97 @@ export default function EntregablesPage() {
         </div>
       </div>
 
-      {/* Filtros Compactos */}
-      <div className="card p-3 bg-[#0d1526]">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input className="input-field pl-8 text-xs py-1.5" placeholder="Buscar asunto o doc..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-          </div>
-          <select className="input-field w-auto text-xs py-1.5 min-w-[120px]" value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)}>
-            <option value="">Empresa: Todas</option>
-            <option value="OKINAWATEC">Okinawatec</option>
-            <option value="TECH SOLUTIONS">Tech Solutions</option>
-            <option value="QUANTIC">Quantic</option>
-          </select>
-          <select className="input-field w-auto text-xs py-1.5 min-w-[120px]" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
-            <option value="">Tipo: Todos</option>
-            {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <select className="input-field w-auto text-xs py-1.5 min-w-[110px]" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
-            <option value="todos">Estado: Todos</option>
-            <option value="reservado">Reservado</option>
-            <option value="completo">Completo</option>
-          </select>
-          <div className="flex items-center gap-1 border border-slate-700 bg-[#111d35] rounded-lg px-2">
-            <span className="text-xs text-slate-500">Del:</span>
-            <input type="date" className="bg-transparent border-none text-xs py-1.5 text-slate-300 focus:outline-none" value={filtroFechaInicio} onChange={e => setFiltroFechaInicio(e.target.value)} />
-            <span className="text-xs text-slate-500">Al:</span>
-            <input type="date" className="bg-transparent border-none text-xs py-1.5 text-slate-300 focus:outline-none" value={filtroFechaFin} onChange={e => setFiltroFechaFin(e.target.value)} />
-          </div>
+      {/* FILTROS REDISEÑADOS Y COMPACTOS */}
+      <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-xl p-2.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
           
+          {/* 1. Buscador Minimalista */}
+          <div className="flex-1 min-w-[200px] flex items-center gap-2 bg-[#111d35] border border-slate-700/50 rounded-lg px-3 py-1.5 focus-within:border-blue-500/50 transition-colors">
+            <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <input 
+              className="bg-transparent border-none outline-none text-xs text-slate-200 w-full placeholder:text-slate-500" 
+              placeholder="Buscar asunto, cliente o doc..." 
+              value={busqueda} 
+              onChange={e => setBusqueda(e.target.value)} 
+            />
+          </div>
+
+          {/* 2. Grupo de Selectores (Empresa, Tipo, Estado) */}
+          <div className="flex items-center bg-[#111d35] border border-slate-700/50 rounded-lg px-3 py-1">
+            <Filter className="w-3.5 h-3.5 text-slate-400 mr-2 flex-shrink-0" />
+            
+            <select 
+              className="bg-transparent text-xs text-slate-300 border-none outline-none cursor-pointer py-0.5 pr-2 focus:ring-0 [&>option]:bg-[#111d35]" 
+              value={filtroEmpresa} 
+              onChange={e => setFiltroEmpresa(e.target.value)}
+            >
+              <option value="">Empresa: Todas</option>
+              <option value="OKINAWATEC">Okinawatec</option>
+              <option value="TECH SOLUTIONS">Tech Solutions</option>
+              <option value="QUANTIC">Quantic</option>
+            </select>
+            
+            <div className="w-px h-3.5 bg-slate-700 mx-2"></div>
+            
+            <select 
+              className="bg-transparent text-xs text-slate-300 border-none outline-none cursor-pointer py-0.5 pr-2 focus:ring-0 [&>option]:bg-[#111d35]" 
+              value={filtroTipo} 
+              onChange={e => setFiltroTipo(e.target.value)}
+            >
+              <option value="">Tipo: Todos</option>
+              {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+
+            <div className="w-px h-3.5 bg-slate-700 mx-2"></div>
+
+            <select 
+              className="bg-transparent text-xs text-slate-300 border-none outline-none cursor-pointer py-0.5 pr-1 focus:ring-0 [&>option]:bg-[#111d35]" 
+              value={filtroEstado} 
+              onChange={e => setFiltroEstado(e.target.value)}
+            >
+              <option value="todos">Estado: Todos</option>
+              <option value="reservado">Reservado</option>
+              <option value="completo">Completo</option>
+            </select>
+          </div>
+
+          {/* 3. Filtro de Fechas Compacto */}
+          <div className="flex items-center gap-2 bg-[#111d35] border border-slate-700/50 rounded-lg px-3 py-1">
+            <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs text-slate-500">Del:</span>
+            <input 
+              type="date" 
+              className="bg-transparent border-none text-xs text-slate-300 outline-none [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer" 
+              value={filtroFechaInicio} 
+              onChange={e => setFiltroFechaInicio(e.target.value)} 
+            />
+            <span className="text-xs text-slate-500 ml-1">Al:</span>
+            <input 
+              type="date" 
+              className="bg-transparent border-none text-xs text-slate-300 outline-none [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer" 
+              value={filtroFechaFin} 
+              onChange={e => setFiltroFechaFin(e.target.value)} 
+            />
+          </div>
+
+          {/* 4. Botón Limpiar (Solo si hay filtros activos) */}
           {(busqueda || filtroEmpresa || filtroTipo || filtroEstado !== 'reservado' || filtroFechaInicio || filtroFechaFin) && (
-            <button onClick={limpiarFiltros} className="btn-secondary text-xs py-1.5 px-3 whitespace-nowrap">
-              <Filter className="w-3 h-3" /> Limpiar
+            <button 
+              onClick={limpiarFiltros} 
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50 transition-all"
+            >
+              <X className="w-3 h-3" /> Limpiar
             </button>
           )}
 
-          <div className="flex items-center gap-2 ml-auto pl-2 border-l border-slate-700">
-            <span className="text-xs text-slate-400">Ver:</span>
-            <select className="input-field w-auto text-xs py-1.5" value={registrosPorPagina} onChange={e => setRegistrosPorPagina(Number(e.target.value))}>
+          {/* 5. Selector de Paginación */}
+          <div className="flex items-center gap-2 ml-auto pl-3 border-l border-slate-700/50">
+            <span className="text-xs text-slate-500">Ver:</span>
+            <select 
+              className="bg-[#111d35] border border-slate-700/50 rounded text-xs text-slate-300 px-2 py-1 outline-none cursor-pointer [&>option]:bg-[#111d35] focus:border-blue-500/50" 
+              value={registrosPorPagina} 
+              onChange={e => setRegistrosPorPagina(Number(e.target.value))}
+            >
               <option value={50}>50</option>
               <option value={100}>100</option>
               <option value={200}>200</option>
