@@ -4,6 +4,9 @@ import { getDocs, collection } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { Proyecto, Usuario } from '@/types'
 
+// ESTA LÍNEA ES LA CLAVE: Evita que Next.js ejecute la ruta durante la compilación de Vercel
+export const dynamic = 'force-dynamic'
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
