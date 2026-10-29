@@ -28,6 +28,7 @@ export interface Usuario {
   empresa?: Empresa
   createdAt: string
   permisos?: PermisoUsuario
+  helpdesk_okinawa_ver?: boolean
 }
 
 export interface PermisoUsuario {
