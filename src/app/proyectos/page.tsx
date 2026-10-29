@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { obtenerProyectos, obtenerClientes, eliminarProyecto, actualizarProyecto } from '@/lib/db'
 import type { Proyecto, Cliente } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
-import { FolderKanban, Plus, Search, Filter, Trash2, CalendarDays, Building2, Pencil, Check, X, ChevronDown, ChevronUp, Download, MessageSquare, Link2 } from 'lucide-react'
+import { FolderKanban, Plus, Search, Filter, Trash2, CalendarDays, Building2, Pencil, Check, X, ChevronDown, ChevronUp, Download, MessageSquare, Link2, ArrowDownUp } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { formatearFecha } from '@/lib/db'
@@ -30,16 +30,30 @@ function sumarMeses(fechaStr: string, meses: number): string {
   return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
 }
 
+function calcularProgreso(inicioStr: string, finStr: string): number {
+  if (!inicioStr || !finStr) return 0
+  const i = new Date(inicioStr).getTime()
+  const f = new Date(finStr).getTime()
+  const h = new Date().getTime()
+  if (h <= i) return 0
+  if (h >= f) return 100
+  return Math.round(((h - i) / (f - i)) * 100)
+}
+
 export default function ProyectosPage() {
   const [ultimoId, setUltimoId] = useState<string | null>(null)
   const { isAdmin, tienePermiso } = useAuth()
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Filtros compactos
   const [busqueda, setBusqueda] = useState('')
   const [filtroEmpresa, setFiltroEmpresa] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('activo') // Activos por defecto
   const [filtroCliente, setFiltroCliente] = useState('')
+  const [orden, setOrden] = useState<'progreso-asc'|'progreso-desc'|'recientes'|'antiguos'>('progreso-asc') // Menor progreso primero
+  
   const [modalAbierto, setModalAbierto] = useState(false)
   const [proyectoComentarios, setProyectoComentarios] = useState<Proyecto | null>(null)
   const [expandido, setExpandido] = useState<string | null>(null)
@@ -56,7 +70,7 @@ export default function ProyectosPage() {
 
   useEffect(() => { cargar() }, [])
 
-  const proyectosFiltrados = proyectos.filter(p => {
+  let proyectosFiltrados = proyectos.filter(p => {
     const q = busqueda.toLowerCase()
     const coincideBusqueda = !q ||
       p.nombre.toLowerCase().includes(q) ||
@@ -65,16 +79,27 @@ export default function ProyectosPage() {
       (p.numeroContrato || '').toLowerCase().includes(q)
     return coincideBusqueda &&
       (!filtroEmpresa || p.empresa === filtroEmpresa) &&
-      (!filtroEstado || p.estado === filtroEstado) &&
+      (filtroEstado === 'todos' || !filtroEstado || p.estado === filtroEstado) &&
       (!filtroCliente || p.clienteId === filtroCliente)
   })
 
+  // Ordenamiento dinámico
+  proyectosFiltrados = proyectosFiltrados.sort((a, b) => {
+    const progA = calcularProgreso(a.fechaInicio, a.fechaFin)
+    const progB = calcularProgreso(b.fechaInicio, b.fechaFin)
+    if (orden === 'progreso-asc') return progA - progB
+    if (orden === 'progreso-desc') return progB - progA
+    if (orden === 'recientes') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    if (orden === 'antiguos') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    return 0
+  })
+
   const exportarExcel = () => {
-    const headers = ['Nombre', 'Cliente', 'Empresa', 'Contratista', 'N° Contrato', 'Solución', 'Plazo', 'Fecha Inicio', 'Fecha Fin', 'Estado']
+    const headers = ['Nombre', 'Cliente', 'Empresa', 'Contratista', 'N° Contrato', 'F. Contrato', 'Solución', 'Plazo', 'Fecha Inicio', 'Fecha Fin', 'Progreso (%)', 'Estado']
     const filas = proyectosFiltrados.map(p => [
       p.nombre, p.clienteNombre, p.empresa, p.contratista,
-      p.numeroContrato, p.solucion, `${p.plazo} meses`,
-      formatearFecha(p.fechaInicio), formatearFecha(p.fechaFin), p.estado,
+      p.numeroContrato, p.fechaContrato ? formatearFecha(p.fechaContrato) : '', p.solucion, `${p.plazo} meses`,
+      formatearFecha(p.fechaInicio), formatearFecha(p.fechaFin), `${calcularProgreso(p.fechaInicio, p.fechaFin)}%`, p.estado,
     ])
     const csv = [headers, ...filas].map(f => f.map(v => `"${v}"`).join(',')).join('\n')
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -95,6 +120,7 @@ export default function ProyectosPage() {
       clienteNombre: p.clienteNombre,
       contratista: p.contratista,
       numeroContrato: p.numeroContrato,
+      fechaContrato: p.fechaContrato,
       solucion: p.solucion,
       plazo: p.plazo,
       fechaInicio: p.fechaInicio,
@@ -136,9 +162,12 @@ export default function ProyectosPage() {
     cargar()
   }
 
+  const limpiarFiltros = () => {
+    setBusqueda(''); setFiltroEmpresa(''); setFiltroEstado('activo'); setFiltroCliente(''); setOrden('progreso-asc')
+  }
+
   return (
     <div className="space-y-5 animate-fade-in">
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -149,52 +178,67 @@ export default function ProyectosPage() {
         </div>
         <div className="flex gap-2">
           <button onClick={exportarExcel} className="btn-secondary">
-            <Download className="w-4 h-4" /> Exportar Excel
+            <Download className="w-4 h-4" /> Exportar
           </button>
           {tienePermiso('proyectos_agregar') && (
             <button onClick={() => setModalAbierto(true)} className="btn-primary">
               <Plus className="w-4 h-4" /> Nuevo proyecto
             </button>
           )}
-          
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="card p-4 flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-48">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            className="input-field pl-9"
-            placeholder="Buscar proyecto, cliente, solución..."
-            value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
-          />
+      {/* FILTROS REDISEÑADOS Y COMPACTOS */}
+      <div className="bg-[#0d1526] border border-[#1e3a8a]/40 rounded-xl p-2.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex-1 min-w-[200px] flex items-center gap-2 bg-[#111d35] border border-slate-700/50 rounded-lg px-3 py-1.5 focus-within:border-blue-500/50 transition-colors">
+            <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <input 
+              className="bg-transparent border-none outline-none text-xs text-slate-200 w-full placeholder:text-slate-500" 
+              placeholder="Buscar proyecto, solución o contrato..." 
+              value={busqueda} 
+              onChange={e => setBusqueda(e.target.value)} 
+            />
+          </div>
+
+          <div className="flex items-center bg-[#111d35] border border-slate-700/50 rounded-lg px-3 py-1">
+            <Filter className="w-3.5 h-3.5 text-slate-400 mr-2 flex-shrink-0" />
+            <select className="bg-transparent text-xs text-slate-300 border-none outline-none cursor-pointer py-0.5 pr-2 focus:ring-0 [&>option]:bg-[#111d35]" value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)}>
+              <option value="">Empresa: Todas</option>
+              <option value="OKINAWATEC">Okinawatec</option>
+              <option value="TECH SOLUTIONS">Tech Solutions</option>
+              <option value="QUANTIC">Quantic</option>
+            </select>
+            <div className="w-px h-3.5 bg-slate-700 mx-2"></div>
+            <select className="bg-transparent text-xs text-slate-300 border-none outline-none cursor-pointer py-0.5 pr-2 focus:ring-0 [&>option]:bg-[#111d35] max-w-[120px] truncate" value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)}>
+              <option value="">Cliente: Todos</option>
+              {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+            <div className="w-px h-3.5 bg-slate-700 mx-2"></div>
+            <select className="bg-transparent text-xs text-slate-300 border-none outline-none cursor-pointer py-0.5 pr-1 focus:ring-0 [&>option]:bg-[#111d35]" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+              <option value="todos">Estado: Todos</option>
+              <option value="activo">Activo</option>
+              <option value="completado">Completado</option>
+              <option value="suspendido">Suspendido</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-[#111d35] border border-slate-700/50 rounded-lg px-3 py-1 ml-auto">
+            <ArrowDownUp className="w-3.5 h-3.5 text-slate-400" />
+            <select className="bg-transparent text-xs text-slate-300 border-none outline-none cursor-pointer py-0.5 focus:ring-0 [&>option]:bg-[#111d35]" value={orden} onChange={e => setOrden(e.target.value as any)}>
+              <option value="progreso-asc">Menor progreso (Nuevos)</option>
+              <option value="progreso-desc">Mayor progreso (Avanzados)</option>
+              <option value="recientes">Fecha de creación (Más recientes)</option>
+              <option value="antiguos">Fecha de creación (Más antiguos)</option>
+            </select>
+          </div>
+
+          {(busqueda || filtroEmpresa || filtroCliente || filtroEstado !== 'activo' || orden !== 'progreso-asc') && (
+            <button onClick={limpiarFiltros} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50 transition-all">
+              <X className="w-3 h-3" /> Limpiar
+            </button>
+          )}
         </div>
-        <select className="input-field w-auto min-w-36" value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)}>
-          <option value="">Todas las empresas</option>
-          <option value="OKINAWATEC">Okinawatec</option>
-          <option value="TECH SOLUTIONS">Tech Solutions</option>
-          <option value="QUANTIC">Quantic</option>
-        </select>
-        <select className="input-field w-auto min-w-36" value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)}>
-          <option value="">Todos los clientes</option>
-          {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
-        <select className="input-field w-auto min-w-32" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
-          <option value="">Todos los estados</option>
-          <option value="activo">Activo</option>
-          <option value="completado">Completado</option>
-          <option value="suspendido">Suspendido</option>
-        </select>
-        {(busqueda || filtroEmpresa || filtroEstado || filtroCliente) && (
-          <button
-            onClick={() => { setBusqueda(''); setFiltroEmpresa(''); setFiltroEstado(''); setFiltroCliente('') }}
-            className="btn-secondary text-xs"
-          >
-            <Filter className="w-3 h-3" /> Limpiar
-          </button>
-        )}
       </div>
 
       {/* Contenido */}
@@ -205,16 +249,18 @@ export default function ProyectosPage() {
       ) : proyectosFiltrados.length === 0 ? (
         <div className="card text-center py-16">
           <FolderKanban className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400">No se encontraron proyectos</p>
+          <p className="text-slate-400">No se encontraron proyectos activos</p>
           {tienePermiso('proyectos_agregar') && (
             <button onClick={() => setModalAbierto(true)} className="btn-primary mx-auto mt-4">
-              <Plus className="w-4 h-4" /> Crear primero
+              <Plus className="w-4 h-4" /> Crear proyecto
             </button>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {proyectosFiltrados.map(p => (
+          {proyectosFiltrados.map(p => {
+            const progreso = calcularProgreso(p.fechaInicio, p.fechaFin)
+            return (
             <div
               key={p.id}
               className={clsx(
@@ -249,9 +295,22 @@ export default function ProyectosPage() {
                 </div>
               </div>
 
-              {/* Badge empresa */}
               <div className="flex flex-wrap gap-1.5">
                 <span className={BADGE_EMPRESA[p.empresa] || 'badge-okinawatec'}>{p.empresa}</span>
+              </div>
+
+              {/* Barra de progreso */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                  <span>Progreso del servicio</span>
+                  <span className={progreso >= 90 ? 'text-red-400' : progreso >= 50 ? 'text-amber-400' : 'text-green-400'}>{progreso}%</span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className={clsx("h-full rounded-full transition-all duration-500", progreso >= 90 ? 'bg-red-500' : progreso >= 50 ? 'bg-amber-500' : 'bg-green-500')} 
+                    style={{ width: `${progreso}%` }} 
+                  />
+                </div>
               </div>
 
               {/* Info básica */}
@@ -319,9 +378,18 @@ export default function ProyectosPage() {
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <label className="label">Fecha inicio</label>
+                          <label className="label text-[10px]">F. Contrato</label>
+                          <input
+                            type="date"
+                            className="input-field"
+                            value={editData.fechaContrato || ''}
+                            onChange={e => setEditData(d => ({ ...d, fechaContrato: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="label text-[10px]">F. Inicio</label>
                           <input
                             type="date"
                             className="input-field"
@@ -330,14 +398,14 @@ export default function ProyectosPage() {
                           />
                         </div>
                         <div>
-                          <label className="label">Plazo</label>
+                          <label className="label text-[10px]">Plazo</label>
                           <select
                             className="input-field"
                             value={editData.plazo}
                             onChange={e => setEditData(d => ({ ...d, plazo: Number(e.target.value) }))}
                           >
                             {[1, 3, 6, 12, 24, 36].map(m => (
-                              <option key={m} value={m}>{m} {m === 1 ? 'mes' : 'meses'}</option>
+                              <option key={m} value={m}>{m} mes</option>
                             ))}
                           </select>
                         </div>
@@ -390,12 +458,12 @@ export default function ProyectosPage() {
                           <p className="text-slate-200">{p.numeroContrato || '—'}</p>
                         </div>
                         <div>
-                          <p className="text-slate-500">Plazo</p>
-                          <p className="text-slate-200">{p.plazo} meses</p>
+                          <p className="text-slate-500">Fecha del Contrato</p>
+                          <p className="text-slate-200">{p.fechaContrato ? formatearFecha(p.fechaContrato) : '—'}</p>
                         </div>
                         <div>
-                          <p className="text-slate-500">Fecha fin</p>
-                          <p className="text-slate-200">{formatearFecha(p.fechaFin)}</p>
+                          <p className="text-slate-500">Plazo Total</p>
+                          <p className="text-slate-200">{p.plazo} meses</p>
                         </div>
                         {(p as any).linkDrive && (
                           <div className="col-span-2">
@@ -452,7 +520,7 @@ export default function ProyectosPage() {
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
