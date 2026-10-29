@@ -22,6 +22,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   const { usuario } = useAuth()
   const [empresa, setEmpresa] = useState<Empresa>('OKINAWATEC')
   const [tipo, setTipo] = useState<TipoEntregable>('Informe Técnico')
+  const [clienteBusqueda, setClienteBusqueda] = useState('')
   const [clienteId, setClienteId] = useState('')
   const [proyectoId, setProyectoId] = useState('')
   const [hitoIds, setHitoIds] = useState<string[]>([])
@@ -44,12 +45,16 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   useEffect(() => {
     if (esReserva) {
       setClienteId('RESERVADO')
+      setClienteBusqueda('RESERVADO')
       setProyectoId('RESERVADO')
       setAsunto('RESERVADO')
       setHitoIds([])
       setVincularHito(null)
     } else {
-      if (clienteId === 'RESERVADO') setClienteId('')
+      if (clienteId === 'RESERVADO') {
+        setClienteId('')
+        setClienteBusqueda('')
+      }
       if (proyectoId === 'RESERVADO') setProyectoId('')
       if (asunto === 'RESERVADO') setAsunto('')
     }
@@ -98,9 +103,11 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
     )
   }
 
-  const proyectosFiltrados = clienteId && clienteId !== 'RESERVADO'
-    ? proyectos.filter(p => p.clienteId === clienteId)
-    : proyectos
+  // Filtrar solo proyectos ACTIVOS para ese cliente
+  const proyectosFiltrados = (clienteId && clienteId !== 'RESERVADO')
+    ? proyectos.filter(p => p.clienteId === clienteId && p.estado === 'activo')
+    : proyectos.filter(p => p.estado === 'activo')
+
   const clienteSeleccionado = clientes.find(c => c.id === clienteId)
   const proyectoSeleccionado = proyectos.find(p => p.id === proyectoId)
 
@@ -212,18 +219,30 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">Cliente *</label>
-                  <select className="input-field" value={clienteId} onChange={e => {
-                    setClienteId(e.target.value)
-                    setProyectoId('')
-                    setVincularHito(null)
-                    setHitoIds([])
-                  }}>
-                    <option value="">Seleccionar...</option>
-                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                  </select>
+                  <input
+                    list="clientes-list"
+                    className="input-field"
+                    placeholder="Buscar cliente..."
+                    value={clienteBusqueda}
+                    onChange={e => {
+                      setClienteBusqueda(e.target.value)
+                      const found = clientes.find(c => c.nombre === e.target.value)
+                      if (found) {
+                        setClienteId(found.id)
+                      } else {
+                        setClienteId('')
+                      }
+                      setProyectoId('')
+                      setVincularHito(null)
+                      setHitoIds([])
+                    }}
+                  />
+                  <datalist id="clientes-list">
+                    {clientes.map(c => <option key={c.id} value={c.nombre} />)}
+                  </datalist>
                 </div>
                 <div>
-                  <label className="label">Proyecto *</label>
+                  <label className="label">Proyecto Activo *</label>
                   <select className="input-field" value={proyectoId} onChange={e => {
                     setProyectoId(e.target.value)
                     setVincularHito(null)
