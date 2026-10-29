@@ -38,7 +38,9 @@ export default function EntregablesPage() {
   const [busqueda, setBusqueda] = useState('')
   const [filtroEmpresa, setFiltroEmpresa] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('reservado') // Estado por defecto
+  const [filtroFechaInicio, setFiltroFechaInicio] = useState('')
+  const [filtroFechaFin, setFiltroFechaFin] = useState('')
 
   // Estados de paginación
   const [paginaActual, setPaginaActual] = useState(1)
@@ -68,6 +70,7 @@ export default function EntregablesPage() {
     const expandirParam = searchParams.get('expandir')
     cargar().then(() => {
       if (expandirParam) {
+        setFiltroEstado('') // Si viene de un link directo (desde cronogramas), quita el filtro por defecto
         setTimeout(() => {
           setExpandido(expandirParam)
           const el = document.getElementById(`entregable-${expandirParam}`)
@@ -77,10 +80,10 @@ export default function EntregablesPage() {
     })
   }, [])
 
-  // Resetear paginación si se cambia la búsqueda o filtros
+  // Resetear paginación si se cambian filtros
   useEffect(() => {
     setPaginaActual(1)
-  }, [busqueda, filtroEmpresa, filtroTipo, filtroEstado, registrosPorPagina])
+  }, [busqueda, filtroEmpresa, filtroTipo, filtroEstado, filtroFechaInicio, filtroFechaFin, registrosPorPagina])
 
   const filtrados = entregables.filter(e => {
     const q = busqueda.toLowerCase()
@@ -89,10 +92,20 @@ export default function EntregablesPage() {
       e.clienteNombre.toLowerCase().includes(q) ||
       e.numeroDocumento.toLowerCase().includes(q) ||
       e.responsableNombre.toLowerCase().includes(q)
-    return coincideBusqueda &&
+      
+    let coincideFechas = true;
+    if (filtroFechaInicio || filtroFechaFin) {
+      if (!e.fecha) coincideFechas = false;
+      else {
+        if (filtroFechaInicio && e.fecha < filtroFechaInicio) coincideFechas = false;
+        if (filtroFechaFin && e.fecha > filtroFechaFin) coincideFechas = false;
+      }
+    }
+
+    return coincideBusqueda && coincideFechas &&
+      (filtroEstado === 'todos' || !filtroEstado || e.estado === filtroEstado) &&
       (!filtroEmpresa || e.empresa === filtroEmpresa) &&
-      (!filtroTipo || e.tipo === filtroTipo) &&
-      (!filtroEstado || e.estado === filtroEstado)
+      (!filtroTipo || e.tipo === filtroTipo)
   })
 
   // Lógica de Paginación
@@ -103,7 +116,6 @@ export default function EntregablesPage() {
 
   const exportarExcel = () => {
     const headers = ['N° Documento', 'N° Cargo', 'Empresa', 'Tipo', 'Cliente', 'Proyecto', 'Fecha', 'Asunto', 'Responsable', 'Estado', 'Expediente']
-    // Usa todos los filtrados, no solo los de la página actual
     const filas = filtrados.map(e => [
       e.numeroDocumento, e.numeroCargo, e.empresa, e.tipo,
       e.clienteNombre, e.proyectoNombre, formatearFecha(e.fecha),
@@ -144,7 +156,6 @@ export default function EntregablesPage() {
   const guardarEdicion = async (id: string) => {
     try {
       const dataActualizar: any = { ...editData }
-      // Limpiar hitoIds vacíos
       if (dataActualizar.hitoIds?.length === 0) {
         dataActualizar.hitoIds = []
         dataActualizar.hitoId = null
@@ -173,6 +184,10 @@ export default function EntregablesPage() {
     cargar()
   }
 
+  const limpiarFiltros = () => {
+    setBusqueda(''); setFiltroEmpresa(''); setFiltroTipo(''); setFiltroEstado('todos'); setFiltroFechaInicio(''); setFiltroFechaFin('')
+  }
+
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
@@ -185,10 +200,9 @@ export default function EntregablesPage() {
         </div>
         <div className="flex gap-2">
           <button onClick={exportarExcel} className="btn-secondary">
-            <Download className="w-4 h-4" /> Exportar Excel
+            <Download className="w-4 h-4" /> Exportar
           </button>
           
-          {/* VALIDACIÓN AGREGADA AQUÍ PARA EL BOTÓN PRINCIPAL */}
           {tienePermiso('entregables_agregar') && (
             <button onClick={() => setModalNuevo(true)} className="btn-primary">
               <Plus className="w-4 h-4" /> Nuevo entregable
@@ -197,41 +211,50 @@ export default function EntregablesPage() {
         </div>
       </div>
 
-      {/* Filtros y Opciones de Paginación */}
-      <div className="card p-4 flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-48">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input className="input-field pl-9" placeholder="Buscar por asunto, cliente, N° documento..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-        </div>
-        <select className="input-field w-auto min-w-36" value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)}>
-          <option value="">Todas las empresas</option>
-          <option value="OKINAWATEC">Okinawatec</option>
-          <option value="TECH SOLUTIONS">Tech Solutions</option>
-          <option value="QUANTIC">Quantic</option>
-        </select>
-        <select className="input-field w-auto min-w-40" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
-          <option value="">Todos los tipos</option>
-          {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <select className="input-field w-auto min-w-32" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
-          <option value="">Todos</option>
-          <option value="reservado">Reservado</option>
-          <option value="completo">Completo</option>
-        </select>
-        {(busqueda || filtroEmpresa || filtroTipo || filtroEstado) && (
-          <button onClick={() => { setBusqueda(''); setFiltroEmpresa(''); setFiltroTipo(''); setFiltroEstado('') }} className="btn-secondary text-xs">
-            <Filter className="w-3 h-3" /> Limpiar
-          </button>
-        )}
-        <div className="flex items-center gap-2 ml-auto border-l border-slate-700 pl-3">
-          <label className="text-xs text-slate-400">Mostrar:</label>
-          <select className="input-field w-auto text-xs py-1" value={registrosPorPagina} onChange={e => setRegistrosPorPagina(Number(e.target.value))}>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-            <option value={200}>200</option>
-            <option value={300}>300</option>
-            <option value={1000000}>Todos</option>
+      {/* Filtros Compactos */}
+      <div className="card p-3 bg-[#0d1526]">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input className="input-field pl-8 text-xs py-1.5" placeholder="Buscar asunto o doc..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+          </div>
+          <select className="input-field w-auto text-xs py-1.5 min-w-[120px]" value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)}>
+            <option value="">Empresa: Todas</option>
+            <option value="OKINAWATEC">Okinawatec</option>
+            <option value="TECH SOLUTIONS">Tech Solutions</option>
+            <option value="QUANTIC">Quantic</option>
           </select>
+          <select className="input-field w-auto text-xs py-1.5 min-w-[120px]" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+            <option value="">Tipo: Todos</option>
+            {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select className="input-field w-auto text-xs py-1.5 min-w-[110px]" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+            <option value="todos">Estado: Todos</option>
+            <option value="reservado">Reservado</option>
+            <option value="completo">Completo</option>
+          </select>
+          <div className="flex items-center gap-1 border border-slate-700 bg-[#111d35] rounded-lg px-2">
+            <span className="text-xs text-slate-500">Del:</span>
+            <input type="date" className="bg-transparent border-none text-xs py-1.5 text-slate-300 focus:outline-none" value={filtroFechaInicio} onChange={e => setFiltroFechaInicio(e.target.value)} />
+            <span className="text-xs text-slate-500">Al:</span>
+            <input type="date" className="bg-transparent border-none text-xs py-1.5 text-slate-300 focus:outline-none" value={filtroFechaFin} onChange={e => setFiltroFechaFin(e.target.value)} />
+          </div>
+          
+          {(busqueda || filtroEmpresa || filtroTipo || filtroEstado !== 'reservado' || filtroFechaInicio || filtroFechaFin) && (
+            <button onClick={limpiarFiltros} className="btn-secondary text-xs py-1.5 px-3 whitespace-nowrap">
+              <Filter className="w-3 h-3" /> Limpiar
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 ml-auto pl-2 border-l border-slate-700">
+            <span className="text-xs text-slate-400">Ver:</span>
+            <select className="input-field w-auto text-xs py-1.5" value={registrosPorPagina} onChange={e => setRegistrosPorPagina(Number(e.target.value))}>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={200}>200</option>
+              <option value={100000}>Todos</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -243,14 +266,7 @@ export default function EntregablesPage() {
       ) : filtrados.length === 0 ? (
         <div className="card text-center py-16">
           <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400">No se encontraron entregables</p>
-          
-          {/* VALIDACIÓN AGREGADA AQUÍ PARA EL ESTADO VACÍO */}
-          {tienePermiso('entregables_agregar') && (
-            <button onClick={() => setModalNuevo(true)} className="btn-primary mx-auto mt-4">
-              <Plus className="w-4 h-4" /> Registrar primero
-            </button>
-          )}
+          <p className="text-slate-400">No se encontraron entregables con los filtros actuales.</p>
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
@@ -270,10 +286,8 @@ export default function EntregablesPage() {
                 </tr>
               </thead>
               <tbody>
-                {/* ── Mapear desde entregablesPaginados en lugar de filtrados ── */}
                 {entregablesPaginados.map(e => (
                   <Fragment key={e.id}>
-                    {/* Fila principal */}
                     <tr
                       id={`entregable-${e.id}`}
                       className={clsx('tabla-row', expandido === e.id && 'bg-[#1e3a8a]/10', ultimoId === e.id && 'highlight-new')}
@@ -353,7 +367,6 @@ export default function EntregablesPage() {
                       <tr key={`${e.id}-expand`} className="bg-[#0d1526]/80">
                         <td colSpan={9} className="px-6 py-4">
                           {editando === e.id ? (
-                            // ── MODO EDICIÓN ──────────────────────────────
                             <div className="space-y-3">
                               <div className="grid grid-cols-2 gap-3">
                                 <div>
@@ -402,7 +415,6 @@ export default function EntregablesPage() {
                                 <label className="label">Descripción</label>
                                 <textarea className="input-field resize-none" rows={2} value={editData.descripcion} onChange={ev => setEditData(d => ({ ...d, descripcion: ev.target.value }))} />
                               </div>
-                              {/* Hitos vinculados — editable */}
                               {hitosEdicion.length > 0 && (
                                 <div>
                                   <label className="label">Hitos vinculados</label>
@@ -451,7 +463,6 @@ export default function EntregablesPage() {
                               </div>
                             </div>
                           ) : (
-                            // ── MODO DETALLE ──────────────────────────────
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
                               <div>
                                 <p className="text-slate-500 mb-0.5">N° Documento</p>
@@ -498,12 +509,10 @@ export default function EntregablesPage() {
                                   <p className="text-green-400 font-mono">{e.expediente}</p>
                                 </div>
                               )}
-                              {/* Hitos vinculados — soporta hitoId (único) e hitoIds (múltiples) */}
                               {(e.hitoId || (e as any).hitoIds?.length > 0) && (
                                 <div className="col-span-3">
                                   <p className="text-slate-500 mb-1">Hito(s) vinculado(s)</p>
                                   <div className="flex flex-wrap gap-2">
-                                    {/* Soporte para múltiples hitos */}
                                     {(e as any).hitoIds?.length > 0
                                       ? (e as any).hitoIds.map((hId: string, i: number) => (
                                           <Link
