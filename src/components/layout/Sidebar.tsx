@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import {
   LayoutDashboard, FolderKanban, FileText, CalendarDays, TrendingUp,
-  Settings, LogOut, Shield, ChevronRight, Menu, X, Building2
+  Settings, LogOut, Shield, ChevronRight, Menu, X, Building2, Mail
 } from 'lucide-react'
 import { useState } from 'react'
 import clsx from 'clsx'
@@ -18,6 +18,7 @@ const navItems = [
   { href: '/proyectos', label: 'Proyectos', icon: FolderKanban },
   { href: '/entregables', label: 'Entregables', icon: FileText },
   { href: '/cronogramas', label: 'Cronogramas', icon: CalendarDays },
+  { href: '/helpdesk-okinawa', label: 'Mesa de Ayuda (OK)', icon: Mail },
   { href: '/ventas', label: 'Ventas', icon: TrendingUp },
 ]
 
@@ -58,7 +59,7 @@ export default function Sidebar() {
         return p.cronogramas_ver === true;
       case '/ventas':
         return p.ventas_ver === true;
-      // Clientes queda público por defecto para usuarios logueados (o puedes limitarlo si lo deseas)
+      // Clientes y HelpDesk quedan públicos por defecto para usuarios logueados (o puedes limitarlo si lo deseas)
       default:
         return true;
     }
