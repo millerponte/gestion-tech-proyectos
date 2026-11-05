@@ -133,13 +133,22 @@ export default function ProyectosPage() {
     try {
       const fechaFin = sumarMeses(editData.fechaInicio || '', editData.plazo || 12)
       const clienteSeleccionado = clientes.find(c => c.id === editData.clienteId)
-      await actualizarProyecto(id, {
+      
+      // Limpiamos los datos antes de enviarlos a Firebase para evitar errores de 'undefined'
+      const datosActualizados: any = {
         ...editData,
         fechaFin,
         clienteNombre: clienteSeleccionado?.nombre || editData.clienteNombre,
         empresa: editData.contratista === 'TECH SOLUTIONS' ? 'TECH SOLUTIONS'
           : editData.contratista === 'QUANTIC' ? 'QUANTIC' : 'OKINAWATEC',
-      })
+      }
+
+      // Firebase odia los 'undefined'. Si no hay fecha de contrato, lo guardamos como cadena vacía.
+      if (datosActualizados.fechaContrato === undefined) {
+         datosActualizados.fechaContrato = ''
+      }
+
+      await actualizarProyecto(id, datosActualizados)
       toast.success('Proyecto actualizado')
       setEditando(null)
       cargar()
@@ -150,7 +159,8 @@ export default function ProyectosPage() {
           setTimeout(() => setUltimoId(null), 5500)
         })
       }, 300)
-    } catch {
+    } catch (err) {
+      console.error(err) // Para ver el error exacto en la consola si vuelve a fallar
       toast.error('Error al guardar')
     }
   }
