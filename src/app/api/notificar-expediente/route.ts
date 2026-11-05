@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     const {
       correos, numeroDocumento, asunto, cliente,
-      proyecto, empresa, expediente, responsable, fecha, esReenvio, numeroContrato
+      proyecto, solucion, empresa, expediente, responsable, fecha, esReenvio, numeroContrato
     } = await req.json()
 
     if (!correos || correos.length === 0) {
@@ -47,9 +47,10 @@ export async function POST(req: NextRequest) {
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Cliente:</td><td style="color:#f0f6ff;font-size:13px;">${cliente}</td></tr>
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Empresa:</td><td style="color:#f0f6ff;font-size:13px;">${empresa || 'OKINAWATEC'}</td></tr>
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Proyecto:</td><td style="color:#f0f6ff;font-size:13px;">${proyecto}</td></tr>
+            <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Solución:</td><td style="color:#f0f6ff;font-size:13px;">${solucion || '—'}</td></tr>
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">N° Contrato:</td><td style="color:#f0f6ff;font-size:13px;">${numeroContrato || '—'}</td></tr>
             <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Responsable:</td><td style="color:#f0f6ff;font-size:13px;">${responsable}</td></tr>
-            <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Fecha:</td><td style="color:#f0f6ff;font-size:13px;">${fecha}</td></tr>
+            <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Fecha Real Envío:</td><td style="color:#f0f6ff;font-size:13px;">${fecha}</td></tr>
           </table>
         </div>
         ${estadoBadge}
