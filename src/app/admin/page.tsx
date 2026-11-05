@@ -25,8 +25,9 @@ const PERMISOS_LABELS: Record<keyof PermisoUsuario, string> = {
   entregables_ver: 'Entregables — Ver',
   entregables_agregar: 'Entregables — Agregar',
   entregables_editar: 'Entregables — Editar',
-  comentarios: 'Comentarios en proyectos',
+  comentarios: 'Comentarios',
   ventas_ver: 'Ventas — Ver',
+  helpdesk_okinawa_ver: 'Help Desk Okinawa — Ver', // <--- ESTA ES LA LÍNEA QUE FALTA
 }
 
 const PERMISOS_POR_ROL: Record<string, PermisoUsuario> = {
