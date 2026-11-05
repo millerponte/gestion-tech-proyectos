@@ -70,17 +70,17 @@ export default function ModalExpediente({ entregable, onClose, onSuccess, esReen
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          correos: correosAEnviar, // o como se llame tu variable de correos
+          correos: correos, // <--- LÍNEA CORREGIDA
           numeroDocumento: entregable.numeroDocumento,
           asunto: entregable.asunto,
           cliente: entregable.clienteNombre,
           proyecto: entregable.proyectoNombre,
-          solucion: entregable.solucion,         // <-- LÍNEA AGREGADA
-          numeroContrato: entregable.numeroContrato, // <-- LÍNEA AGREGADA
+          solucion: entregable.solucion,
+          numeroContrato: entregable.numeroContrato,
           empresa: entregable.empresa,
-          expediente: expedienteFinal, // o la variable que uses para el expediente
+          expediente: expedienteFinal,
           responsable: entregable.responsableNombre,
-          fecha: new Date().toLocaleDateString('es-PE'), // o tu variable de fecha
+          fecha: new Date().toLocaleDateString('es-PE'),
           esReenvio: esReenvio || false
         }),
       })
