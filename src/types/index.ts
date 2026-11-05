@@ -28,7 +28,6 @@ export interface Usuario {
   empresa?: Empresa
   createdAt: string
   permisos?: PermisoUsuario
-  helpdesk_okinawa_ver?: boolean
 }
 
 export interface PermisoUsuario {
@@ -99,6 +98,8 @@ export interface Entregable {
   clienteNombre: string
   proyectoId: string
   proyectoNombre: string
+  solucion?: string
+  numeroContrato?: string
   hitoId?: string
   hitoIds?: string[]
   fecha: string
@@ -146,19 +147,3 @@ export interface ClienteVentas { id: string; nombre: string; contacto: string; t
 export interface CitaVentas { id: string; cliente: string; empresa?: string; contacto: string; correo: string; cargo: string; sector: SectorCita; fechaReunion: string; horario: string; solucion: string; observaciones: string; statusProyecto: string; status: 'pendiente' | 'realizado' | 'cancelado' | 'vencido'; createdAt: string; esPendiente?: boolean; pendienteFechaInicio?: string; pendienteFechaLimite?: string; fechaPendienteResuelto?: string; historialPendientes?: HistorialNota[]; }
 export interface FirmaVentas { id: string; cliente: string; autorizadoPor: string; documento: string; empresa: string; fecha: string; firmadoPor: string; tipoFirma: string; medioEntrega: string; nombreProyecto: string; enviadoPor: string; codigo: string; observaciones: string; historialStatus?: HistorialNota[]; createdAt: string; esPendiente?: boolean; pendienteFechaInicio?: string; pendienteFechaLimite?: string; fechaPendienteResuelto?: string; historialPendientes?: HistorialNota[]; }
 export interface LicitacionVentas { id: string; entidad: string; basesIntegradas: string; proceso: string; fechaPresentacion: string; fechaFinEvaluacion: string; buenaPro: string; consentimiento: string; fechaFirmaContrato: string; observaciones: string; empresa: string; resultado: ResultadoLicitacion; año: string; createdAt: string; esPendiente?: boolean; pendienteFechaInicio?: string; pendienteFechaLimite?: string; fechaPendienteResuelto?: string; historialPendientes?: HistorialNota[]; }
-
-export interface TicketOkinawa {
-  id: string;
-  numeroTicket: string; // Ej: OK2026HD0121
-  correoCliente: string;
-  asunto: string;
-  requerimiento: string; // El cuerpo del correo
-  fechaEnvio: string;
-  fechaCierre?: string;
-  sede: string;
-  marcaProducto: string;
-  estado: 'abierto' | 'en_proceso' | 'cerrado';
-  proyectoId?: string; // Vinculación clave con el proyecto
-  proyectoNombre?: string;
-  createdAt: string;
-}
