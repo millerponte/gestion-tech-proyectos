@@ -16,11 +16,9 @@ interface Props {
 }
 
 const TIPOS: TipoEntregable[] = ['Reservar', 'Plan de Trabajo', 'Informe Técnico', 'Informe Mensual', 'Informe de Incidencia', 'Entregable', 'Otro']
-const EMPRESAS: Empresa[] = ['OKINAWATEC', 'TECH SOLUTIONS', 'QUANTIC']
 
 export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onSuccess }: Props) {
   const { usuario } = useAuth()
-  const [empresa, setEmpresa] = useState<Empresa>('OKINAWATEC')
   const [tipo, setTipo] = useState<TipoEntregable>('Informe Técnico')
   const [clienteBusqueda, setClienteBusqueda] = useState('')
   const [clienteId, setClienteId] = useState('')
@@ -41,6 +39,10 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
   const [loadingHitos, setLoadingHitos] = useState(false)
 
   const esReserva = tipo === 'Reservar'
+  const proyectoSeleccionado = proyectos.find(p => p.id === proyectoId)
+  
+  // La empresa se hereda automáticamente del proyecto seleccionado (o 'OKINAWATEC' si es reserva)
+  const empresaHeredada: Empresa = esReserva ? 'OKINAWATEC' : (proyectoSeleccionado?.empresa || 'OKINAWATEC')
 
   useEffect(() => {
     if (esReserva) {
@@ -68,7 +70,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
       try {
         const siguiente = await obtenerNumeroPreview()
         if (activo) {
-          const { documento, cargo } = formatearNumeroDoc(empresa, siguiente)
+          const { documento, cargo } = formatearNumeroDoc(empresaHeredada, siguiente)
           setPreviewDoc(documento)
           setPreviewCargo(cargo)
         }
@@ -78,9 +80,10 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
         if (activo) setLoadingNum(false)
       }
     }
+    // Recalcula si cambia el proyecto (y por ende, la empresa)
     calcular()
     return () => { activo = false }
-  }, [empresa, modoManual])
+  }, [empresaHeredada, modoManual])
 
   useEffect(() => {
     if (!proyectoId || proyectoId === 'RESERVADO' || !vincularHito) {
@@ -109,7 +112,6 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
     : proyectos.filter(p => p.estado === 'activo')
 
   const clienteSeleccionado = clientes.find(c => c.id === clienteId)
-  const proyectoSeleccionado = proyectos.find(p => p.id === proyectoId)
 
   const handleGuardar = async () => {
     if (!esReserva && (!clienteId || !proyectoId || !asunto.trim())) {
@@ -127,22 +129,25 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
       if (modoManual && numeroManual.trim()) {
         const match = numeroManual.trim().match(/(\d+)/)
         const numManual = match ? parseInt(match[1]) : 0
-        const { documento, cargo } = formatearNumeroDoc(empresa, numManual)
+        const { documento, cargo } = formatearNumeroDoc(empresaHeredada, numManual)
         numeroDoc = documento
         numeroCargo = cargo
       } else {
         const siguiente = await obtenerSiguienteNumero()
-        const { documento, cargo } = formatearNumeroDoc(empresa, siguiente)
+        const { documento, cargo } = formatearNumeroDoc(empresaHeredada, siguiente)
         numeroDoc = documento
         numeroCargo = cargo
       }
 
       await crearEntregable({
-        empresa, tipo,
+        empresa: empresaHeredada, // Guarda la empresa heredada
+        tipo,
         clienteId: esReserva ? '' : clienteId,
         clienteNombre: esReserva ? 'RESERVADO' : (clienteSeleccionado?.nombre || ''),
         proyectoId: esReserva ? '' : proyectoId,
         proyectoNombre: esReserva ? 'RESERVADO' : (proyectoSeleccionado?.nombre || ''),
+        solucion: esReserva ? '' : (proyectoSeleccionado?.solucion || ''), // Heredado
+        numeroContrato: esReserva ? '' : (proyectoSeleccionado?.numeroContrato || ''), // Heredado
         ...(hitoIds.length > 0 ? { hitoIds, hitoId: hitoIds[0] } : {}),
         fecha,
         asunto: esReserva ? 'RESERVADO' : asunto.trim(),
@@ -181,24 +186,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Empresa */}
-          <div>
-            <label className="label">Empresa *</label>
-            <div className="flex gap-2">
-              {EMPRESAS.map(e => (
-                <button key={e} onClick={() => setEmpresa(e)}
-                  className={clsx('flex-1 py-2 px-2 rounded-lg text-xs font-medium border transition-all',
-                    empresa === e
-                      ? e === 'OKINAWATEC' ? 'bg-blue-600/30 border-blue-500 text-blue-300'
-                        : e === 'TECH SOLUTIONS' ? 'bg-green-600/30 border-green-500 text-green-300'
-                        : 'bg-purple-600/30 border-purple-500 text-purple-300'
-                      : 'bg-[#0d1526] border-[#1e3a8a]/50 text-slate-400')}>
-                  {e === 'TECH SOLUTIONS' ? 'TECH' : e === 'OKINAWATEC' ? 'OKINA' : 'QUANTIC'}
-                </button>
-              ))}
-            </div>
-          </div>
-
+          
           {/* Tipo */}
           <div>
             <label className="label">Tipo *</label>
@@ -209,7 +197,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
 
           {esReserva && (
             <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg px-4 py-3 text-xs text-amber-300">
-              🔒 Modo <strong>Reservar</strong> — se generará un número reservado. Completa los datos después al agregar el expediente.
+              🔒 Modo <strong>Reservar</strong> — se generará un número reservado genérico (OKINAWATEC). Completa los datos después al agregar el expediente.
             </div>
           )}
 
@@ -253,6 +241,19 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
                   </select>
                 </div>
               </div>
+
+              {/* Indicador de empresa heredada */}
+              {proyectoId && (
+                 <div className="bg-[#111d35] border border-blue-800/30 rounded-lg px-3 py-2 text-xs flex items-center justify-between">
+                   <span className="text-slate-400">Empresa asignada al proyecto:</span>
+                   <span className={clsx('font-medium',
+                      empresaHeredada === 'TECH SOLUTIONS' ? 'text-green-400' :
+                      empresaHeredada === 'QUANTIC' ? 'text-purple-400' : 'text-blue-400'
+                   )}>
+                     {empresaHeredada}
+                   </span>
+                 </div>
+              )}
 
               {/* Opción vincular hito */}
               {proyectoId && vincularHito === null && (
@@ -373,7 +374,7 @@ export default function ModalNuevoEntregable({ clientes, proyectos, onClose, onS
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Hash className="w-4 h-4 text-blue-400" />
-                <span className="text-xs font-medium text-slate-300">Numeración automática</span>
+                <span className="text-xs font-medium text-slate-300">Numeración automática ({empresaHeredada})</span>
               </div>
               <button onClick={() => setModoManual(!modoManual)} className="text-xs text-blue-400 hover:text-blue-300 underline">
                 {modoManual ? 'Usar automático' : 'Ingresar manual'}
