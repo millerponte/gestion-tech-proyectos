@@ -70,7 +70,7 @@ export default function ModalExpediente({ entregable, onClose, onSuccess, esReen
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          correos: correos, // <--- LÍNEA CORREGIDA
+          correos: correos,
           numeroDocumento: entregable.numeroDocumento,
           asunto: entregable.asunto,
           cliente: entregable.clienteNombre,
@@ -80,7 +80,8 @@ export default function ModalExpediente({ entregable, onClose, onSuccess, esReen
           empresa: entregable.empresa,
           expediente: expediente,
           responsable: entregable.responsableNombre,
-          fecha: new Date().toLocaleDateString('es-PE'),
+          // 👇 LÍNEA CORREGIDA: Toma la fecha del entregable y la invierte a DD/MM/YYYY
+          fecha: entregable.fecha.split('-').reverse().join('/'), 
           esReenvio: esReenvio || false
         }),
       })
