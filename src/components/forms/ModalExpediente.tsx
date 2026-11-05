@@ -78,7 +78,7 @@ export default function ModalExpediente({ entregable, onClose, onSuccess, esReen
           solucion: entregable.solucion,
           numeroContrato: entregable.numeroContrato,
           empresa: entregable.empresa,
-          expediente: expedienteFinal,
+          expediente: expediente,
           responsable: entregable.responsableNombre,
           fecha: new Date().toLocaleDateString('es-PE'),
           esReenvio: esReenvio || false
