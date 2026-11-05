@@ -43,6 +43,7 @@ export interface PermisoUsuario {
   entregables_agregar?: boolean
   entregables_editar?: boolean
   comentarios?: boolean
+  helpdesk_okinawa_ver?: boolean
 }
 
 export interface Cliente {
@@ -117,6 +118,29 @@ export interface Entregable {
 export interface ContadorDocumento {
   empresa: Empresa
   ultimoNumero: number
+}
+
+// ─── TICKETS OKINAWATEC (HELP DESK) ──────────────────────────────────────
+export interface TicketOkinawa {
+  id: string;
+  numeroTicket: string; // Ej: OK2026HD0121
+  correoCliente: string;
+  asunto: string;
+  requerimiento: string; // El cuerpo original del correo
+  fechaEnvio: string;
+  fechaCierre?: string;
+  sede: string;
+  marcaProducto: string;
+  estado: 'abierto' | 'en_proceso' | 'cerrado';
+  proyectoId?: string; // Vinculación clave con el proyecto
+  proyectoNombre?: string;
+  createdAt: string;
+  mensajes?: {
+    id: string;
+    texto: string;
+    tipo: 'entrante' | 'saliente';
+    fecha: string;
+  }[];
 }
 
 export type StatusPipeline = 'nuevo' | 'procesando' | 'perdido' | 'realizado'
