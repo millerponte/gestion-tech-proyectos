@@ -67,23 +67,23 @@ export default function ModalExpediente({ entregable, onClose, onSuccess, esReen
 
           if (correos.length > 0) {
             await fetch('/api/notificar-expediente', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                correos,
-                numeroDocumento: entregable.numeroDocumento,
-                asunto: entregable.asunto,
-                cliente: entregable.clienteNombre,
-                proyecto: entregable.proyectoNombre,
-                empresa: entregable.empresa,
-                expediente: expediente.trim() || entregable.expediente,
-                responsable: entregable.responsableNombre,
-                esReenvio,
-                fecha: entregable.fecha
-                  ? entregable.fecha.split('-').reverse().join('/')
-                  : new Date().toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-              }),
-            })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          correos: correosAEnviar, // o como se llame tu variable de correos
+          numeroDocumento: entregable.numeroDocumento,
+          asunto: entregable.asunto,
+          cliente: entregable.clienteNombre,
+          proyecto: entregable.proyectoNombre,
+          solucion: entregable.solucion,         // <-- LÍNEA AGREGADA
+          numeroContrato: entregable.numeroContrato, // <-- LÍNEA AGREGADA
+          empresa: entregable.empresa,
+          expediente: expedienteFinal, // o la variable que uses para el expediente
+          responsable: entregable.responsableNombre,
+          fecha: new Date().toLocaleDateString('es-PE'), // o tu variable de fecha
+          esReenvio: esReenvio || false
+        }),
+      })
             toast.success(`${esReenvio ? 'Correo reenviado' : 'Expediente guardado y notificado'} a ${correos.length} usuario(s)`)
           } else {
             toast.success(esReenvio ? 'Sin destinatarios para los roles seleccionados' : 'Expediente guardado')
