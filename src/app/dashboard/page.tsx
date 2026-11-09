@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 import {
   CalendarDays, AlertCircle, CheckCircle2, Clock,
   FolderKanban, ChevronLeft, ChevronRight, ArrowRight, X, Trash2,
-  Search, Target, TrendingUp, Building2
+  Search, Target, TrendingUp, Building2, ListTodo
 } from 'lucide-react'
 import Link from 'next/link'
 import clsx from 'clsx'
