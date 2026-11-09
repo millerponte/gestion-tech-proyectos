@@ -328,3 +328,9 @@ export async function generarNumeroTicketOkinawa(): Promise<string> {
   // Genera el formato OK2026HD0001
   return `OK${año}HD${String(siguiente).padStart(4, '0')}`
 }
+
+// --- OBTENER TODOS LOS HITOS (PENDIENTES) ---
+export const obtenerHitos = async (): Promise<Hito[]> => {
+  const snapshot = await getDocs(collection(db, 'hitos'))
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hito))
+}
