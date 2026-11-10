@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore'
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db } from '@/lib/firebase' // Asegúrate de que esta ruta sea correcta para tu proyecto
+import { db } from '@/lib/firebase'
 import { generarNumeroTicketOkinawa } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -13,9 +12,6 @@ export async function POST(req: NextRequest) {
     const fromRaw = (formData.get('from') as string) || ''
     const subject = (formData.get('subject') as string) || '(Sin Asunto)'
     const textBody = (formData.get('text') as string) || ''
-    
-    // Extraer el archivo adjunto (si existe)
-    const archivoFisico = formData.get('adjunto') as File | null
 
     const emailMatch = fromRaw.match(/<([^>]+)>/)
     const correoCliente = emailMatch ? emailMatch[1].trim() : fromRaw.trim()
@@ -26,35 +22,11 @@ export async function POST(req: NextRequest) {
 
     const textoLimpio = textBody.split(/El lun, \d+ de.*escribió:|On.*wrote:|From:/i)[0].trim()
 
-// DESACTIVADO POR FALTA DE PLAN BLAZE EN FIREBASE
-    let urlAdjunto = null
-    let nombreAdjunto = null
-
-    /*
-    if (archivoFisico && archivoFisico.size > 0) {
-      const storage = getStorage()
-      nombreAdjunto = archivoFisico.name
-      const storageRef = ref(storage, `tickets_adjuntos/${Date.now()}_${nombreAdjunto}`)
-      
-      const buffer = await archivoFisico.arrayBuffer()
-      await uploadBytes(storageRef, buffer, { contentType: archivoFisico.type })
-      urlAdjunto = await getDownloadURL(storageRef)
-    }
-    */
-
     const nuevoMensaje: any = {
       id: Date.now().toString(),
       texto: textoLimpio,
       tipo: 'entrante',
       fecha: new Date().toISOString()
-    }
-
-    // Si hay archivo, lo agregamos al mensaje
-    if (urlAdjunto) {
-      nuevoMensaje.adjunto = {
-        nombre: nombreAdjunto,
-        url: urlAdjunto
-      }
     }
 
     const ticketMatch = subject.match(/OK\d{4}HD\d{4}/)
