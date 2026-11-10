@@ -26,20 +26,21 @@ export async function POST(req: NextRequest) {
 
     const textoLimpio = textBody.split(/El lun, \d+ de.*escribió:|On.*wrote:|From:/i)[0].trim()
 
-    // Lógica para subir el archivo a Firebase Storage
+// DESACTIVADO POR FALTA DE PLAN BLAZE EN FIREBASE
     let urlAdjunto = null
     let nombreAdjunto = null
 
+    /*
     if (archivoFisico && archivoFisico.size > 0) {
       const storage = getStorage()
       nombreAdjunto = archivoFisico.name
-      // Creamos una ruta única en Storage
       const storageRef = ref(storage, `tickets_adjuntos/${Date.now()}_${nombreAdjunto}`)
       
       const buffer = await archivoFisico.arrayBuffer()
       await uploadBytes(storageRef, buffer, { contentType: archivoFisico.type })
       urlAdjunto = await getDownloadURL(storageRef)
     }
+    */
 
     const nuevoMensaje: any = {
       id: Date.now().toString(),
