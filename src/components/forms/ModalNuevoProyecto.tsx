@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 interface Props {
   clientes: Cliente[]
   proyectos: Proyecto[]
+  proyectoA_Renovar?: Proyecto | null // NUEVO: Para pre-rellenar
   onClose: () => void
   onSuccess: () => void
 }
