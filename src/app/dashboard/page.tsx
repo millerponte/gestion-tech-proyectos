@@ -184,7 +184,24 @@ export default function DashboardPage() {
       const q = searchQuery.toLowerCase()
       return base.filter(h => h.nombre.toLowerCase().includes(q) || h.proyectoNombre.toLowerCase().includes(q) || h.clienteNombre.toLowerCase().includes(q) || h.solucion.toLowerCase().includes(q) || h.numeroContrato.toLowerCase().includes(q))
     }
-    const ordenados = [...base].sort((a, b) => (b.fechaRealEnvio || b.fechaLimite).localeCompare(a.fechaRealEnvio || a.fechaLimite))
+    
+    // Función segura para convertir YYYY-MM-DD a timestamp sin que salgan años 3000
+    const parseSeguro = (fechaStr: string) => {
+      if (!fechaStr || fechaStr === 'por definir') return 0
+      const partes = fechaStr.split('-') // Aseguramos que sea YYYY-MM-DD
+      if(partes.length === 3) return new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2])).getTime()
+      return 0
+    }
+
+    // ORDENAMOS DESCENDENTE (El realizado más reciente ARRIBA) usando fechaRealEnvio o fechaLimite
+    const ordenados = [...base].sort((a, b) => parseSeguro(b.fechaRealEnvio || b.fechaLimite) - parseSeguro(a.fechaRealEnvio || a.fechaLimite))
+    
+    if (vistaRealizados === 'todo') return ordenados
+    if (vistaRealizados === 'dia') return ordenados.filter(h => { if (!h.fechaRealEnvio || h.fechaRealEnvio === 'por definir') return false; return isSameDay(parseSeguro(h.fechaRealEnvio), hoy) })
+    if (vistaRealizados === 'semana') { const ini = startOfWeek(hoy, { weekStartsOn: 1 }).getTime(); const fin = endOfWeek(hoy, { weekStartsOn: 1 }).getTime(); return ordenados.filter(h => { if (!h.fechaRealEnvio || h.fechaRealEnvio === 'por definir') return false; const t = parseSeguro(h.fechaRealEnvio); return t >= ini && t <= fin }) }
+    if (vistaRealizados === 'año') { const ini = startOfYear(hoy).getTime(); return ordenados.filter(h => { if (!h.fechaRealEnvio || h.fechaRealEnvio === 'por definir') return false; return parseSeguro(h.fechaRealEnvio) >= ini }) }
+    return ordenados.filter(h => { if (!h.fechaRealEnvio || h.fechaRealEnvio === 'por definir') return false; return isSameMonth(parseSeguro(h.fechaRealEnvio), hoy) })
+  })()
     if (vistaRealizados === 'todo') return ordenados
     if (vistaRealizados === 'dia') return ordenados.filter(h => { if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false; try { return isSameDay(parseISO(h.fechaRealEnvio || h.fechaLimite), hoy) } catch { return false } })
     if (vistaRealizados === 'semana') { const ini = startOfWeek(hoy, { weekStartsOn: 1 }); const fin = endOfWeek(hoy, { weekStartsOn: 1 }); return ordenados.filter(h => { if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false; try { const f = parseISO(h.fechaRealEnvio || h.fechaLimite); return f >= ini && f <= fin } catch { return false } }) }
