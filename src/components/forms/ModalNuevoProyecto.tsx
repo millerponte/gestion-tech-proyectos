@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 interface Props {
   clientes: Cliente[]
   proyectos: Proyecto[]
-  proyectoA_Renovar?: Proyecto | null // NUEVO: Para pre-rellenar
+  proyectoA_Renovar?: Proyecto | null
   onClose: () => void
   onSuccess: () => void
 }
@@ -27,38 +27,23 @@ function formatDMY(fechaStr: string): string {
 }
 
 export default function ModalNuevoProyecto({ clientes, proyectos, proyectoA_Renovar, onClose, onSuccess }: Props) {
-  // SI VIENE UN PROYECTO PARA RENOVAR, PRE-RELLENAMOS SUS DATOS
   const [nombre, setNombre] = useState(proyectoA_Renovar ? `[RENOVACIÓN] ${proyectoA_Renovar.nombre}` : '')
   const [clienteId, setClienteId] = useState(proyectoA_Renovar ? proyectoA_Renovar.clienteId : '')
-  const [contratista, setContratista] = useState(proyectoA_Renovar ? proyectoA_Renovar.contratista : '')
-  const [numeroContrato, setNumeroContrato] = useState(proyectoA_Renovar ? proyectoA_Renovar.numeroContrato : '')
+  const [contratista, setContratista] = useState(proyectoA_Renovar ? (proyectoA_Renovar.contratista || '') : '')
+  const [numeroContrato, setNumeroContrato] = useState(proyectoA_Renovar ? (proyectoA_Renovar.numeroContrato || '') : '')
   const [fechaContrato, setFechaContrato] = useState(hoy())
   const [plazoModo, setPlazoModo] = useState<'lista' | 'manual'>('lista')
-  const [plazo, setPlazo] = useState(12)
+  const [plazo, setPlazo] = useState(proyectoA_Renovar ? (proyectoA_Renovar.plazo || 12) : 12)
   const [plazoManual, setPlazoManual] = useState('')
   const [fechaInicio, setFechaInicio] = useState(hoy())
   const [fechaFinManual, setFechaFinManual] = useState('')
   const [editarFechaFin, setEditarFechaFin] = useState(false)
-  const [solucion, setSolucion] = useState(proyectoA_Renovar ? proyectoA_Renovar.solucion : '')
+  const [solucion, setSolucion] = useState(proyectoA_Renovar ? (proyectoA_Renovar.solucion || '') : '')
   const [estado, setEstado] = useState<'activo' | 'completado' | 'suspendido'>('activo')
-  const [linkDrive, setLinkDrive] = useState(proyectoA_Renovar ? (proyectoA_Renovar as any).linkDrive || '' : '')
+  const [linkDrive, setLinkDrive] = useState(proyectoA_Renovar ? ((proyectoA_Renovar as any).linkDrive || '') : '')
   const [loading, setLoading] = useState(false)
   
-  // NUEVO: Estado para vincular un proyecto manualmente desde la lista
   const [proyectoAnteriorId, setProyectoAnteriorId] = useState(proyectoA_Renovar ? proyectoA_Renovar.id : '')
-  const [contratista, setContratista] = useState('')
-  const [numeroContrato, setNumeroContrato] = useState('')
-  const [fechaContrato, setFechaContrato] = useState(hoy())
-  const [plazoModo, setPlazoModo] = useState<'lista' | 'manual'>('lista')
-  const [plazo, setPlazo] = useState(12)
-  const [plazoManual, setPlazoManual] = useState('')
-  const [fechaInicio, setFechaInicio] = useState(hoy())
-  const [fechaFinManual, setFechaFinManual] = useState('')
-  const [editarFechaFin, setEditarFechaFin] = useState(false)
-  const [solucion, setSolucion] = useState('')
-  const [estado, setEstado] = useState<'activo' | 'completado' | 'suspendido'>('activo')
-  const [linkDrive, setLinkDrive] = useState('')
-  const [loading, setLoading] = useState(false)
 
   const plazoFinal = plazoModo === 'manual' ? (parseInt(plazoManual) || 0) : plazo
   const fechaFinCalculada = sumarMeses(fechaInicio, plazoFinal)
@@ -87,18 +72,20 @@ export default function ModalNuevoProyecto({ clientes, proyectos, proyectoA_Reno
     try {
       await crearProyecto({
         nombre: nombre.trim(),
-        empresa, clienteId,
+        empresa, 
+        clienteId,
         clienteNombre: clienteSeleccionado?.nombre || '',
         contratista: contratista.trim(),
         numeroContrato: numeroContrato.trim(),
         fechaContrato: fechaContrato,
         plazo: plazoFinal,
-        fechaInicio, fechaFin,
+        fechaInicio, 
+        fechaFin,
         solucion: solucion.trim(),
         marca: '',
         estado,
         linkDrive: linkDrive.trim(),
-        proyectoAnteriorId: proyectoAnteriorId || null, // NUEVO: Guardamos el vínculo
+        proyectoAnteriorId: proyectoAnteriorId || null,
         createdAt: new Date().toISOString(),
       } as any)
       toast.success('Proyecto creado')
@@ -222,7 +209,8 @@ export default function ModalNuevoProyecto({ clientes, proyectos, proyectoA_Reno
             <input className="input-field" placeholder="https://drive.google.com/drive/folders/..." value={linkDrive} onChange={e => setLinkDrive(e.target.value)} />
           </div>
         </div>
-{/* NUEVO: VINCULACIÓN MANUAL */}
+        
+        {/* VINCULACIÓN MANUAL */}
         {!proyectoA_Renovar && (
           <div className="px-6 pb-2">
             <div className="bg-[#111d35] border border-blue-900/40 rounded-lg p-3">
@@ -242,8 +230,6 @@ export default function ModalNuevoProyecto({ clientes, proyectos, proyectoA_Reno
         )}
 
         <div className="flex justify-end gap-3 px-6 pb-6 mt-4">
-          
-        <div className="flex justify-end gap-3 px-6 pb-6">
           <button onClick={onClose} className="btn-secondary">Cancelar</button>
           <button onClick={handleGuardar} disabled={loading} className="btn-primary">
             {loading
