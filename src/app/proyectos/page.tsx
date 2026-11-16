@@ -56,6 +56,7 @@ export default function ProyectosPage() {
   
   const [modalAbierto, setModalAbierto] = useState(false)
   const [proyectoComentarios, setProyectoComentarios] = useState<Proyecto | null>(null)
+  const [proyectoARenovar, setProyectoARenovar] = useState<Proyecto | null>(null)
   const [expandido, setExpandido] = useState<string | null>(null)
   const [editando, setEditando] = useState<string | null>(null)
   const [editData, setEditData] = useState<Partial<Proyecto>>({})
@@ -191,7 +192,7 @@ export default function ProyectosPage() {
             <Download className="w-4 h-4" /> Exportar
           </button>
           {tienePermiso('proyectos_agregar') && (
-            <button onClick={() => setModalAbierto(true)} className="btn-primary">
+            <button onClick={() => { setProyectoARenovar(null); setModalAbierto(true); }} className="btn-primary">
               <Plus className="w-4 h-4" /> Nuevo proyecto
             </button>
           )}
@@ -520,7 +521,16 @@ export default function ProyectosPage() {
                     </button>
                   )}
                   {isAdmin && (
+                    {tienePermiso('proyectos_agregar') && (
                     <button
+                      onClick={(e) => { e.stopPropagation(); setProyectoARenovar(p); setModalAbierto(true); }}
+                      className="text-slate-500 hover:text-green-400 transition-colors"
+                      title="Renovar este proyecto"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Renovar
+                    </button>
+                  )}
+                  <button
                       onClick={() => handleEliminar(p.id, p.nombre)}
                       className="text-slate-500 hover:text-red-400 transition-colors"
                     >
@@ -539,8 +549,9 @@ export default function ProyectosPage() {
         <ModalNuevoProyecto
           clientes={clientes}
           proyectos={proyectos}
-          onClose={() => setModalAbierto(false)}
-          onSuccess={() => { setModalAbierto(false); cargar() }}
+          proyectoA_Renovar={proyectoARenovar}
+          onClose={() => { setModalAbierto(false); setProyectoARenovar(null); }}
+          onSuccess={() => { setModalAbierto(false); setProyectoARenovar(null); cargar() }}
         />
       )}
       {proyectoComentarios && (
