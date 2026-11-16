@@ -98,6 +98,7 @@ export default function ModalNuevoProyecto({ clientes, proyectos, proyectoA_Reno
         marca: '',
         estado,
         linkDrive: linkDrive.trim(),
+        proyectoAnteriorId: proyectoAnteriorId || null, // NUEVO: Guardamos el vínculo
         createdAt: new Date().toISOString(),
       } as any)
       toast.success('Proyecto creado')
