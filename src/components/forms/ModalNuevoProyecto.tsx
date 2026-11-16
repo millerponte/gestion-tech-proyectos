@@ -222,7 +222,27 @@ export default function ModalNuevoProyecto({ clientes, proyectos, proyectoA_Reno
             <input className="input-field" placeholder="https://drive.google.com/drive/folders/..." value={linkDrive} onChange={e => setLinkDrive(e.target.value)} />
           </div>
         </div>
+{/* NUEVO: VINCULACIÓN MANUAL */}
+        {!proyectoA_Renovar && (
+          <div className="px-6 pb-2">
+            <div className="bg-[#111d35] border border-blue-900/40 rounded-lg p-3">
+              <label className="label text-xs text-blue-300">¿Es una renovación de un proyecto ya existente? (Vincular historial)</label>
+              <select 
+                className="input-field mt-1" 
+                value={proyectoAnteriorId} 
+                onChange={e => setProyectoAnteriorId(e.target.value)}
+              >
+                <option value="">No vincular (Proyecto nuevo desde cero)</option>
+                {proyectos.filter(p => p.clienteId === clienteId).map(p => (
+                  <option key={p.id} value={p.id}>{p.nombre} — {p.numeroContrato}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
+        <div className="flex justify-end gap-3 px-6 pb-6 mt-4">
+          
         <div className="flex justify-end gap-3 px-6 pb-6">
           <button onClick={onClose} className="btn-secondary">Cancelar</button>
           <button onClick={handleGuardar} disabled={loading} className="btn-primary">
