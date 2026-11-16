@@ -202,12 +202,6 @@ export default function DashboardPage() {
     if (vistaRealizados === 'año') { const ini = startOfYear(hoy).getTime(); return ordenados.filter(h => { if (!h.fechaRealEnvio || h.fechaRealEnvio === 'por definir') return false; return parseSeguro(h.fechaRealEnvio) >= ini }) }
     return ordenados.filter(h => { if (!h.fechaRealEnvio || h.fechaRealEnvio === 'por definir') return false; return isSameMonth(parseSeguro(h.fechaRealEnvio), hoy) })
   })()
-    if (vistaRealizados === 'todo') return ordenados
-    if (vistaRealizados === 'dia') return ordenados.filter(h => { if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false; try { return isSameDay(parseISO(h.fechaRealEnvio || h.fechaLimite), hoy) } catch { return false } })
-    if (vistaRealizados === 'semana') { const ini = startOfWeek(hoy, { weekStartsOn: 1 }); const fin = endOfWeek(hoy, { weekStartsOn: 1 }); return ordenados.filter(h => { if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false; try { const f = parseISO(h.fechaRealEnvio || h.fechaLimite); return f >= ini && f <= fin } catch { return false } }) }
-    if (vistaRealizados === 'año') { const ini = startOfYear(hoy); return ordenados.filter(h => { if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false; try { return parseISO(h.fechaRealEnvio || h.fechaLimite) >= ini } catch { return false } }) }
-    return ordenados.filter(h => { if (h.fechaRealEnvio === 'por definir' || (!h.fechaRealEnvio && h.fechaLimite === 'por definir')) return false; try { return isSameMonth(parseISO(h.fechaRealEnvio || h.fechaLimite), hoy) } catch { return false } })
-  })()
 
   // ── Lógica Calendario Estilo Google ──
   const inicioMes = startOfMonth(mesActual)
