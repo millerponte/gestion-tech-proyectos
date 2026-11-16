@@ -50,13 +50,16 @@ export default function ProyectosPage() {
   // Filtros compactos
   const [busqueda, setBusqueda] = useState('')
   const [filtroEmpresa, setFiltroEmpresa] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('activo') // Activos por defecto
+  const [filtroEstado, setFiltroEstado] = useState('activo')
   const [filtroCliente, setFiltroCliente] = useState('')
-  const [orden, setOrden] = useState<'progreso-asc'|'progreso-desc'|'recientes'|'antiguos'>('progreso-asc') // Menor progreso primero
+  const [orden, setOrden] = useState<'progreso-asc'|'progreso-desc'|'recientes'|'antiguos'>('progreso-asc')
   
   const [modalAbierto, setModalAbierto] = useState(false)
   const [proyectoComentarios, setProyectoComentarios] = useState<Proyecto | null>(null)
+  
+  // NUEVO ESTADO PARA RENOVAR:
   const [proyectoARenovar, setProyectoARenovar] = useState<Proyecto | null>(null)
+  
   const [expandido, setExpandido] = useState<string | null>(null)
   const [editando, setEditando] = useState<string | null>(null)
   const [editData, setEditData] = useState<Partial<Proyecto>>({})
