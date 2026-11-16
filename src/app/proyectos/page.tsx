@@ -50,15 +50,13 @@ export default function ProyectosPage() {
   // Filtros compactos
   const [busqueda, setBusqueda] = useState('')
   const [filtroEmpresa, setFiltroEmpresa] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('activo')
+  const [filtroEstado, setFiltroEstado] = useState('activo') // Activos por defecto
   const [filtroCliente, setFiltroCliente] = useState('')
-  const [orden, setOrden] = useState<'progreso-asc'|'progreso-desc'|'recientes'|'antiguos'>('progreso-asc')
+  const [orden, setOrden] = useState<'progreso-asc'|'progreso-desc'|'recientes'|'antiguos'>('progreso-asc') // Menor progreso primero
   
   const [modalAbierto, setModalAbierto] = useState(false)
   const [proyectoComentarios, setProyectoComentarios] = useState<Proyecto | null>(null)
-  
-  // NUEVO ESTADO PARA RENOVAR:
-  const [proyectoARenovar, setProyectoARenovar] = useState<Proyecto | null>(null)
+  const [proyectoARenovar, setProyectoARenovar] = useState<Proyecto | null>(null) // NUEVO ESTADO PARA RENOVAR
   
   const [expandido, setExpandido] = useState<string | null>(null)
   const [editando, setEditando] = useState<string | null>(null)
@@ -138,7 +136,6 @@ export default function ProyectosPage() {
       const fechaFin = sumarMeses(editData.fechaInicio || '', editData.plazo || 12)
       const clienteSeleccionado = clientes.find(c => c.id === editData.clienteId)
       
-      // Limpiamos los datos antes de enviarlos a Firebase para evitar errores de 'undefined'
       const datosActualizados: any = {
         ...editData,
         fechaFin,
@@ -147,7 +144,6 @@ export default function ProyectosPage() {
           : editData.contratista === 'QUANTIC' ? 'QUANTIC' : 'OKINAWATEC',
       }
 
-      // Firebase odia los 'undefined'. Si no hay fecha de contrato, lo guardamos como cadena vacía.
       if (datosActualizados.fechaContrato === undefined) {
          datosActualizados.fechaContrato = ''
       }
@@ -164,7 +160,7 @@ export default function ProyectosPage() {
         })
       }, 300)
     } catch (err) {
-      console.error(err) // Para ver el error exacto en la consola si vuelve a fallar
+      console.error(err)
       toast.error('Error al guardar')
     }
   }
@@ -265,7 +261,7 @@ export default function ProyectosPage() {
           <FolderKanban className="w-12 h-12 text-slate-600 mx-auto mb-3" />
           <p className="text-slate-400">No se encontraron proyectos activos</p>
           {tienePermiso('proyectos_agregar') && (
-            <button onClick={() => setModalAbierto(true)} className="btn-primary mx-auto mt-4">
+            <button onClick={() => { setProyectoARenovar(null); setModalAbierto(true); }} className="btn-primary mx-auto mt-4">
               <Plus className="w-4 h-4" /> Crear proyecto
             </button>
           )}
@@ -515,6 +511,15 @@ export default function ProyectosPage() {
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                   </button>
+                  {tienePermiso('proyectos_agregar') && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setProyectoARenovar(p); setModalAbierto(true); }}
+                      className="text-slate-500 hover:text-green-400 transition-colors"
+                      title="Renovar este proyecto"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {tienePermiso('proyectos_editar') && (
                     <button
                       onClick={() => { setExpandido(p.id); iniciarEdicion(p) }}
@@ -524,16 +529,7 @@ export default function ProyectosPage() {
                     </button>
                   )}
                   {isAdmin && (
-                    {tienePermiso('proyectos_agregar') && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); setProyectoARenovar(p); setModalAbierto(true); }}
-                      className="text-slate-500 hover:text-green-400 transition-colors"
-                      title="Renovar este proyecto"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Renovar
-                    </button>
-                  )}
-                  <button
                       onClick={() => handleEliminar(p.id, p.nombre)}
                       className="text-slate-500 hover:text-red-400 transition-colors"
                     >
