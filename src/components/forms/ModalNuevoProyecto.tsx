@@ -26,9 +26,26 @@ function formatDMY(fechaStr: string): string {
   return `${d}/${m}/${y}`
 }
 
-export default function ModalNuevoProyecto({ clientes, proyectos, onClose, onSuccess }: Props) {
-  const [nombre, setNombre] = useState('')
-  const [clienteId, setClienteId] = useState('')
+export default function ModalNuevoProyecto({ clientes, proyectos, proyectoA_Renovar, onClose, onSuccess }: Props) {
+  // SI VIENE UN PROYECTO PARA RENOVAR, PRE-RELLENAMOS SUS DATOS
+  const [nombre, setNombre] = useState(proyectoA_Renovar ? `[RENOVACIÓN] ${proyectoA_Renovar.nombre}` : '')
+  const [clienteId, setClienteId] = useState(proyectoA_Renovar ? proyectoA_Renovar.clienteId : '')
+  const [contratista, setContratista] = useState(proyectoA_Renovar ? proyectoA_Renovar.contratista : '')
+  const [numeroContrato, setNumeroContrato] = useState(proyectoA_Renovar ? proyectoA_Renovar.numeroContrato : '')
+  const [fechaContrato, setFechaContrato] = useState(hoy())
+  const [plazoModo, setPlazoModo] = useState<'lista' | 'manual'>('lista')
+  const [plazo, setPlazo] = useState(12)
+  const [plazoManual, setPlazoManual] = useState('')
+  const [fechaInicio, setFechaInicio] = useState(hoy())
+  const [fechaFinManual, setFechaFinManual] = useState('')
+  const [editarFechaFin, setEditarFechaFin] = useState(false)
+  const [solucion, setSolucion] = useState(proyectoA_Renovar ? proyectoA_Renovar.solucion : '')
+  const [estado, setEstado] = useState<'activo' | 'completado' | 'suspendido'>('activo')
+  const [linkDrive, setLinkDrive] = useState(proyectoA_Renovar ? (proyectoA_Renovar as any).linkDrive || '' : '')
+  const [loading, setLoading] = useState(false)
+  
+  // NUEVO: Estado para vincular un proyecto manualmente desde la lista
+  const [proyectoAnteriorId, setProyectoAnteriorId] = useState(proyectoA_Renovar ? proyectoA_Renovar.id : '')
   const [contratista, setContratista] = useState('')
   const [numeroContrato, setNumeroContrato] = useState('')
   const [fechaContrato, setFechaContrato] = useState(hoy())
